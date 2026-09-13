@@ -150,6 +150,15 @@
     margin-bottom: 14px;
   }
   .sprite-wrap img { width: 190px; height: 190px; cursor: pointer; }
+  .sprite-wrap img.shake { animation: shakeSprite 0.5s; }
+  @keyframes shakeSprite {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    20% { transform: translateX(-8px) rotate(-8deg); }
+    40% { transform: translateX(8px) rotate(8deg); }
+    60% { transform: translateX(-6px) rotate(-6deg); }
+    80% { transform: translateX(6px) rotate(6deg); }
+  }
+  .catch-difficulty { font-size: 12px; color: #888; text-align: center; margin-top: -6px; margin-bottom: 8px; }
   .types { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .type-badge {
     padding: 6px 18px; border-radius: 999px; color: #fff; font-weight: bold;
@@ -399,6 +408,7 @@
       <button class="yt-btn" id="ytBtn">▶️ YouTube'da Ara</button>
     </div>
 
+    <div class="catch-difficulty" id="catchDifficulty"></div>
     <button id="addDexBtn">⭐ Ayaz'ın Pokédex'ine Ekle</button>
   </div>
   <button id="nextBtn" title="Sonraki">➡️</button>
@@ -415,6 +425,7 @@ let currentAudio = null;
 let allNames = [];
 let currentData = null;
 let currentSpecies = null;
+let catchAttemptBonus = 0;
 
 const el = (id) => document.getElementById(id);
 const statusEl = el('status');
@@ -521,7 +532,9 @@ async function renderPokemon(data) {
   };
 
   updateAddButton(data.id);
-  el('addDexBtn').onclick = () => toggleMyDex(data, total);
+  catchAttemptBonus = 0;
+  el('catchDifficulty').textContent = '';
+  el('addDexBtn').onclick = () => attemptCatch(data, total);
   updateFavNickUI(data.id);
 
   el('flavor').textContent = 'Açıklama yükleniyor...';
@@ -682,11 +695,22 @@ async function translateToTurkish(text) {
   }
 }
 
+function renderCatchDifficulty(captureRate) {
+  const box = el('catchDifficulty');
+  let label, emoji;
+  if (captureRate >= 150) { label = 'Kolay yakalanır'; emoji = '🟢'; }
+  else if (captureRate >= 60) { label = 'Orta zorlukta'; emoji = '🟡'; }
+  else if (captureRate >= 20) { label = 'Zor yakalanır'; emoji = '🟠'; }
+  else { label = 'Çok zor yakalanır!'; emoji = '🔴'; }
+  box.textContent = `${emoji} Yakalama zorluğu: ${label}`;
+}
+
 async function loadSpeciesExtras(data) {
   try {
     const speciesRes = await fetch(data.species.url);
     const species = await speciesRes.json();
     currentSpecies = species;
+    renderCatchDifficulty(species.capture_rate);
 
     const entries = species.flavor_text_entries || [];
     const trEntry = entries.find(e => e.language.name === 'tr');
@@ -771,6 +795,44 @@ function updateAddButton(id) {
   const myName = PROFILE_INFO[CURRENT_PROFILE]?.name || 'Benim';
   btn.textContent = exists ? '✅ Pokédex\'te Var (Çıkar)' : `⭐ ${myName}'ın Pokédex'ine Ekle`;
   btn.classList.toggle('added', exists);
+}
+
+function showCatchFailToast(name) {
+  const toast = el('badgeToast');
+  toast.style.background = '#c0392b';
+  toast.textContent = `😅 ${name} kaçtı! Tekrar dene, şansın arttı 🍀`;
+  toast.classList.add('show');
+  clearTimeout(showCatchFailToast._t);
+  showCatchFailToast._t = setTimeout(() => {
+    toast.classList.remove('show');
+    toast.style.background = '';
+  }, 2500);
+
+  const sprite = el('sprite');
+  sprite.classList.remove('shake');
+  void sprite.offsetWidth;
+  sprite.classList.add('shake');
+}
+
+async function attemptCatch(data, total) {
+  const mydex = getMyDex();
+  const alreadyOwned = mydex.some(p => p.id === data.id);
+  if (alreadyOwned) {
+    toggleMyDex(data, total);
+    return;
+  }
+
+  const captureRate = currentSpecies?.capture_rate ?? 150;
+  const baseChance = 0.35 + (captureRate / 255) * 0.6;
+  const chance = Math.min(1, baseChance + catchAttemptBonus);
+
+  if (Math.random() < chance) {
+    catchAttemptBonus = 0;
+    toggleMyDex(data, total);
+  } else {
+    catchAttemptBonus += 0.15;
+    showCatchFailToast(data.name);
+  }
 }
 
 async function toggleMyDex(data, total) {
