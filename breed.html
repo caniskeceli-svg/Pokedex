@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e3350d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Çiftleştirme Merkezi</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 36px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+  .nav-mine { background: #f39c12; }
+
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+
+  .parents-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 20px; }
+  .parent-slot {
+    flex: 1; background: #fff; border-radius: 20px; padding: 16px; text-align: center;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.08); cursor: pointer; min-height: 160px;
+  }
+  .parent-slot img { width: 80px; height: 80px; }
+  .parent-slot .p-name { font-weight: bold; text-transform: capitalize; margin-top: 6px; }
+  .parent-slot .p-empty { color: #bbb; font-size: 14px; padding: 30px 0; }
+  .plus-sign { font-size: 32px; color: #e3350d; font-weight: bold; }
+
+  .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 14px; max-height: 300px; overflow-y: auto; background: #fff; border-radius: 16px; padding: 12px; }
+  .pick-item { text-align: center; background: #f7f7f7; border-radius: 12px; padding: 8px; cursor: pointer; }
+  .pick-item:hover { background: #ffe6cc; }
+  .pick-item img { width: 48px; height: 48px; }
+  .pick-item span { display: block; font-size: 11px; text-transform: capitalize; }
+
+  .breed-btn {
+    display: block; width: 100%; max-width: 280px; margin: 20px auto 0;
+    background: #e3350d; color: #fff; border: none; padding: 16px; border-radius: 999px;
+    font-size: 20px; font-weight: bold; cursor: pointer;
+  }
+  .breed-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .result-box {
+    background: #fff; border-radius: 20px; padding: 24px; margin-top: 20px; text-align: center;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.1); display: none;
+  }
+  .result-box.show { display: block; }
+  .egg { font-size: 70px; }
+  .egg.hatch { animation: wiggle 0.4s infinite; }
+  @keyframes wiggle { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+  .baby-name { font-size: 24px; font-weight: bold; color: var(--accent-dark); text-transform: capitalize; margin-top: 10px; }
+  .baby-img { width: 160px; height: 160px; }
+  .result-msg { font-size: 15px; color: #666; margin-top: 8px; }
+  .add-baby-btn { background: #27ae60; color: #fff; border: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 14px; }
+  .again-btn { background: #3b6cdb; color: #fff; border: none; padding: 10px 20px; border-radius: 999px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 10px; }
+
+  .empty-box { text-align: center; color: #a6925a; font-size: 15px; background: #fff; border-radius: 18px; padding: 24px 20px; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥚 Çiftleştirme Merkezi 🥚</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex</a>
+    <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+  </div>
+</header>
+
+<div class="wrap" id="wrap">
+  <div class="parents-row">
+    <div class="parent-slot" id="slotA">
+      <div class="p-empty">Bir Pokémon seç</div>
+    </div>
+    <div class="plus-sign">+</div>
+    <div class="parent-slot" id="slotB">
+      <div class="p-empty">Bir Pokémon seç</div>
+    </div>
+  </div>
+
+  <div class="pick-grid" id="pickGrid"></div>
+
+  <button class="breed-btn" id="breedBtn" disabled>🥚 Çiftleştir!</button>
+
+  <div class="result-box" id="resultBox"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+let parentA = null;
+let parentB = null;
+let pickTarget = 'A';
+
+function renderPicker() {
+  const mydex = getMyDexShared();
+  if (!mydex.length) {
+    el('wrap').innerHTML = `<div class="empty-box">Çiftleştirmek için önce Pokédex'ten birkaç Pokémon yakalamalısın!</div>`;
+    return;
+  }
+  el('pickGrid').innerHTML = mydex.map(p => `
+    <div class="pick-item" data-id="${p.id}">
+      <img src="${p.img}" alt="${p.name}">
+      <span>${p.nickname || p.name}</span>
+    </div>`).join('');
+
+  el('pickGrid').querySelectorAll('.pick-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const poke = mydex.find(p => p.id === Number(item.dataset.id));
+      if (pickTarget === 'A') { parentA = poke; renderSlot('A', poke); pickTarget = 'B'; }
+      else { parentB = poke; renderSlot('B', poke); pickTarget = 'A'; }
+      updateBreedBtn();
+    });
+  });
+}
+
+function renderSlot(which, poke) {
+  el(`slot${which}`).innerHTML = `
+    <img src="${poke.img}" alt="${poke.name}">
+    <div class="p-name">${poke.nickname || poke.name}</div>`;
+}
+
+el('slotA').addEventListener('click', () => { pickTarget = 'A'; });
+el('slotB').addEventListener('click', () => { pickTarget = 'B'; });
+
+function updateBreedBtn() {
+  el('breedBtn').disabled = !(parentA && parentB && parentA.id !== parentB.id);
+}
+
+async function getEggGroups(id) {
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
+  const species = await res.json();
+  return { species, eggGroups: species.egg_groups.map(g => g.name) };
+}
+
+async function getBabyForm(species) {
+  if (!species.evolution_chain) return species.name;
+  const res = await fetch(species.evolution_chain.url);
+  const evo = await res.json();
+  return evo.chain.species.name;
+}
+
+el('breedBtn').addEventListener('click', async () => {
+  const box = el('resultBox');
+  box.classList.add('show');
+  box.innerHTML = `<div class="egg">🥚</div><div class="result-msg">Çiftleştiriliyor...</div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  try {
+    const [dataA, dataB] = await Promise.all([getEggGroups(parentA.id), getEggGroups(parentB.id)]);
+
+    if (dataA.eggGroups.includes('no-eggs') || dataB.eggGroups.includes('no-eggs')) {
+      box.innerHTML = `
+        <div style="font-size:50px;">🚫</div>
+        <div class="result-msg">Bu Pokémon'lardan biri üreyemiyor (efsanevi ya da özel bir tür)!</div>
+        <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Dene</button>`;
+      el('tryAgainBtn').addEventListener('click', resetBreeding);
+      return;
+    }
+
+    const shared = dataA.eggGroups.some(g => dataB.eggGroups.includes(g));
+    if (!shared) {
+      box.innerHTML = `
+        <div style="font-size:50px;">😅</div>
+        <div class="result-msg">Uyumsuzlar! Farklı yumurta gruplarındalar:<br>
+        <b>${parentA.name}</b>: ${dataA.eggGroups.join(', ')}<br>
+        <b>${parentB.name}</b>: ${dataB.eggGroups.join(', ')}</div>
+        <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Dene</button>`;
+      el('tryAgainBtn').addEventListener('click', resetBreeding);
+      return;
+    }
+
+    box.innerHTML = `<div class="egg hatch">🥚</div><div class="result-msg">Yumurta çatlıyor...</div>`;
+    await new Promise(r => setTimeout(r, 1500));
+
+    const pickSpecies = Math.random() < 0.5 ? dataA.species : dataB.species;
+    const babyName = await getBabyForm(pickSpecies);
+    const babyRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${babyName}`);
+    const babyData = await babyRes.json();
+    const art = babyData.sprites?.other?.['official-artwork']?.front_default || babyData.sprites?.front_default || '';
+
+    box.innerHTML = `
+      <div style="font-size:50px;">🐣</div>
+      <img class="baby-img" src="${art}" alt="${babyData.name}">
+      <div class="baby-name">${babyData.name}</div>
+      <div class="result-msg">${parentA.name} ve ${parentB.name}'in yavrusu!</div>
+      <button class="add-baby-btn" id="addBabyBtn">⭐ Pokédex'ime Ekle</button>
+      <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Çiftleştir</button>`;
+
+    el('addBabyBtn').addEventListener('click', () => {
+      const result = addPokemonToMyDex(babyData);
+      if (result.added) {
+        const xpTotal = result.gained.xpEvents.reduce((s, e) => s + e.xp, 0);
+        el('addBabyBtn').textContent = `✅ Eklendi! (+${xpTotal} XP)`;
+        el('addBabyBtn').disabled = true;
+      } else {
+        el('addBabyBtn').textContent = '✅ Zaten Pokédex\'te var!';
+        el('addBabyBtn').disabled = true;
+      }
+    });
+    el('tryAgainBtn').addEventListener('click', resetBreeding);
+  } catch (err) {
+    console.error(err);
+    box.innerHTML = `<div class="result-msg">Bir şeyler ters gitti 😕 Tekrar dene.</div>`;
+  }
+});
+
+function resetBreeding() {
+  parentA = null;
+  parentB = null;
+  pickTarget = 'A';
+  el('slotA').innerHTML = `<div class="p-empty">Bir Pokémon seç</div>`;
+  el('slotB').innerHTML = `<div class="p-empty">Bir Pokémon seç</div>`;
+  el('resultBox').classList.remove('show');
+  el('resultBox').innerHTML = '';
+  updateBreedBtn();
+}
+
+waitForCloud().then(renderPicker);
+</script>
+
+</body>
+</html>
