@@ -110,11 +110,18 @@
   .arena-log.show { display: block; }
   .round-title { font-size: 14px; color: #999; margin-bottom: 10px; }
   .round-fighters { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
-  .fighter { text-align: center; width: 110px; }
+  .fighter { text-align: center; width: 150px; }
   .fighter img { width: 72px; height: 72px; }
   .fighter .f-name { font-weight: bold; text-transform: capitalize; font-size: 15px; }
-  .fighter .f-score { font-size: 13px; color: var(--accent-dark); font-weight: bold; }
+  .fighter .f-score { font-size: 13px; color: var(--accent-dark); font-weight: bold; margin-top: 2px; }
   .fighter.loser { opacity: 0.4; }
+  .fighter .f-types { display: flex; justify-content: center; gap: 3px; flex-wrap: wrap; margin: 4px 0; }
+  .fighter .f-stats { text-align: left; font-size: 10px; color: #666; margin-top: 6px; }
+  .fighter .f-stats div { display: flex; justify-content: space-between; padding: 1px 4px; }
+  .fighter .f-stats b { color: var(--accent-dark); }
+  .fighter .f-effect { font-size: 10px; margin-top: 4px; font-weight: bold; }
+  .fighter .f-effect.super { color: #27ae60; }
+  .fighter .f-effect.weak { color: #c0392b; }
   .round-vs { font-size: 22px; font-weight: bold; color: #999; }
   .round-result { font-size: 17px; font-weight: bold; margin-bottom: 16px; }
   .round-result.won { color: #27ae60; }
@@ -149,6 +156,11 @@
     background: #f9f9f9; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; color: #555;
   }
   .history-card b { color: var(--accent-dark); }
+  .score-row { display: flex; justify-content: center; gap: 30px; }
+  .score-box { text-align: center; }
+  .score-box .s-name { font-size: 14px; font-weight: bold; color: #666; }
+  .score-box .s-num { font-size: 32px; font-weight: bold; color: var(--accent-dark); }
+  .score-vs { font-size: 20px; color: #ccc; align-self: center; }
 </style>
 </head>
 <body>
@@ -392,6 +404,31 @@ function runBattleUI(membersA, membersB, onFinish) {
   el('arenaLog').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function fighterCardHtml(fighter, mult, isLoser) {
+  const statRow = (key, label) => `<div><span>${label}</span><b>${fighter.stats?.[key] ?? '-'}</b></div>`;
+  const effectHtml = mult > 1
+    ? `<div class="f-effect super">💥 Etkili (x${mult})</div>`
+    : mult < 1
+      ? `<div class="f-effect weak">😣 Etkisiz (x${mult})</div>`
+      : '';
+  return `
+    <div class="fighter ${isLoser ? 'loser' : ''}">
+      <img src="${fighter.img}" alt="${fighter.name}">
+      <div class="f-name">${fighter.nickname || fighter.name}</div>
+      <div class="f-types">${(fighter.types || []).map(t => `<span class="type-chip" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`).join('')}</div>
+      <div class="f-stats">
+        ${statRow('hp', 'Can')}
+        ${statRow('attack', 'Sal')}
+        ${statRow('defense', 'Sav')}
+        ${statRow('special-attack', 'Ö.Sal')}
+        ${statRow('special-defense', 'Ö.Sav')}
+        ${statRow('speed', 'Hız')}
+      </div>
+      <div class="f-score">💪 ${fighter.__score}</div>
+      ${effectHtml}
+    </div>`;
+}
+
 function renderRound() {
   if (uiIndex >= uiRounds.length) {
     uiOnFinish();
@@ -399,20 +436,14 @@ function renderRound() {
   }
   const r = uiRounds[uiIndex];
   const log = el('arenaLog');
+  const fighterA = Object.assign({}, r.A, { __score: r.scoreA });
+  const fighterB = Object.assign({}, r.B, { __score: r.scoreB });
   log.innerHTML = `
     <div class="round-title">Raunt ${uiIndex + 1} / ${uiRounds.length}</div>
     <div class="round-fighters">
-      <div class="fighter ${!r.aWins ? 'loser' : ''}">
-        <img src="${r.A.img}" alt="${r.A.name}">
-        <div class="f-name">${r.A.nickname || r.A.name}</div>
-        <div class="f-score">💪 ${r.scoreA}${r.multA > 1 ? ' ⚡' : ''}</div>
-      </div>
+      ${fighterCardHtml(fighterA, r.multA, !r.aWins)}
       <div class="round-vs">VS</div>
-      <div class="fighter ${r.aWins ? 'loser' : ''}">
-        <img src="${r.B.img}" alt="${r.B.name}">
-        <div class="f-name">${r.B.nickname || r.B.name}</div>
-        <div class="f-score">💪 ${r.scoreB}${r.multB > 1 ? ' ⚡' : ''}</div>
-      </div>
+      ${fighterCardHtml(fighterB, r.multB, r.aWins)}
     </div>
     <div class="round-result won">${r.aWins ? '🛡️ ' + (r.A.nickname || r.A.name) : '🎮 ' + (r.B.nickname || r.B.name)} kazandı! ${r.aWins ? (r.B.nickname || r.B.name) : (r.A.nickname || r.A.name)} yenildi 💫</div>
     <button class="next-round-btn" id="nextRoundBtn">${uiIndex + 1 < uiRounds.length ? 'Sonraki Raunt ➜' : 'Sonucu Gör 🏆'}</button>
@@ -471,6 +502,10 @@ function renderChallengeTab() {
   const otherName = PROFILE_INFO[getOtherProfile(CURRENT_PROFILE)].name;
 
   area.innerHTML = `
+    <div class="challenge-section" id="scoreboardBox">
+      <h3>🏅 Skor Tablosu</h3>
+      <p style="color:#999;font-size:13px;">Yükleniyor...</p>
+    </div>
     <div class="challenge-section">
       <h3>📥 Gelen Meydan Okumalar</h3>
       <div id="incomingList"><p style="color:#999;font-size:13px;">Yükleniyor...</p></div>
@@ -588,6 +623,9 @@ function renderHistoryList() {
   const box = el('historyList');
   if (!box) return;
   listenMyChallengeHistory(list => {
+    const completed = list.filter(c => c.status === 'completed');
+    renderScoreboard(completed);
+
     const finished = list.filter(c => c.status === 'completed' || c.status === 'declined');
     if (!finished.length) {
       box.innerHTML = `<p style="color:#999;font-size:13px;">Henüz tamamlanmış bir meydan okuma yok.</p>`;
@@ -601,6 +639,33 @@ function renderHistoryList() {
       return `<div class="history-card">${c.fromName} (${c.fromTeamName}) vs ${c.toName} (${c.toTeamName || '?'}) — kazanan: <b>${winnerName}</b></div>`;
     }).join('');
   });
+}
+
+function renderScoreboard(completed) {
+  const scoreboardBox = el('scoreboardBox');
+  if (!scoreboardBox) return;
+  const wins = {};
+  Object.keys(PROFILE_INFO).forEach(id => wins[id] = 0);
+  completed.forEach(c => {
+    const winnerProfile = c.winnerSide === 'from' ? c.fromProfile : c.toProfile;
+    if (wins[winnerProfile] !== undefined) wins[winnerProfile]++;
+  });
+  const [idA, idB] = Object.keys(PROFILE_INFO);
+  scoreboardBox.innerHTML = `
+    <h3>🏅 Skor Tablosu</h3>
+    <div class="score-row">
+      <div class="score-box">
+        <div class="s-name">${PROFILE_INFO[idA].emoji} ${PROFILE_INFO[idA].name}</div>
+        <div class="s-num">${wins[idA]}</div>
+      </div>
+      <div class="score-vs">—</div>
+      <div class="score-box">
+        <div class="s-name">${PROFILE_INFO[idB].emoji} ${PROFILE_INFO[idB].name}</div>
+        <div class="s-num">${wins[idB]}</div>
+      </div>
+    </div>
+    ${completed.length ? `<p style="text-align:center;font-size:12px;color:#999;margin-top:8px;">Toplam ${completed.length} savaş oynandı</p>` : ''}
+  `;
 }
 
 waitForCloud().then(renderSetup);
