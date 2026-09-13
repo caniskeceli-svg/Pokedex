@@ -27,19 +27,43 @@
     color: var(--accent);
     text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
   }
-  .back-link {
-    display: inline-block;
-    margin-top: 10px;
+  .nav-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .nav-row a {
     color: #fff;
-    background: #3b6cdb;
-    padding: 10px 18px;
+    padding: 10px 16px;
     border-radius: 999px;
     font-weight: bold;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 14px;
   }
+  .nav-back { background: #3b6cdb; }
+  .nav-teams { background: #9b59b6; }
+  .nav-quiz { background: #e67e22; }
 
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  .trainer-card {
+    background: #2c3e50;
+    color: #fff;
+    border-radius: 22px;
+    padding: 18px 20px;
+    margin-top: 18px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+  }
+  .trainer-card .t-title { font-size: 15px; letter-spacing: 1px; color: #ffd24a; font-weight: bold; }
+  .trainer-card .t-level { font-size: 26px; font-weight: bold; margin: 2px 0 10px; }
+  .xp-track { background: #445566; border-radius: 999px; height: 20px; overflow: hidden; position: relative; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, #ffd24a, #ffb703); }
+  .xp-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold; color: #2c3e50;
+  }
 
   .hero {
     background: linear-gradient(135deg, #ffd24a, #ff9a3c);
@@ -76,6 +100,41 @@
     margin: 26px 0 12px;
   }
 
+  .bag-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .bag-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 8px;
+    text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+  }
+  .bag-card .b-emoji { font-size: 30px; }
+  .bag-card .b-name { font-size: 13px; font-weight: bold; margin: 4px 0 2px; }
+  .bag-card .b-count { font-size: 22px; font-weight: bold; color: var(--accent-dark); }
+
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .badge-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+    opacity: 0.35;
+    filter: grayscale(1);
+  }
+  .badge-card.unlocked { opacity: 1; filter: none; border: 2px solid #ffd24a; }
+  .badge-card .bd-emoji { font-size: 30px; }
+  .badge-card .bd-title { font-size: 13px; font-weight: bold; margin: 4px 0 2px; }
+  .badge-card .bd-desc { font-size: 11px; color: #888; }
+
   .power-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -96,6 +155,16 @@
   .power-card.zero .p-val { color: #ccc; }
   .power-card.zero { opacity: 0.55; }
 
+  .filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  .filter-row input { width: 18px; height: 18px; }
+
   .mydex-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -113,12 +182,17 @@
   .mydex-item:hover { background: #fff3dc; }
   .mydex-item img { width: 64px; height: 64px; }
   .mydex-item .m-name { display: block; font-size: 13px; text-transform: capitalize; font-weight: bold; margin-top: 2px; }
+  .mydex-item .m-nick { display: block; font-size: 11px; color: #8e44ad; font-style: italic; }
   .mydex-item .m-power { font-size: 13px; color: var(--accent-dark); font-weight: bold; }
   .mydex-item .m-types { display: flex; gap: 3px; justify-content: center; margin: 4px 0; flex-wrap: wrap; }
   .mydex-item .m-type-dot { font-size: 11px; padding: 2px 6px; border-radius: 999px; color: #fff; }
   .mydex-item .remove-x {
     position: absolute; top: 4px; right: 6px;
     color: #c0392b; font-weight: bold; font-size: 16px; cursor: pointer;
+  }
+  .mydex-item .fav-mark {
+    position: absolute; top: 4px; left: 6px;
+    font-size: 15px;
   }
 
   .empty-box {
@@ -141,10 +215,23 @@
 
 <header>
   <h1>⭐ Ayaz'ın Pokémonları ⭐</h1>
-  <a class="back-link" href="index.html">⬅️ Pokédex'e Dön</a>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex'e Dön</a>
+    <a class="nav-teams" href="teams.html">🛡️ Takımlarım</a>
+    <a class="nav-quiz" href="quiz.html">❓ Quiz Oyna</a>
+  </div>
 </header>
 
 <div class="wrap">
+
+  <div class="trainer-card">
+    <div class="t-title">AYAZ — TRAINER</div>
+    <div class="t-level" id="trainerLevel">Seviye 1</div>
+    <div class="xp-track">
+      <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      <div class="xp-text" id="xpText">0 / 1000 XP</div>
+    </div>
+  </div>
 
   <div class="hero">
     <div class="trophy">🏆</div>
@@ -157,10 +244,20 @@
     </div>
   </div>
 
+  <div class="section-title">🎒 Çantam</div>
+  <div class="bag-grid" id="bagGrid"></div>
+
+  <div class="section-title">🏅 Rozetlerim</div>
+  <div class="badge-grid" id="badgeGrid"></div>
+
   <div class="section-title">🔥 Tip Güçlerim ⚡</div>
   <div class="power-grid" id="powerGrid"></div>
 
   <div class="section-title">📦 Koleksiyonum</div>
+  <div class="filter-row">
+    <input type="checkbox" id="favOnly">
+    <label for="favOnly">Sadece favorilerimi göster ⭐</label>
+  </div>
   <div id="collectionArea"></div>
 
 </div>
@@ -168,6 +265,40 @@
 <script src="pokedex-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
+
+function renderTrainerCard() {
+  const player = getPlayer();
+  const { level, xpIntoLevel, xpForNextLevel } = levelInfo(player.xp);
+  el('trainerLevel').textContent = `Seviye ${level}`;
+  el('xpFill').style.width = Math.round((xpIntoLevel / xpForNextLevel) * 100) + '%';
+  el('xpText').textContent = `${xpIntoLevel} / ${xpForNextLevel} XP`;
+}
+
+function renderBag() {
+  const inv = getInventory();
+  el('bagGrid').innerHTML = Object.keys(ITEM_INFO).map(key => {
+    const info = ITEM_INFO[key];
+    return `
+      <div class="bag-card">
+        <div class="b-emoji">${info.emoji}</div>
+        <div class="b-name">${info.name}</div>
+        <div class="b-count">${inv[key] || 0}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderBadges() {
+  const player = getPlayer();
+  el('badgeGrid').innerHTML = ACHIEVEMENTS.map(a => {
+    const unlocked = player.achievements.includes(a.id);
+    return `
+      <div class="badge-card ${unlocked ? 'unlocked' : ''}">
+        <div class="bd-emoji">${a.emoji}</div>
+        <div class="bd-title">${a.title}</div>
+        <div class="bd-desc">${unlocked ? a.desc : '🔒 Henüz kilitli'}</div>
+      </div>`;
+  }).join('');
+}
 
 function computeTypePowers(mydex) {
   const totals = {};
@@ -183,12 +314,16 @@ function computeTypePowers(mydex) {
 function renderDashboard() {
   const mydex = getMyDexShared();
 
+  renderTrainerCard();
+  renderBag();
+  renderBadges();
+
   const grandTotal = mydex.reduce((sum, p) => sum + (p.power || 0), 0);
   el('grandTotal').textContent = grandTotal;
   el('pokeCount').textContent = mydex.length;
   el('avgPower').textContent = mydex.length ? Math.round(grandTotal / mydex.length) : 0;
   const strongest = mydex.slice().sort((a, b) => (b.power || 0) - (a.power || 0))[0];
-  el('strongestName').textContent = strongest ? strongest.name : '-';
+  el('strongestName').textContent = strongest ? (strongest.nickname || strongest.name) : '-';
 
   const typePowers = computeTypePowers(mydex);
   const grid = el('powerGrid');
@@ -203,6 +338,9 @@ function renderDashboard() {
       </div>`;
   }).join('');
 
+  const favOnly = el('favOnly').checked;
+  const shown = favOnly ? mydex.filter(p => p.favorite) : mydex;
+
   const area = el('collectionArea');
   if (!mydex.length) {
     area.innerHTML = `
@@ -213,12 +351,18 @@ function renderDashboard() {
       </div>`;
     return;
   }
+  if (!shown.length) {
+    area.innerHTML = `<div class="empty-box">⭐ Henüz favori işaretlediğin bir Pokémon yok.</div>`;
+    return;
+  }
 
-  area.innerHTML = `<div class="mydex-grid">${mydex.map(p => `
+  area.innerHTML = `<div class="mydex-grid">${shown.map(p => `
     <div class="mydex-item" data-name="${p.name}">
+      ${p.favorite ? '<span class="fav-mark">❤️</span>' : ''}
       <span class="remove-x" data-remove="${p.id}">✕</span>
       <img src="${p.img}" alt="${p.name}">
       <span class="m-name">${p.name}</span>
+      ${p.nickname ? `<span class="m-nick">"${p.nickname}"</span>` : ''}
       <div class="m-types">${(p.types || []).map(t =>
         `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`
       ).join('')}</div>
@@ -240,6 +384,8 @@ function renderDashboard() {
     });
   });
 }
+
+el('favOnly').addEventListener('change', renderDashboard);
 
 renderDashboard();
 </script>

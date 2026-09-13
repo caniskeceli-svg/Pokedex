@@ -30,6 +30,17 @@
     letter-spacing: 1px;
   }
   header p { margin: 4px 0 0; font-size: 14px; color: #6b5a2a; }
+  .level-badge {
+    display: inline-block;
+    margin-top: 10px;
+    background: #2c3e50;
+    color: #ffd24a;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    text-decoration: none;
+  }
 
   .controls {
     max-width: 560px;
@@ -122,7 +133,15 @@
   @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
   .dex-num { font-size: 16px; color: #999; font-weight: bold; }
-  .poke-name { font-size: 32px; margin: 2px 0 10px; text-transform: capitalize; color: var(--accent-dark); }
+  .poke-name { font-size: 32px; margin: 2px 0 0; text-transform: capitalize; color: var(--accent-dark); }
+  .nickname-row { font-size: 15px; color: #8e44ad; font-weight: bold; margin-bottom: 4px; }
+  .quick-actions { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+  .fav-btn {
+    background: #fff; border: 2px solid #eee; border-radius: 999px;
+    font-size: 18px; padding: 6px 12px; color: #333;
+  }
+  .fav-btn.active { background: #ffe6ee; border-color: #ff6b9d; }
+  .nick-btn { background: #8e44ad; font-size: 13px; padding: 6px 14px; }
   .sprite-wrap {
     background: radial-gradient(circle, #f2f2f2 0%, #e6e6e6 70%);
     border-radius: 20px;
@@ -244,6 +263,26 @@
   }
   .result-list button:hover { background: #ffe6cc; }
 
+  .catch-box { text-align: center; max-width: 380px; }
+  .catch-title { font-size: 22px; font-weight: bold; color: var(--accent-dark); margin-bottom: 6px; }
+  .catch-img { width: 140px; height: 140px; margin: 6px 0; }
+  .catch-sub { font-size: 16px; color: #888; }
+  .catch-name { font-size: 26px; font-weight: bold; text-transform: capitalize; color: #8e44ad; margin-bottom: 4px; }
+  .catch-progress { font-size: 14px; color: #666; margin-bottom: 14px; }
+  .catch-xp-list { text-align: left; background: #fff9ec; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
+  .catch-xp-list div { padding: 3px 0; color: #a86b00; font-weight: bold; }
+  .catch-items { display: flex; justify-content: center; gap: 14px; margin-bottom: 16px; font-size: 14px; }
+  .catch-items span { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: bold; color: #555; }
+  .catch-items span b { font-size: 20px; }
+  #catchCloseBtn { background: #27ae60; font-size: 18px; padding: 12px 30px; }
+  .badge-toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #2c3e50; color: #ffd24a; font-weight: bold; padding: 12px 22px;
+    border-radius: 999px; z-index: 200; box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    display: none;
+  }
+  .badge-toast.show { display: block; animation: pop 0.3s ease; }
+
   @media (max-width: 420px) {
     .sprite-wrap img { width: 150px; height: 150px; }
     .stat-bar-label { width: 90px; font-size: 12px; }
@@ -255,6 +294,7 @@
 <header>
   <h1>🔴 Ayaz'ın Pokédex'i ⚡</h1>
   <p>Bir Pokémon adı yaz, ya da rastgele dene!</p>
+  <a href="mypokemon.html" class="level-badge" id="levelBadge">🎮 Seviye ...</a>
 </header>
 
 <div class="controls">
@@ -281,6 +321,20 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="catchModal">
+  <div class="modal-box catch-box">
+    <div class="catch-title">Pokémon Yakalandı! 🎉</div>
+    <img id="catchImg" src="" alt="" class="catch-img">
+    <div class="catch-sub">🎉 Yeni Pokémon!</div>
+    <div class="catch-name" id="catchName"></div>
+    <div class="catch-progress" id="catchProgress"></div>
+    <div class="catch-xp-list" id="catchXpList"></div>
+    <div class="catch-items" id="catchItems"></div>
+    <button id="catchCloseBtn">Harika! 🎊</button>
+  </div>
+</div>
+
+<div class="badge-toast" id="badgeToast"></div>
 <div id="status"></div>
 
 <div class="stage">
@@ -288,6 +342,13 @@
   <div class="card" id="card">
     <div class="dex-num" id="dexNum"></div>
     <div class="poke-name" id="pokeName"></div>
+    <div class="nickname-row" id="nicknameRow" style="display:none;">
+      <span id="nicknameText"></span>
+    </div>
+    <div class="quick-actions">
+      <button class="fav-btn" id="favBtn" title="Favorilere ekle">🤍</button>
+      <button class="nick-btn" id="nickBtn" title="Lakap ver">✏️ Lakap Ver</button>
+    </div>
     <div class="sprite-wrap">
       <img id="sprite" src="" alt="" title="Büyütmek için dokun!">
     </div>
@@ -328,6 +389,7 @@ let currentId = 25;
 let currentAudio = null;
 let allNames = [];
 let currentData = null;
+let currentSpecies = null;
 
 const el = (id) => document.getElementById(id);
 const statusEl = el('status');
@@ -435,6 +497,7 @@ async function renderPokemon(data) {
 
   updateAddButton(data.id);
   el('addDexBtn').onclick = () => toggleMyDex(data, total);
+  updateFavNickUI(data.id);
 
   el('flavor').textContent = 'Açıklama yükleniyor...';
   el('evoTitle').style.display = 'none';
@@ -443,8 +506,48 @@ async function renderPokemon(data) {
 
   card.classList.add('show');
 
+  currentSpecies = null;
   loadSpeciesExtras(data);
   loadTypeEffectiveness(data);
+
+  const discoveryResult = processDiscovery(data);
+  updateLevelBadge();
+  if (discoveryResult.xpEvents.length) {
+    const totalXp = discoveryResult.xpEvents.reduce((s, e) => s + e.xp, 0);
+    showBadgeToast(`+${totalXp} XP: ` + discoveryResult.xpEvents.map(e => e.label).join(', '));
+  }
+}
+
+function updateFavNickUI(id) {
+  const mydex = getMyDex();
+  const entry = mydex.find(p => p.id === id);
+  const favBtn = el('favBtn');
+  favBtn.textContent = entry?.favorite ? '❤️' : '🤍';
+  favBtn.classList.toggle('active', !!entry?.favorite);
+  favBtn.style.display = entry ? 'inline-flex' : 'none';
+
+  const nickRow = el('nicknameRow');
+  if (entry?.nickname) {
+    el('nicknameText').textContent = `"${entry.nickname}"`;
+    nickRow.style.display = 'block';
+  } else {
+    nickRow.style.display = 'none';
+  }
+  el('nickBtn').style.display = entry ? 'inline-flex' : 'none';
+}
+
+function showBadgeToast(text) {
+  const toast = el('badgeToast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  clearTimeout(showBadgeToast._t);
+  showBadgeToast._t = setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function updateLevelBadge() {
+  const player = getPlayer();
+  const { level, xpIntoLevel, xpForNextLevel } = levelInfo(player.xp);
+  el('levelBadge').textContent = `🎮 Seviye ${level} — ${xpIntoLevel}/${xpForNextLevel} XP`;
 }
 
 function effBadge(typeName, extraText) {
@@ -496,17 +599,41 @@ async function loadTypeEffectiveness(data) {
   }
 }
 
+async function translateToTurkish(text) {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('translate failed');
+    const data = await res.json();
+    return data[0].map(chunk => chunk[0]).join('');
+  } catch {
+    return null;
+  }
+}
+
 async function loadSpeciesExtras(data) {
   try {
     const speciesRes = await fetch(data.species.url);
     const species = await speciesRes.json();
+    currentSpecies = species;
 
     const entries = species.flavor_text_entries || [];
-    let flavor = entries.find(e => e.language.name === 'tr')
-      || entries.find(e => e.language.name === 'en');
-    el('flavor').textContent = flavor
-      ? '📝 ' + flavor.flavor_text.replace(/\f|\n/g, ' ')
-      : 'Bu Pokémon hakkında açıklama bulunamadı.';
+    const trEntry = entries.find(e => e.language.name === 'tr');
+    const enEntry = entries.find(e => e.language.name === 'en');
+    const flavor = trEntry || enEntry;
+
+    if (!flavor) {
+      el('flavor').textContent = 'Bu Pokémon hakkında açıklama bulunamadı.';
+    } else {
+      const cleanText = flavor.flavor_text.replace(/\f|\n/g, ' ');
+      if (trEntry) {
+        el('flavor').textContent = '📝 ' + cleanText;
+      } else {
+        el('flavor').textContent = '📝 Çevriliyor...';
+        const translated = await translateToTurkish(cleanText);
+        el('flavor').textContent = '📝 ' + (translated || cleanText);
+      }
+    }
 
     if (species.evolution_chain?.url) {
       const evoRes = await fetch(species.evolution_chain.url);
@@ -579,19 +706,75 @@ async function toggleMyDex(data, total) {
   const exists = mydex.some(p => p.id === data.id);
   if (exists) {
     mydex = mydex.filter(p => p.id !== data.id);
-  } else {
-    const art = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
-    mydex.push({
-      id: data.id,
-      name: data.name,
-      img: art,
-      power: total,
-      types: data.types.map(t => t.type.name)
-    });
+    saveMyDex(mydex);
+    updateAddButton(data.id);
+    updateFavNickUI(data.id);
+    return;
   }
+
+  const art = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+  mydex.push({
+    id: data.id,
+    name: data.name,
+    img: art,
+    power: total,
+    types: data.types.map(t => t.type.name),
+    favorite: false,
+    nickname: null
+  });
   saveMyDex(mydex);
   updateAddButton(data.id);
+  updateFavNickUI(data.id);
+
+  const gained = processCatch(data, currentSpecies);
+  updateLevelBadge();
+  showCatchModal(data, mydex.length, gained);
 }
+
+function showCatchModal(data, collectionCount, gained) {
+  const art = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+  el('catchImg').src = art;
+  el('catchName').textContent = data.name;
+  el('catchProgress').textContent = `Koleksiyon: ${collectionCount} / ${MAX_ID}`;
+
+  const xpTotal = gained.xpEvents.reduce((s, e) => s + e.xp, 0);
+  const xpLines = gained.xpEvents.map(e => `<div>+${e.xp} XP: ${e.label}</div>`);
+  el('catchXpList').innerHTML = xpLines.join('') + `<div style="border-top:1px solid #ffd27a;margin-top:6px;padding-top:6px;">Toplam: +${xpTotal} XP</div>`;
+
+  el('catchItems').innerHTML = gained.items.map(it => {
+    const info = ITEM_INFO[it.key];
+    return `<span>${info.emoji}<b>+${it.qty}</b>${info.name}</span>`;
+  }).join('');
+
+  el('catchModal').classList.add('show');
+
+  gained.achievements.forEach(a => {
+    if (a) showBadgeToast(`${a.emoji} Yeni Rozet: ${a.title}`);
+  });
+}
+el('catchCloseBtn').addEventListener('click', () => el('catchModal').classList.remove('show'));
+
+el('favBtn').addEventListener('click', () => {
+  if (!currentData) return;
+  let mydex = getMyDex();
+  const entry = mydex.find(p => p.id === currentData.id);
+  if (!entry) return;
+  entry.favorite = !entry.favorite;
+  saveMyDex(mydex);
+  updateFavNickUI(currentData.id);
+});
+
+el('nickBtn').addEventListener('click', () => {
+  if (!currentData) return;
+  let mydex = getMyDex();
+  const entry = mydex.find(p => p.id === currentData.id);
+  if (!entry) return;
+  const nick = prompt(`${currentData.name} için bir lakap yaz (boş bırakırsan silinir):`, entry.nickname || '');
+  if (nick === null) return;
+  entry.nickname = nick.trim() || null;
+  saveMyDex(mydex);
+  updateFavNickUI(currentData.id);
+});
 
 function playCry() {
   const url = el('soundBtn').dataset.cry;
@@ -683,6 +866,7 @@ const startPoke = urlParams.get('poke') || currentId;
 
 loadNameList();
 loadPokemon(startPoke);
+updateLevelBadge();
 </script>
 
 </body>

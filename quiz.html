@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayaz'ın Pokémon Quiz'i</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 38px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+  .nav-mine { background: #f39c12; }
+
+  .wrap { max-width: 460px; margin: 0 auto; padding: 0 16px; }
+
+  .score-row {
+    display: flex; justify-content: center; gap: 24px; margin-top: 16px;
+    font-size: 14px; color: #6b5a2a; text-align: center;
+  }
+  .score-row b { display: block; font-size: 24px; color: var(--accent-dark); }
+
+  .quiz-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 26px 22px;
+    margin-top: 18px;
+    text-align: center;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.1);
+  }
+  .quiz-question { font-size: 22px; font-weight: bold; color: var(--accent-dark); margin-bottom: 20px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-options button {
+    font-size: 17px; padding: 14px; border-radius: 14px; border: 3px solid #eee;
+    background: #f9f9f9; cursor: pointer; text-transform: capitalize; font-weight: bold;
+  }
+  .quiz-options button:hover { background: #fff0d9; }
+  .quiz-options button.correct { background: #d4f8d4; border-color: #27ae60; }
+  .quiz-options button.wrong { background: #ffd6d6; border-color: #c0392b; }
+  .quiz-options button:disabled { cursor: default; }
+
+  .feedback { margin-top: 18px; font-size: 18px; font-weight: bold; min-height: 28px; }
+  .feedback.correct-fb { color: #27ae60; }
+  .feedback.wrong-fb { color: #c0392b; }
+
+  .next-btn {
+    margin-top: 16px; background: #3b6cdb; color: #fff; border: none;
+    padding: 12px 26px; border-radius: 999px; font-size: 16px; font-weight: bold; cursor: pointer;
+    display: none;
+  }
+  .next-btn.show { display: inline-block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>❓ Ayaz'ın Pokémon Quiz'i ❓</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex</a>
+    <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="score-row">
+    <div><b id="scoreCorrect">0</b>Doğru</div>
+    <div><b id="scoreTotal">0</b>Toplam Soru</div>
+  </div>
+
+  <div class="quiz-card">
+    <div class="quiz-question" id="quizQuestion">Yükleniyor...</div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn">Sonraki Soru ➜</button>
+  </div>
+</div>
+
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+let correctCount = 0;
+let totalCount = 0;
+let currentAnswer = null;
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function newQuestion() {
+  el('feedback').textContent = '';
+  el('feedback').className = 'feedback';
+  el('nextBtn').classList.remove('show');
+
+  const types = Object.keys(QUIZ_POOL);
+  const targetType = pick(types);
+  const correctPoke = pick(QUIZ_POOL[targetType]);
+
+  const otherTypes = types.filter(t => t !== targetType);
+  const wrongTypesShuffled = otherTypes.sort(() => Math.random() - 0.5).slice(0, 3);
+  const wrongPokes = wrongTypesShuffled.map(t => pick(QUIZ_POOL[t].filter(p => p !== correctPoke)));
+
+  const options = [correctPoke, ...wrongPokes].sort(() => Math.random() - 0.5);
+  currentAnswer = correctPoke;
+
+  el('quizQuestion').textContent = `Hangisi ${TYPE_TR[targetType]} tipinde?`;
+  el('quizOptions').innerHTML = options.map(p => `<button data-name="${p}">${p}</button>`).join('');
+
+  el('quizOptions').querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => answer(btn));
+  });
+}
+
+function answer(btn) {
+  el('quizOptions').querySelectorAll('button').forEach(b => b.disabled = true);
+  totalCount++;
+  el('scoreTotal').textContent = totalCount;
+
+  const isCorrect = btn.dataset.name === currentAnswer;
+  if (isCorrect) {
+    btn.classList.add('correct');
+    correctCount++;
+    el('scoreCorrect').textContent = correctCount;
+    addXP(20);
+    el('feedback').textContent = '🔥 DOĞRU! +20 XP';
+    el('feedback').className = 'feedback correct-fb';
+  } else {
+    btn.classList.add('wrong');
+    el('quizOptions').querySelectorAll('button').forEach(b => {
+      if (b.dataset.name === currentAnswer) b.classList.add('correct');
+    });
+    el('feedback').textContent = `❌ Olmadı! Doğru cevap: ${currentAnswer}`;
+    el('feedback').className = 'feedback wrong-fb';
+  }
+
+  el('nextBtn').classList.add('show');
+}
+
+el('nextBtn').addEventListener('click', newQuestion);
+
+newQuestion();
+</script>
+
+</body>
+</html>

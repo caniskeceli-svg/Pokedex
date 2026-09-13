@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayaz'ın Takımları</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 38px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a, .nav-row button {
+    color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold;
+    text-decoration: none; font-size: 14px; border: none; cursor: pointer;
+  }
+  .nav-back { background: #3b6cdb; }
+  .nav-mine { background: #f39c12; }
+  .new-team-btn { background: #27ae60; }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  .team-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 16px;
+    margin-top: 16px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.08);
+  }
+  .team-card h3 { margin: 0 0 8px; color: var(--accent-dark); font-size: 20px; }
+  .team-members { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .team-member { text-align: center; width: 70px; }
+  .team-member img { width: 52px; height: 52px; }
+  .team-member span { display: block; font-size: 11px; text-transform: capitalize; }
+  .team-stats { display: flex; gap: 20px; font-size: 13px; color: #666; margin-bottom: 10px; }
+  .team-stats b { display: block; font-size: 18px; color: var(--accent-dark); }
+  .team-coverage { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+  .type-chip { font-size: 11px; padding: 3px 8px; border-radius: 999px; color: #fff; }
+  .team-actions { display: flex; gap: 8px; }
+  .team-actions button { flex: 1; padding: 8px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; }
+  .edit-btn { background: #3b6cdb; }
+  .delete-btn { background: #c0392b; }
+
+  .editor-box { background: #fff; border-radius: 20px; padding: 16px; margin-top: 16px; }
+  .editor-box h3 { margin-top: 0; color: var(--accent-dark); text-align: center; }
+  .member-pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-bottom: 14px; max-height: 340px; overflow-y: auto; }
+  .member-pick {
+    text-align: center; background: #f7f7f7; border-radius: 12px; padding: 8px; cursor: pointer;
+    border: 3px solid transparent;
+  }
+  .member-pick.selected { border-color: #27ae60; background: #eafff0; }
+  .member-pick img { width: 48px; height: 48px; }
+  .member-pick span { display: block; font-size: 11px; text-transform: capitalize; }
+  .editor-count { text-align: center; margin-bottom: 10px; font-size: 14px; color: #666; }
+  .save-btn { background: #27ae60; width: 100%; padding: 12px; border: none; border-radius: 12px; color: #fff; font-weight: bold; font-size: 16px; cursor: pointer; }
+  .cancel-link { display: block; text-align: center; margin-top: 8px; color: #999; cursor: pointer; font-size: 13px; }
+
+  .empty-box { text-align: center; color: #a6925a; font-size: 16px; background: #fff; border-radius: 18px; padding: 30px 20px; margin-top: 16px; }
+  .empty-box .big-emoji { font-size: 48px; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛡️ Ayaz'ın Takımları 🛡️</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex</a>
+    <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+    <button class="new-team-btn" id="newTeamBtn">➕ Yeni Takım</button>
+  </div>
+</header>
+
+<div class="wrap" id="wrap"></div>
+
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const wrap = el('wrap');
+let editingTeamId = null;
+let editingSelection = [];
+
+function typeChip(t) {
+  return `<span class="type-chip" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`;
+}
+
+function teamStats(team, mydex) {
+  const members = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+  const totalPower = members.reduce((s, m) => s + (m.power || 0), 0);
+  const avgPower = members.length ? Math.round(totalPower / members.length) : 0;
+  const coverage = [...new Set(members.flatMap(m => m.types || []))];
+  return { members, totalPower, avgPower, coverage };
+}
+
+function renderList() {
+  const mydex = getMyDexShared();
+  const teams = getTeams();
+  editingTeamId = null;
+
+  if (!teams.length) {
+    wrap.innerHTML = `
+      <div class="empty-box">
+        <span class="big-emoji">🛡️</span>
+        Henüz bir takım kurmadın!<br>
+        "➕ Yeni Takım" butonuyla 6 Pokémon'luk ilk takımını oluştur.
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = teams.map(team => {
+    const { members, totalPower, avgPower, coverage } = teamStats(team, mydex);
+    return `
+      <div class="team-card" data-id="${team.id}">
+        <h3>${team.name}</h3>
+        <div class="team-members">
+          ${members.map(m => `
+            <div class="team-member">
+              <img src="${m.img}" alt="${m.name}">
+              <span>${m.nickname || m.name}</span>
+            </div>`).join('') || '<span style="color:#999;font-size:13px;">Henüz üye yok</span>'}
+        </div>
+        <div class="team-stats">
+          <div><b>${members.length}/6</b>Üye</div>
+          <div><b>${totalPower}</b>Toplam Güç</div>
+          <div><b>${avgPower}</b>Ortalama Güç</div>
+        </div>
+        <div class="team-coverage">${coverage.map(typeChip).join('') || '<span style="color:#999;font-size:12px;">Tip yok</span>'}</div>
+        <div class="team-actions">
+          <button class="edit-btn" data-edit="${team.id}">✏️ Düzenle</button>
+          <button class="delete-btn" data-del="${team.id}">🗑️ Sil</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('[data-edit]').forEach(b => {
+    b.addEventListener('click', () => openEditor(b.dataset.edit));
+  });
+  wrap.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', () => {
+      if (!confirm('Bu takımı silmek istediğine emin misin?')) return;
+      saveTeams(getTeams().filter(t => t.id !== b.dataset.del));
+      renderList();
+    });
+  });
+}
+
+function openEditor(teamId) {
+  const mydex = getMyDexShared();
+  const teams = getTeams();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) return;
+  editingTeamId = teamId;
+  editingSelection = [...team.memberIds];
+
+  wrap.innerHTML = `
+    <div class="editor-box">
+      <h3>${team.name} — Üyeleri Seç</h3>
+      <div class="editor-count" id="editorCount"></div>
+      <div class="member-pick-grid" id="pickGrid"></div>
+      <button class="save-btn" id="saveTeamBtn">💾 Takımı Kaydet</button>
+      <div class="cancel-link" id="cancelEdit">İptal, geri dön</div>
+    </div>`;
+
+  renderPickGrid(mydex);
+  el('cancelEdit').addEventListener('click', renderList);
+  el('saveTeamBtn').addEventListener('click', () => {
+    const t = getTeams().find(tt => tt.id === teamId);
+    if (t) {
+      t.memberIds = editingSelection;
+      saveTeams(getTeams().map(tt => tt.id === teamId ? t : tt));
+    }
+    renderList();
+  });
+}
+
+function renderPickGrid(mydex) {
+  el('editorCount').textContent = `${editingSelection.length} / 6 seçildi`;
+  el('pickGrid').innerHTML = mydex.map(p => `
+    <div class="member-pick ${editingSelection.includes(p.id) ? 'selected' : ''}" data-id="${p.id}">
+      <img src="${p.img}" alt="${p.name}">
+      <span>${p.nickname || p.name}</span>
+    </div>`).join('');
+
+  el('pickGrid').querySelectorAll('.member-pick').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = Number(card.dataset.id);
+      const idx = editingSelection.indexOf(id);
+      if (idx >= 0) {
+        editingSelection.splice(idx, 1);
+      } else if (editingSelection.length < 6) {
+        editingSelection.push(id);
+      } else {
+        alert('Bir takımda en fazla 6 Pokémon olabilir!');
+        return;
+      }
+      renderPickGrid(mydex);
+    });
+  });
+}
+
+el('newTeamBtn').addEventListener('click', () => {
+  const mydex = getMyDexShared();
+  if (!mydex.length) {
+    alert('Önce Pokédex\'ten birkaç Pokémon yakalamalısın!');
+    return;
+  }
+  const name = prompt('Takımına bir isim ver:', 'Takım ' + (getTeams().length + 1));
+  if (!name) return;
+  const teams = getTeams();
+  const newTeam = { id: 'team_' + Date.now(), name: name.trim(), memberIds: [] };
+  teams.push(newTeam);
+  saveTeams(teams);
+
+  if (teams.length === 1) {
+    const player = getPlayer();
+    if (!player.achievements.includes('first_team')) {
+      player.achievements.push('first_team');
+      player.xp += 100;
+      savePlayer(player);
+    }
+  }
+  openEditor(newTeam.id);
+});
+
+renderList();
+</script>
+
+</body>
+</html>
