@@ -171,6 +171,7 @@ async function startCloudSync(profileId) {
       personalizeHeader();
       injectProfileBadge();
       injectChallengeBanner();
+      injectNotificationButton();
       claimPendingChallengeRewards();
     }
   }, (err) => {
@@ -325,6 +326,7 @@ async function claimPendingChallengeRewards() {
 }
 
 // Global "you've been challenged" banner, shown on every page once cloud+profile are ready.
+let lastSeenChallengeCount = 0;
 function injectChallengeBanner() {
   if (document.getElementById("challengeBanner")) return;
   const banner = document.createElement("a");
@@ -337,10 +339,41 @@ function injectChallengeBanner() {
     if (list.length) {
       banner.textContent = `⚔️ ${list.length} yeni meydan okuma! Görüntüle ➜`;
       banner.style.display = "inline-block";
+      if (list.length > lastSeenChallengeCount && window.Notification && Notification.permission === "granted") {
+        const latest = list[0];
+        try {
+          new Notification("⚔️ Yeni Meydan Okuma!", {
+            body: `${latest.fromName} sana meydan okudu!`,
+            icon: "icon-192.png"
+          });
+        } catch (e) { console.error(e); }
+      }
+      lastSeenChallengeCount = list.length;
     } else {
       banner.style.display = "none";
+      lastSeenChallengeCount = 0;
     }
   });
+}
+
+// ---- PWA: service worker + notification permission ----
+function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  }
+}
+
+function injectNotificationButton() {
+  if (!window.Notification || Notification.permission !== "default") return;
+  if (document.getElementById("notifyBtn")) return;
+  const btn = document.createElement("button");
+  btn.id = "notifyBtn";
+  btn.textContent = "🔔 Meydan Okuma Bildirimlerini Aç";
+  btn.style.cssText = "position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:500;background:#3b6cdb;color:#fff;border:none;padding:10px 16px;border-radius:999px;font-size:13px;font-family:'Trebuchet MS','Segoe UI',sans-serif;font-weight:bold;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,0.3);";
+  btn.addEventListener("click", () => {
+    Notification.requestPermission().then(() => btn.remove());
+  });
+  document.body.appendChild(btn);
 }
 
 const LEGENDARY_NAMES = [
@@ -655,3 +688,5 @@ const QUIZ_POOL = {
   fairy: ["cleffa", "snubbull", "togepi", "ralts", "flabebe"],
   normal: ["rattata", "pidgey", "eevee", "meowth", "zigzagoon"]
 };
+
+registerServiceWorker();
