@@ -161,6 +161,11 @@
   .score-box .s-name { font-size: 14px; font-weight: bold; color: #666; }
   .score-box .s-num { font-size: 32px; font-weight: bold; color: var(--accent-dark); }
   .score-vs { font-size: 20px; color: #ccc; align-self: center; }
+  .team-record-list { display: flex; flex-direction: column; gap: 6px; }
+  .team-record-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #f9f9f9; border-radius: 10px; padding: 8px 12px; font-size: 13px;
+  }
 </style>
 </head>
 <body>
@@ -537,7 +542,7 @@ function renderChallengeTab() {
         return;
       }
       const hidden = el('hideTeamCheckbox').checked;
-      sendChallenge(team.name, members, hidden).then(() => {
+      sendChallenge(team.name, members, hidden, team.id).then(() => {
         el('sendChallengeStatus').textContent = '✅ Meydan okuma gönderildi!';
       }).catch(() => {
         el('sendChallengeStatus').textContent = 'Gönderilemedi, tekrar dene.';
@@ -601,6 +606,7 @@ function openAcceptPicker(challenge) {
       if (iWon) addXP(30);
       completeChallenge(challenge.id, {
         toTeamName: team.name,
+        toTeamId: team.id,
         rounds,
         winnerSide: iWon ? 'to' : 'from'
       });
@@ -641,7 +647,7 @@ function renderHistoryList() {
   });
 }
 
-function renderScoreboard(completed) {
+async function renderScoreboard(completed) {
   const scoreboardBox = el('scoreboardBox');
   if (!scoreboardBox) return;
   const wins = {};
@@ -651,6 +657,24 @@ function renderScoreboard(completed) {
     if (wins[winnerProfile] !== undefined) wins[winnerProfile]++;
   });
   const [idA, idB] = Object.keys(PROFILE_INFO);
+
+  // Gather every team from both profiles so the breakdown covers both sides.
+  const otherId = getOtherProfile(CURRENT_PROFILE);
+  let otherTeams = [];
+  try {
+    const snap = await cloudDb.collection('profiles').doc(otherId).get();
+    otherTeams = (snap.data() || {}).teams || [];
+  } catch (e) { console.error(e); }
+  const myTeams = getTeams();
+  const allTeams = [
+    ...myTeams.map(t => ({ ...t, owner: CURRENT_PROFILE })),
+    ...otherTeams.map(t => ({ ...t, owner: otherId }))
+  ];
+  const teamRows = allTeams
+    .map(t => ({ team: t, record: computeTeamRecord(t.id, completed) }))
+    .filter(r => r.record.wins + r.record.losses > 0)
+    .sort((a, b) => (b.record.wins - b.record.losses) - (a.record.wins - a.record.losses));
+
   scoreboardBox.innerHTML = `
     <h3>🏅 Skor Tablosu</h3>
     <div class="score-row">
@@ -665,6 +689,15 @@ function renderScoreboard(completed) {
       </div>
     </div>
     ${completed.length ? `<p style="text-align:center;font-size:12px;color:#999;margin-top:8px;">Toplam ${completed.length} savaş oynandı</p>` : ''}
+    ${teamRows.length ? `
+      <div class="detail-label" style="margin-top:14px;">🛡️ Takım Takım Skor</div>
+      <div class="team-record-list">
+        ${teamRows.map(r => `
+          <div class="team-record-row">
+            <span>${PROFILE_INFO[r.team.owner].emoji} ${r.team.name}</span>
+            <span><b style="color:#27ae60;">${r.record.wins}G</b> — <b style="color:#c0392b;">${r.record.losses}M</b></span>
+          </div>`).join('')}
+      </div>` : ''}
   `;
 }
 

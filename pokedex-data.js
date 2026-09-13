@@ -244,12 +244,13 @@ function injectProfileBadge() {
 // ---- Battle challenges (real-time, between the two profiles) ----
 // A challenge snapshots the challenger's team so the fight is fair and
 // reproducible even if either team roster changes later.
-function sendChallenge(myTeamName, myMembers, hidden) {
+function sendChallenge(myTeamName, myMembers, hidden, myTeamId) {
   const toProfile = getOtherProfile(CURRENT_PROFILE);
   return cloudDb.collection("challenges").add({
     fromProfile: CURRENT_PROFILE,
     fromName: PROFILE_INFO[CURRENT_PROFILE].name,
     fromTeamName: myTeamName,
+    fromTeamId: myTeamId || null,
     fromTeam: myMembers,
     hidden: !!hidden,
     toProfile,
@@ -284,14 +285,28 @@ function declineChallenge(challengeId) {
   return cloudDb.collection("challenges").doc(challengeId).set({ status: "declined" }, { merge: true });
 }
 
-function completeChallenge(challengeId, { toTeamName, rounds, winnerSide }) {
+function completeChallenge(challengeId, { toTeamName, toTeamId, rounds, winnerSide }) {
   return cloudDb.collection("challenges").doc(challengeId).set({
     status: "completed",
     toTeamName,
+    toTeamId: toTeamId || null,
     rounds,
     winnerSide,
     toClaimed: true
   }, { merge: true });
+}
+
+// Wins/losses for one specific saved team, based on completed challenges it took part in.
+function computeTeamRecord(teamId, completedChallenges) {
+  let wins = 0, losses = 0;
+  completedChallenges.forEach(c => {
+    const wasFrom = c.fromTeamId === teamId;
+    const wasTo = c.toTeamId === teamId;
+    if (!wasFrom && !wasTo) return;
+    const won = (wasFrom && c.winnerSide === "from") || (wasTo && c.winnerSide === "to");
+    if (won) wins++; else losses++;
+  });
+  return { wins, losses };
 }
 
 // Call once per page load (after cloud is ready): grants XP to the

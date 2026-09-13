@@ -44,6 +44,7 @@
   .team-card h3 { margin: 0 0 8px; color: var(--accent-dark); font-size: 20px; }
   .rename-icon { cursor: pointer; font-size: 15px; opacity: 0.6; }
   .rename-icon:hover { opacity: 1; }
+  .team-record { font-size: 13px; margin-bottom: 10px; }
   .team-members { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .team-member { text-align: center; width: 70px; }
   .team-member img { width: 52px; height: 52px; }
@@ -128,6 +129,7 @@ function renderList() {
     return `
       <div class="team-card" data-id="${team.id}">
         <h3>${team.name} <span class="rename-icon" data-rename="${team.id}" title="İsmi değiştir">✏️</span></h3>
+        <div class="team-record" id="record-${team.id}"></div>
         ${renderTeamDetailHtml(memberObjs)}
         <div class="team-actions">
           <button class="edit-btn" data-edit="${team.id}">✏️ Düzenle</button>
@@ -135,6 +137,18 @@ function renderList() {
         </div>
       </div>`;
   }).join('');
+
+  listenMyChallengeHistory(list => {
+    const completed = list.filter(c => c.status === 'completed');
+    teams.forEach(team => {
+      const box = document.getElementById(`record-${team.id}`);
+      if (!box) return;
+      const { wins, losses } = computeTeamRecord(team.id, completed);
+      box.innerHTML = (wins + losses > 0)
+        ? `🏆 <b style="color:#27ae60;">${wins} Galibiyet</b> — <b style="color:#c0392b;">${losses} Mağlubiyet</b>`
+        : `<span style="color:#bbb;">Henüz savaşmadı</span>`;
+    });
+  });
 
   wrap.querySelectorAll('[data-rename]').forEach(b => {
     b.addEventListener('click', () => {
