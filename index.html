@@ -713,12 +713,15 @@ async function toggleMyDex(data, total) {
   }
 
   const art = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+  const statMap = {};
+  data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
   mydex.push({
     id: data.id,
     name: data.name,
     img: art,
     power: total,
     types: data.types.map(t => t.type.name),
+    stats: statMap,
     favorite: false,
     nickname: null
   });

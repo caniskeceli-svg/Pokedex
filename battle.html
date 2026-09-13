@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savaş Arenası</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 38px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+  .nav-mine { background: #f39c12; }
+  .nav-teams { background: #9b59b6; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+  .arena { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 18px; }
+  .side { flex: 1 1 320px; min-width: 280px; }
+
+  .side-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.08);
+  }
+  .side-card.mine { border-top: 6px solid #3b6cdb; }
+  .side-card.guest { border-top: 6px solid #c0392b; }
+  .side-title { font-size: 16px; font-weight: bold; color: var(--accent-dark); margin-bottom: 8px; }
+  .side-title .tag { font-size: 11px; background: #eee; color: #888; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+
+  select {
+    width: 100%; padding: 10px; border-radius: 10px; border: 2px solid #eee; font-size: 15px; margin-bottom: 10px;
+  }
+
+  .editor-count { text-align: center; font-size: 12px; color: #888; margin-bottom: 8px; }
+  .reset-link { text-align: center; font-size: 12px; color: #c0392b; cursor: pointer; margin-top: 4px; }
+
+  .guest-search { position: relative; margin-bottom: 10px; }
+  .guest-search-row { display: flex; gap: 6px; }
+  .guest-search input {
+    flex: 1; min-width: 0; padding: 10px; border-radius: 10px; border: 2px solid #eee; font-size: 14px;
+  }
+  .guest-search button {
+    background: #c0392b; color: #fff; border: none; border-radius: 10px; padding: 0 16px; font-weight: bold; cursor: pointer;
+  }
+  .guest-suggestions {
+    position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 2px solid #c0392b;
+    border-radius: 12px; margin-top: 4px; max-height: 180px; overflow-y: auto; z-index: 20; display: none;
+  }
+  .guest-suggestions div { padding: 8px 14px; cursor: pointer; text-transform: capitalize; font-size: 14px; }
+  .guest-suggestions div:hover { background: #ffe6e6; }
+  .guest-search-status { font-size: 12px; color: #c0392b; min-height: 16px; margin-bottom: 6px; }
+
+  .guest-roster { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .guest-roster-item { position: relative; text-align: center; background: #f7f7f7; border-radius: 10px; padding: 6px; width: 64px; }
+  .guest-roster-item img { width: 40px; height: 40px; }
+  .guest-roster-item span { display: block; font-size: 10px; text-transform: capitalize; }
+  .guest-roster-item .rm { position: absolute; top: -4px; right: -2px; background: #c0392b; color: #fff; border-radius: 999px; width: 16px; height: 16px; font-size: 11px; line-height: 16px; cursor: pointer; }
+
+  .detail-label { font-size: 12px; font-weight: bold; color: #999; margin: 10px 0 6px; text-align: left; }
+  .team-members { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .team-member { text-align: center; width: 58px; }
+  .team-member img { width: 44px; height: 44px; }
+  .team-member span { display: block; font-size: 10px; text-transform: capitalize; }
+  .team-stats { display: flex; gap: 14px; font-size: 12px; color: #666; margin-bottom: 8px; }
+  .team-stats b { display: block; font-size: 16px; color: var(--accent-dark); }
+  .team-coverage { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .type-chip { font-size: 10px; padding: 3px 7px; border-radius: 999px; color: #fff; }
+  .type-chip .cnt { opacity: 0.85; font-size: 9px; margin-left: 2px; }
+  .team-statbars { text-align: left; margin-bottom: 4px; }
+  .team-statbar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 11px; }
+  .team-statbar-label { width: 80px; flex-shrink: 0; text-align: right; color: #666; }
+  .team-statbar-track { flex: 1; background: #eee; border-radius: 6px; height: 8px; overflow: hidden; }
+  .team-statbar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #3b6cdb, #7aa5f0); }
+  .team-statbar-val { width: 26px; flex-shrink: 0; font-weight: bold; color: var(--accent-dark); font-size: 11px; }
+  .no-stats-note { font-size: 11px; color: #aaa; font-style: italic; margin-bottom: 8px; }
+
+  .vs-badge {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px; font-weight: bold; color: var(--accent-dark);
+    flex: 0 0 60px;
+  }
+
+  .battle-btn {
+    display: block; width: 100%; max-width: 300px; margin: 22px auto 0;
+    background: #c0392b; color: #fff; border: none; padding: 16px; border-radius: 999px;
+    font-size: 20px; font-weight: bold; cursor: pointer;
+  }
+  .battle-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .arena-log {
+    max-width: 500px; margin: 20px auto 0; background: #fff; border-radius: 20px;
+    padding: 24px; text-align: center; box-shadow: 0 8px 0 rgba(0,0,0,0.1); display: none;
+  }
+  .arena-log.show { display: block; }
+  .round-title { font-size: 14px; color: #999; margin-bottom: 10px; }
+  .round-fighters { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+  .fighter { text-align: center; width: 110px; }
+  .fighter img { width: 72px; height: 72px; }
+  .fighter .f-name { font-weight: bold; text-transform: capitalize; font-size: 15px; }
+  .fighter .f-score { font-size: 13px; color: var(--accent-dark); font-weight: bold; }
+  .fighter.loser { opacity: 0.4; }
+  .round-vs { font-size: 22px; font-weight: bold; color: #999; }
+  .round-result { font-size: 17px; font-weight: bold; margin-bottom: 16px; }
+  .round-result.won { color: #27ae60; }
+  .next-round-btn {
+    background: #3b6cdb; color: #fff; border: none; padding: 12px 26px;
+    border-radius: 999px; font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .final-banner {
+    font-size: 26px; font-weight: bold; color: var(--accent-dark); margin-bottom: 10px;
+  }
+
+  .empty-box { text-align: center; color: #a6925a; font-size: 15px; background: #fff; border-radius: 18px; padding: 24px 20px; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Savaş Arenası ⚔️</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex</a>
+    <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+    <a class="nav-teams" href="teams.html">🛡️ Takımlarım</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="setupArea"></div>
+  <div id="arenaLog" class="arena-log"></div>
+</div>
+
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const setupArea = el('setupArea');
+let mydex = [];
+let tempTeam = getTempTeam();
+let allPokeNames = [];
+
+fetch('https://pokeapi.co/api/v2/pokemon?limit=1302')
+  .then(r => r.json())
+  .then(d => { allPokeNames = d.results.map(p => p.name); })
+  .catch(() => {});
+
+function typeChip(t, count) { return typeChipHtml(t, count); }
+
+function myTeamOptionsHtml() {
+  const teams = getTeams();
+  if (!teams.length) return null;
+  return teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function renderSetup() {
+  mydex = getMyDexShared();
+  const teams = getTeams();
+
+  if (!teams.length) {
+    setupArea.innerHTML = `
+      <div class="empty-box">
+        Önce Ayaz için bir takım kurman lazım.<br>
+        <a href="teams.html">🛡️ Takımlarım</a> sayfasından bir takım oluştur, sonra buraya dön!
+      </div>`;
+    return;
+  }
+  if (!mydex.length) {
+    setupArea.innerHTML = `<div class="empty-box">Önce Pokédex'ten birkaç Pokémon yakalamalısın!</div>`;
+    return;
+  }
+
+  const savedTeamId = teams[0].id;
+
+  setupArea.innerHTML = `
+    <div class="arena">
+      <div class="side">
+        <div class="side-card mine">
+          <div class="side-title">🛡️ Ayaz'ın Takımı <span class="tag">kalıcı</span></div>
+          <select id="teamSelect">${myTeamOptionsHtml()}</select>
+          <div id="myTeamDetail"></div>
+        </div>
+      </div>
+
+      <div class="vs-badge">VS</div>
+
+      <div class="side">
+        <div class="side-card guest">
+          <div class="side-title">🎮 Rakip Takım <span class="tag">geçici, kaydedilmez</span></div>
+          <div class="editor-count" id="tempCount"></div>
+          <div class="guest-search">
+            <div class="guest-search-row">
+              <input type="text" id="guestSearchInput" placeholder="Herhangi bir Pokémon adı yaz...">
+              <button id="guestAddBtn">➕ Ekle</button>
+            </div>
+            <div class="guest-suggestions" id="guestSuggestions"></div>
+          </div>
+          <div class="guest-search-status" id="guestSearchStatus"></div>
+          <div class="guest-roster" id="guestRoster"></div>
+          <div id="guestTeamDetail"></div>
+          <div class="reset-link" id="resetTemp">🔄 Rakip takımı sıfırla</div>
+        </div>
+      </div>
+    </div>
+    <button class="battle-btn" id="battleBtn">⚔️ Savaştır!</button>
+  `;
+
+  el('teamSelect').value = localStorage.getItem('ayaz_last_battle_team') || savedTeamId;
+  el('teamSelect').addEventListener('change', () => {
+    localStorage.setItem('ayaz_last_battle_team', el('teamSelect').value);
+    renderMyTeamDetail();
+  });
+  renderMyTeamDetail();
+
+  renderGuestRoster();
+  renderGuestDetail();
+  wireGuestSearch();
+
+  el('resetTemp').addEventListener('click', () => {
+    tempTeam = { name: 'Rakip Takım', members: [] };
+    saveTempTeam(tempTeam);
+    renderGuestRoster();
+    renderGuestDetail();
+  });
+
+  el('battleBtn').addEventListener('click', startBattle);
+}
+
+function wireGuestSearch() {
+  const input = el('guestSearchInput');
+  const suggestions = el('guestSuggestions');
+
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase().trim();
+    if (!q) { suggestions.style.display = 'none'; return; }
+    const matches = allPokeNames.filter(n => n.startsWith(q)).slice(0, 8);
+    if (!matches.length) { suggestions.style.display = 'none'; return; }
+    suggestions.innerHTML = matches.map(n => `<div data-name="${n}">${n}</div>`).join('');
+    suggestions.style.display = 'block';
+    suggestions.querySelectorAll('div').forEach(d => {
+      d.addEventListener('click', () => {
+        input.value = d.dataset.name;
+        suggestions.style.display = 'none';
+        addGuestPokemon(d.dataset.name);
+      });
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.guest-search')) suggestions.style.display = 'none';
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addGuestPokemon(input.value);
+  });
+  el('guestAddBtn').addEventListener('click', () => addGuestPokemon(input.value));
+}
+
+async function addGuestPokemon(query) {
+  const name = String(query || '').trim();
+  if (!name) return;
+  if (tempTeam.members.length >= 6) {
+    el('guestSearchStatus').textContent = 'Bir takımda en fazla 6 Pokémon olabilir!';
+    return;
+  }
+  el('guestSearchStatus').textContent = 'Aranıyor... ⏳';
+  try {
+    const poke = await fetchPokemonAsTeamMember(name);
+    if (tempTeam.members.some(m => m.id === poke.id)) {
+      el('guestSearchStatus').textContent = 'Bu Pokémon zaten takımda!';
+      return;
+    }
+    tempTeam.members.push(poke);
+    saveTempTeam(tempTeam);
+    el('guestSearchInput').value = '';
+    el('guestSearchStatus').textContent = '';
+    renderGuestRoster();
+    renderGuestDetail();
+  } catch {
+    el('guestSearchStatus').textContent = 'Bulunamadı 😕 Adı kontrol et.';
+  }
+}
+
+function removeGuestPokemon(id) {
+  tempTeam.members = tempTeam.members.filter(m => m.id !== id);
+  saveTempTeam(tempTeam);
+  renderGuestRoster();
+  renderGuestDetail();
+}
+
+function renderGuestRoster() {
+  el('tempCount').textContent = `${tempTeam.members.length} / 6 seçildi`;
+  el('guestRoster').innerHTML = tempTeam.members.map(m => `
+    <div class="guest-roster-item">
+      <span class="rm" data-rm="${m.id}">✕</span>
+      <img src="${m.img}" alt="${m.name}">
+      <span>${m.name}</span>
+    </div>`).join('') || '<span style="color:#999;font-size:12px;">Henüz üye yok</span>';
+
+  el('guestRoster').querySelectorAll('[data-rm]').forEach(x => {
+    x.addEventListener('click', () => removeGuestPokemon(Number(x.dataset.rm)));
+  });
+}
+
+function getSelectedMyTeam() {
+  const teams = getTeams();
+  return teams.find(t => t.id === el('teamSelect').value) || teams[0];
+}
+
+function renderMyTeamDetail() {
+  const team = getSelectedMyTeam();
+  const members = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+  el('myTeamDetail').innerHTML = renderTeamDetailHtml(members);
+}
+
+function renderGuestDetail() {
+  el('guestTeamDetail').innerHTML = renderTeamDetailHtml(tempTeam.members);
+}
+
+// ---- Battle simulation ----
+let battleRounds = [];
+let battleIndex = 0;
+let winningSide = null;
+
+function startBattle() {
+  const myTeam = getSelectedMyTeam();
+  const myMembers = myTeam.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+  const guestMembers = tempTeam.members;
+
+  if (!myMembers.length || !guestMembers.length) {
+    alert('Her iki takımda da en az 1 Pokémon olmalı!');
+    return;
+  }
+
+  battleRounds = [];
+  let i = 0, j = 0;
+  while (i < myMembers.length && j < guestMembers.length) {
+    const A = myMembers[i];
+    const B = guestMembers[j];
+    const multA = bestMultiplier(A.types, B.types);
+    const multB = bestMultiplier(B.types, A.types);
+    const scoreA = Math.round((A.power || 100) * multA * (0.85 + Math.random() * 0.3));
+    const scoreB = Math.round((B.power || 100) * multB * (0.85 + Math.random() * 0.3));
+    const aWins = scoreA >= scoreB;
+    battleRounds.push({ A, B, multA, multB, scoreA, scoreB, aWins });
+    if (aWins) j++; else i++;
+  }
+  winningSide = (i < myMembers.length) ? 'me' : 'guest';
+
+  battleIndex = 0;
+  el('arenaLog').classList.add('show');
+  renderRound();
+  el('arenaLog').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderRound() {
+  if (battleIndex >= battleRounds.length) {
+    renderFinal();
+    return;
+  }
+  const r = battleRounds[battleIndex];
+  const log = el('arenaLog');
+  log.innerHTML = `
+    <div class="round-title">Raunt ${battleIndex + 1} / ${battleRounds.length}</div>
+    <div class="round-fighters">
+      <div class="fighter ${!r.aWins ? 'loser' : ''}">
+        <img src="${r.A.img}" alt="${r.A.name}">
+        <div class="f-name">${r.A.nickname || r.A.name}</div>
+        <div class="f-score">💪 ${r.scoreA}${r.multA > 1 ? ' ⚡' : ''}</div>
+      </div>
+      <div class="round-vs">VS</div>
+      <div class="fighter ${r.aWins ? 'loser' : ''}">
+        <img src="${r.B.img}" alt="${r.B.name}">
+        <div class="f-name">${r.B.nickname || r.B.name}</div>
+        <div class="f-score">💪 ${r.scoreB}${r.multB > 1 ? ' ⚡' : ''}</div>
+      </div>
+    </div>
+    <div class="round-result won">${r.aWins ? '🛡️ ' + (r.A.nickname || r.A.name) : '🎮 ' + (r.B.nickname || r.B.name)} kazandı! ${r.aWins ? (r.B.nickname || r.B.name) : (r.A.nickname || r.A.name)} yenildi 💫</div>
+    <button class="next-round-btn" id="nextRoundBtn">${battleIndex + 1 < battleRounds.length ? 'Sonraki Raunt ➜' : 'Sonucu Gör 🏆'}</button>
+  `;
+  el('nextRoundBtn').addEventListener('click', () => {
+    battleIndex++;
+    renderRound();
+  });
+}
+
+function renderFinal() {
+  const log = el('arenaLog');
+  const myWon = winningSide === 'me';
+  if (myWon) {
+    addXP(30);
+  }
+  log.innerHTML = `
+    <div class="final-banner">${myWon ? '🏆 Ayaz\'ın Takımı Kazandı! 🏆' : '🎮 Rakip Takım Kazandı!'}</div>
+    <div style="font-size:40px;margin-bottom:14px;">${myWon ? '🥳🎉🛡️' : '😮💥'}</div>
+    ${myWon ? '<div style="color:#27ae60;font-weight:bold;margin-bottom:16px;">+30 XP kazandın!</div>' : ''}
+    <button class="next-round-btn" id="battleAgainBtn">🔄 Tekrar Savaştır</button>
+  `;
+  el('battleAgainBtn').addEventListener('click', () => {
+    el('arenaLog').classList.remove('show');
+    renderSetup();
+  });
+}
+
+renderSetup();
+</script>
+
+</body>
+</html>

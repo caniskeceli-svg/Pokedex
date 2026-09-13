@@ -202,6 +202,161 @@ function processDiscovery(pokemonData) {
   return gained;
 }
 
+// ---- Type effectiveness chart (attacker -> {defender: multiplier}); anything not listed is 1x ----
+const TYPE_CHART = {
+  normal: { rock: 0.5, ghost: 0, steel: 0.5 },
+  fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+  water: { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+  electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+  grass: { fire: 0.5, water: 2, grass: 0.5, poison: 0.5, ground: 2, flying: 0.5, bug: 0.5, rock: 2, dragon: 0.5, steel: 0.5 },
+  ice: { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+  fighting: { normal: 2, ice: 2, poison: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 2, ghost: 0, dark: 2, steel: 2, fairy: 0.5 },
+  poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+  ground: { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+  flying: { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+  psychic: { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+  bug: { fire: 0.5, grass: 2, fighting: 0.5, poison: 0.5, flying: 0.5, psychic: 2, ghost: 0.5, dark: 2, steel: 0.5, fairy: 0.5 },
+  rock: { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+  ghost: { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+  dragon: { dragon: 2, steel: 0.5, fairy: 0 },
+  dark: { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+  steel: { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+  fairy: { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 }
+};
+function typeMultiplier(attackType, defenderTypes) {
+  return (defenderTypes || []).reduce((mult, dt) => mult * (TYPE_CHART[attackType]?.[dt] ?? 1), 1);
+}
+function bestMultiplier(attackerTypes, defenderTypes) {
+  return Math.max(...(attackerTypes || ["normal"]).map(at => typeMultiplier(at, defenderTypes)));
+}
+
+// Aggregate stats + type analysis for a set of mydex-style pokemon objects.
+function computeTeamDetails(members) {
+  const totalPower = members.reduce((s, m) => s + (m.power || 0), 0);
+  const avgPower = members.length ? Math.round(totalPower / members.length) : 0;
+  const coverage = [...new Set(members.flatMap(m => m.types || []))];
+
+  const statKeys = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
+  const hasStats = members.some(m => m.stats);
+  const statTotals = {};
+  statKeys.forEach(k => {
+    statTotals[k] = members.reduce((s, m) => s + (m.stats?.[k] || 0), 0);
+  });
+
+  const weaknessCounts = {};
+  const strengthCounts = {};
+  Object.keys(TYPE_TR).forEach(t => {
+    weaknessCounts[t] = members.filter(m => typeMultiplier(t, m.types) > 1).length;
+    strengthCounts[t] = members.filter(m => bestMultiplier(m.types, [t]) > 1).length;
+  });
+  const weaknesses = Object.entries(weaknessCounts).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+  const strengths = Object.entries(strengthCounts).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]);
+
+  return { members, totalPower, avgPower, coverage, hasStats, statTotals, weaknesses, strengths };
+}
+
+// Fills in missing `stats` for Pokémon caught before stat-tracking existed.
+// Safe to call every time a page loads: it's a no-op once everything has stats.
+async function backfillMissingStats() {
+  const mydex = getMyDexShared();
+  const missing = mydex.filter(p => !p.stats);
+  if (!missing.length) return mydex;
+
+  await Promise.all(missing.map(async (p) => {
+    try {
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`);
+      const data = await res.json();
+      const statMap = {};
+      data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
+      p.stats = statMap;
+    } catch {}
+  }));
+
+  saveMyDexShared(mydex);
+  return mydex;
+}
+
+// ---- Shared team-detail HTML rendering (used by teams.html and battle.html) ----
+const STAT_TR_SHORT = {
+  hp: "Can", attack: "Saldırı", defense: "Savunma",
+  "special-attack": "Öz.Saldırı", "special-defense": "Öz.Savunma", speed: "Hız"
+};
+function typeChipHtml(t, count) {
+  return `<span class="type-chip" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}${count ? `<span class="cnt">×${count}</span>` : ''}</span>`;
+}
+function renderTeamDetailHtml(memberObjs) {
+  const d = computeTeamDetails(memberObjs);
+
+  let statHtml = '';
+  if (d.hasStats) {
+    const maxStat = Math.max(1, ...Object.values(d.statTotals));
+    statHtml = `<div class="detail-label">📊 Toplam İstatistikler</div><div class="team-statbars">` +
+      Object.keys(STAT_TR_SHORT).map(k => {
+        const val = d.statTotals[k];
+        const pct = Math.min(100, (val / maxStat) * 100);
+        return `<div class="team-statbar-row">
+          <div class="team-statbar-label">${STAT_TR_SHORT[k]}</div>
+          <div class="team-statbar-track"><div class="team-statbar-fill" style="width:${pct}%"></div></div>
+          <div class="team-statbar-val">${val}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  } else if (memberObjs.length) {
+    statHtml = `<div class="no-stats-note">Bazı Pokémon'lar için detaylı istatistik henüz yüklenmedi.</div>`;
+  }
+
+  return `
+    <div class="team-members">
+      ${memberObjs.map(m => `
+        <div class="team-member">
+          <img src="${m.img}" alt="${m.name}">
+          <span>${m.nickname || m.name}</span>
+        </div>`).join('') || '<span style="color:#999;font-size:13px;">Henüz üye yok</span>'}
+    </div>
+    <div class="team-stats">
+      <div><b>${memberObjs.length}/6</b>Üye</div>
+      <div><b>${d.totalPower}</b>Toplam Güç</div>
+      <div><b>${d.avgPower}</b>Ortalama Güç</div>
+    </div>
+    ${statHtml}
+    <div class="detail-label">🧬 Takımdaki Tipler</div>
+    <div class="team-coverage">${d.coverage.map(t => typeChipHtml(t)).join('') || '<span style="color:#999;font-size:12px;">Tip yok</span>'}</div>
+    <div class="detail-label">😣 Takımın Zayıf Olduğu Tipler</div>
+    <div class="team-coverage">${d.weaknesses.length ? d.weaknesses.map(([t, c]) => typeChipHtml(t, c)).join('') : '<span style="color:#999;font-size:12px;">Belirgin bir zayıflık yok 💪</span>'}</div>
+    <div class="detail-label">💥 Takımın Güçlü Olduğu Tipler</div>
+    <div class="team-coverage">${d.strengths.length ? d.strengths.map(([t, c]) => typeChipHtml(t, c)).join('') : '<span style="color:#999;font-size:12px;">Bilgi yok</span>'}</div>`;
+}
+
+// ---- Temporary (unsaved) battle opponent team, kept only for this browser tab ----
+// Unlike Ayaz's saved teams (which reference his caught Pokémon by id), the guest
+// team can be built from ANY Pokémon, so it stores full Pokémon objects directly.
+const TEMP_TEAM_KEY = "ayaz_temp_team_v1";
+function getTempTeam() {
+  try {
+    const t = JSON.parse(sessionStorage.getItem(TEMP_TEAM_KEY));
+    if (t && Array.isArray(t.members)) return t;
+  } catch {}
+  return { name: "Rakip Takım", members: [] };
+}
+function saveTempTeam(team) {
+  try { sessionStorage.setItem(TEMP_TEAM_KEY, JSON.stringify(team)); } catch {}
+}
+async function fetchPokemonAsTeamMember(query) {
+  const key = String(query).toLowerCase().trim();
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
+  if (!res.ok) throw new Error('not found');
+  const data = await res.json();
+  const statMap = {};
+  data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
+  return {
+    id: data.id,
+    name: data.name,
+    img: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '',
+    power: data.stats.reduce((s, st) => s + st.base_stat, 0),
+    types: data.types.map(t => t.type.name),
+    stats: statMap
+  };
+}
+
 // ---- Quiz question pool (curated so the quiz doesn't need many live API calls) ----
 const QUIZ_POOL = {
   fire: ["charmander", "vulpix", "growlithe", "torchic", "cyndaquil"],

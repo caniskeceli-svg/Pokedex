@@ -45,6 +45,7 @@
   .nav-back { background: #3b6cdb; }
   .nav-teams { background: #9b59b6; }
   .nav-quiz { background: #e67e22; }
+  .nav-battle { background: #c0392b; }
 
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 
@@ -218,6 +219,7 @@
   <div class="nav-row">
     <a class="nav-back" href="index.html">⬅️ Pokédex'e Dön</a>
     <a class="nav-teams" href="teams.html">🛡️ Takımlarım</a>
+    <a class="nav-battle" href="battle.html">⚔️ Savaştır</a>
     <a class="nav-quiz" href="quiz.html">❓ Quiz Oyna</a>
   </div>
 </header>
@@ -311,7 +313,8 @@ function computeTypePowers(mydex) {
   return totals;
 }
 
-function renderDashboard() {
+async function renderDashboard() {
+  await backfillMissingStats();
   const mydex = getMyDexShared();
 
   renderTrainerCard();

@@ -29,6 +29,7 @@
   }
   .nav-back { background: #3b6cdb; }
   .nav-mine { background: #f39c12; }
+  .nav-battle { background: #c0392b; }
   .new-team-btn { background: #27ae60; }
 
   .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
@@ -49,6 +50,16 @@
   .team-stats b { display: block; font-size: 18px; color: var(--accent-dark); }
   .team-coverage { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
   .type-chip { font-size: 11px; padding: 3px 8px; border-radius: 999px; color: #fff; }
+  .type-chip .cnt { opacity: 0.85; font-size: 10px; margin-left: 2px; }
+
+  .detail-label { font-size: 12px; font-weight: bold; color: #999; margin: 10px 0 6px; text-align: left; }
+  .team-statbars { text-align: left; margin-bottom: 4px; }
+  .team-statbar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+  .team-statbar-label { width: 100px; flex-shrink: 0; text-align: right; color: #666; }
+  .team-statbar-track { flex: 1; background: #eee; border-radius: 6px; height: 10px; overflow: hidden; }
+  .team-statbar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #3b6cdb, #7aa5f0); }
+  .team-statbar-val { width: 30px; flex-shrink: 0; font-weight: bold; color: var(--accent-dark); font-size: 12px; }
+  .no-stats-note { font-size: 12px; color: #aaa; font-style: italic; margin-bottom: 8px; }
   .team-actions { display: flex; gap: 8px; }
   .team-actions button { flex: 1; padding: 8px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; }
   .edit-btn { background: #3b6cdb; }
@@ -79,6 +90,7 @@
   <div class="nav-row">
     <a class="nav-back" href="index.html">⬅️ Pokédex</a>
     <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+    <a class="nav-battle" href="battle.html">⚔️ Savaştır</a>
     <button class="new-team-btn" id="newTeamBtn">➕ Yeni Takım</button>
   </div>
 </header>
@@ -91,18 +103,6 @@ const el = (id) => document.getElementById(id);
 const wrap = el('wrap');
 let editingTeamId = null;
 let editingSelection = [];
-
-function typeChip(t) {
-  return `<span class="type-chip" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`;
-}
-
-function teamStats(team, mydex) {
-  const members = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
-  const totalPower = members.reduce((s, m) => s + (m.power || 0), 0);
-  const avgPower = members.length ? Math.round(totalPower / members.length) : 0;
-  const coverage = [...new Set(members.flatMap(m => m.types || []))];
-  return { members, totalPower, avgPower, coverage };
-}
 
 function renderList() {
   const mydex = getMyDexShared();
@@ -120,23 +120,11 @@ function renderList() {
   }
 
   wrap.innerHTML = teams.map(team => {
-    const { members, totalPower, avgPower, coverage } = teamStats(team, mydex);
+    const memberObjs = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
     return `
       <div class="team-card" data-id="${team.id}">
         <h3>${team.name}</h3>
-        <div class="team-members">
-          ${members.map(m => `
-            <div class="team-member">
-              <img src="${m.img}" alt="${m.name}">
-              <span>${m.nickname || m.name}</span>
-            </div>`).join('') || '<span style="color:#999;font-size:13px;">Henüz üye yok</span>'}
-        </div>
-        <div class="team-stats">
-          <div><b>${members.length}/6</b>Üye</div>
-          <div><b>${totalPower}</b>Toplam Güç</div>
-          <div><b>${avgPower}</b>Ortalama Güç</div>
-        </div>
-        <div class="team-coverage">${coverage.map(typeChip).join('') || '<span style="color:#999;font-size:12px;">Tip yok</span>'}</div>
+        ${renderTeamDetailHtml(memberObjs)}
         <div class="team-actions">
           <button class="edit-btn" data-edit="${team.id}">✏️ Düzenle</button>
           <button class="delete-btn" data-del="${team.id}">🗑️ Sil</button>
@@ -234,7 +222,7 @@ el('newTeamBtn').addEventListener('click', () => {
   openEditor(newTeam.id);
 });
 
-renderList();
+backfillMissingStats().then(renderList);
 </script>
 
 </body>
