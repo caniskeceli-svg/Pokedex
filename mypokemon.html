@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayaz'ın Pokémonları</title>
+<style>
+  :root {
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --accent: #e3350d;
+    --accent-dark: #a82008;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 38px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .back-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: #fff;
+    background: #3b6cdb;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 16px;
+  }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  .hero {
+    background: linear-gradient(135deg, #ffd24a, #ff9a3c);
+    border-radius: 26px;
+    padding: 22px;
+    text-align: center;
+    margin-top: 16px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.1);
+  }
+  .hero .trophy { font-size: 46px; }
+  .hero .total-num {
+    font-size: clamp(40px, 12vw, 64px);
+    font-weight: bold;
+    color: #6b3500;
+    line-height: 1;
+    margin: 4px 0;
+    text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
+  }
+  .hero .total-label { font-size: 16px; color: #6b3500; font-weight: bold; }
+  .hero .sub-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: #6b3500;
+  }
+  .hero .sub-stats b { display: block; font-size: 22px; }
+
+  .section-title {
+    text-align: center;
+    font-size: 20px;
+    color: var(--accent-dark);
+    margin: 26px 0 12px;
+  }
+
+  .power-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .power-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+    border: 3px solid transparent;
+  }
+  .power-card.has-power { border-color: var(--pc, #ccc); }
+  .power-card .p-emoji { font-size: 26px; }
+  .power-card .p-name { font-size: 13px; font-weight: bold; margin: 2px 0; }
+  .power-card .p-val { font-size: 22px; font-weight: bold; color: var(--accent-dark); }
+  .power-card.zero .p-val { color: #ccc; }
+  .power-card.zero { opacity: 0.55; }
+
+  .mydex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  .mydex-item {
+    background: #fff;
+    border-radius: 16px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .mydex-item:hover { background: #fff3dc; }
+  .mydex-item img { width: 64px; height: 64px; }
+  .mydex-item .m-name { display: block; font-size: 13px; text-transform: capitalize; font-weight: bold; margin-top: 2px; }
+  .mydex-item .m-power { font-size: 13px; color: var(--accent-dark); font-weight: bold; }
+  .mydex-item .m-types { display: flex; gap: 3px; justify-content: center; margin: 4px 0; flex-wrap: wrap; }
+  .mydex-item .m-type-dot { font-size: 11px; padding: 2px 6px; border-radius: 999px; color: #fff; }
+  .mydex-item .remove-x {
+    position: absolute; top: 4px; right: 6px;
+    color: #c0392b; font-weight: bold; font-size: 16px; cursor: pointer;
+  }
+
+  .empty-box {
+    text-align: center;
+    color: #a6925a;
+    font-size: 16px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 30px 20px;
+    margin-top: 16px;
+  }
+  .empty-box .big-emoji { font-size: 48px; display: block; margin-bottom: 10px; }
+
+  @media (max-width: 420px) {
+    .power-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⭐ Ayaz'ın Pokémonları ⭐</h1>
+  <a class="back-link" href="index.html">⬅️ Pokédex'e Dön</a>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="trophy">🏆</div>
+    <div class="total-num" id="grandTotal">0</div>
+    <div class="total-label">TOPLAM GÜÇ</div>
+    <div class="sub-stats">
+      <div><b id="pokeCount">0</b>Pokémon</div>
+      <div><b id="avgPower">0</b>Ortalama Güç</div>
+      <div><b id="strongestName">-</b>En Güçlüsü</div>
+    </div>
+  </div>
+
+  <div class="section-title">🔥 Tip Güçlerim ⚡</div>
+  <div class="power-grid" id="powerGrid"></div>
+
+  <div class="section-title">📦 Koleksiyonum</div>
+  <div id="collectionArea"></div>
+
+</div>
+
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+
+function computeTypePowers(mydex) {
+  const totals = {};
+  Object.keys(TYPE_TR).forEach(t => totals[t] = 0);
+  mydex.forEach(p => {
+    (p.types || []).forEach(t => {
+      if (totals[t] !== undefined) totals[t] += (p.power || 0);
+    });
+  });
+  return totals;
+}
+
+function renderDashboard() {
+  const mydex = getMyDexShared();
+
+  const grandTotal = mydex.reduce((sum, p) => sum + (p.power || 0), 0);
+  el('grandTotal').textContent = grandTotal;
+  el('pokeCount').textContent = mydex.length;
+  el('avgPower').textContent = mydex.length ? Math.round(grandTotal / mydex.length) : 0;
+  const strongest = mydex.slice().sort((a, b) => (b.power || 0) - (a.power || 0))[0];
+  el('strongestName').textContent = strongest ? strongest.name : '-';
+
+  const typePowers = computeTypePowers(mydex);
+  const grid = el('powerGrid');
+  grid.innerHTML = Object.keys(TYPE_TR).map(t => {
+    const val = typePowers[t];
+    const zero = val === 0;
+    return `
+      <div class="power-card ${zero ? 'zero' : 'has-power'}" style="--pc:${TYPE_COLORS[t]}">
+        <div class="p-emoji">${TYPE_EMOJI[t]}</div>
+        <div class="p-name">${TYPE_TR[t]}</div>
+        <div class="p-val">${val}</div>
+      </div>`;
+  }).join('');
+
+  const area = el('collectionArea');
+  if (!mydex.length) {
+    area.innerHTML = `
+      <div class="empty-box">
+        <span class="big-emoji">🎒</span>
+        Henüz hiç Pokémon toplamadın!<br>
+        Pokédex'e dön, beğendiğin Pokémon'u "⭐ Ekle" butonuyla buraya getir.
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = `<div class="mydex-grid">${mydex.map(p => `
+    <div class="mydex-item" data-name="${p.name}">
+      <span class="remove-x" data-remove="${p.id}">✕</span>
+      <img src="${p.img}" alt="${p.name}">
+      <span class="m-name">${p.name}</span>
+      <div class="m-types">${(p.types || []).map(t =>
+        `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`
+      ).join('')}</div>
+      <div class="m-power">💪 ${p.power || 0}</div>
+    </div>`).join('')}</div>`;
+
+  area.querySelectorAll('.mydex-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.dataset.remove) return;
+      window.location.href = `index.html?poke=${item.dataset.name}`;
+    });
+  });
+  area.querySelectorAll('[data-remove]').forEach(x => {
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const updated = getMyDexShared().filter(p => p.id !== Number(x.dataset.remove));
+      saveMyDexShared(updated);
+      renderDashboard();
+    });
+  });
+}
+
+renderDashboard();
+</script>
+
+</body>
+</html>

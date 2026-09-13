@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ayaz'ın Pokédex'i</title>
+<style>
+  :root {
+    --bg: #fff7e6;
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --accent: #e3350d;
+    --accent-dark: #a82008;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 10px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(26px, 6vw, 42px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+    letter-spacing: 1px;
+  }
+  header p { margin: 4px 0 0; font-size: 14px; color: #6b5a2a; }
+
+  .controls {
+    max-width: 560px;
+    margin: 18px auto 0;
+    display: flex;
+    gap: 10px;
+    padding: 0 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+  }
+  .search-wrap { position: relative; flex: 1 1 180px; min-width: 180px; }
+  input#search {
+    width: 100%;
+    font-size: 18px;
+    padding: 12px 16px;
+    border: 3px solid var(--accent);
+    border-radius: 999px;
+    outline: none;
+  }
+  #suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  #suggestions div {
+    padding: 10px 16px;
+    cursor: pointer;
+    text-transform: capitalize;
+    font-size: 16px;
+  }
+  #suggestions div:hover, #suggestions div.active { background: #ffe6cc; }
+
+  button, a.btn-link {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #fff;
+    transition: transform 0.1s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  button:active, a.btn-link:active { transform: scale(0.93); }
+  #randomBtn { background: #3b6cdb; }
+  #searchBtn { background: var(--accent); }
+  #prevBtn, #nextBtn { background: #49a84c; font-size: 22px; padding: 10px 18px; }
+  #addDexBtn { background: #8e44ad; margin-top: 10px; }
+  #addDexBtn.added { background: #27ae60; }
+  #filterBtn { background: #16a085; }
+  #myDexLink { background: #f39c12; }
+
+  #status { text-align: center; margin-top: 16px; font-size: 16px; min-height: 24px; color: #7a6a3a; }
+
+  .stage {
+    max-width: 560px;
+    margin: 10px auto;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 28px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.12), 0 14px 24px rgba(0,0,0,0.15);
+    padding: 20px;
+    width: 100%;
+    max-width: 460px;
+    text-align: center;
+    display: none;
+  }
+  .card.show { display: block; animation: pop 0.25s ease; }
+  @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .dex-num { font-size: 16px; color: #999; font-weight: bold; }
+  .poke-name { font-size: 32px; margin: 2px 0 10px; text-transform: capitalize; color: var(--accent-dark); }
+  .sprite-wrap {
+    background: radial-gradient(circle, #f2f2f2 0%, #e6e6e6 70%);
+    border-radius: 20px;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+  .sprite-wrap img { width: 190px; height: 190px; cursor: pointer; }
+  .types { display: flex; justify-content: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .type-badge {
+    padding: 6px 18px; border-radius: 999px; color: #fff; font-weight: bold;
+    font-size: 14px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+  }
+  .meta-row { display: flex; justify-content: space-around; margin-bottom: 14px; }
+  .stat-box { font-size: 14px; }
+  .stat-box b { display: block; font-size: 20px; color: var(--accent-dark); }
+
+  .flavor {
+    background: #fff9ec;
+    border: 2px dashed #ffd27a;
+    border-radius: 14px;
+    padding: 12px;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+
+  .section-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: var(--accent-dark);
+    margin: 10px 0 8px;
+    text-align: left;
+  }
+
+  .stat-bars { text-align: left; margin-bottom: 16px; }
+  .stat-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; }
+  .stat-bar-label { width: 110px; flex-shrink: 0; text-align: right; color: #555; }
+  .stat-bar-track { flex: 1; background: #eee; border-radius: 6px; height: 12px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #49a84c, #8bd98e); }
+  .stat-bar-val { width: 32px; flex-shrink: 0; font-weight: bold; color: var(--accent-dark); }
+  .total-power { text-align: right; font-size: 13px; color: #888; margin-top: -4px; margin-bottom: 10px; }
+  .total-power b { color: var(--accent-dark); }
+
+  .sound-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .sound-btn { background: #ffb703; color: #4a3600; font-size: 16px; padding: 10px 18px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .yt-btn { background: #ff0000; font-size: 15px; padding: 10px 18px; }
+
+  .evo-chain {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .evo-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 12px;
+    transition: background 0.15s;
+  }
+  .evo-stage:hover { background: #fff0d9; }
+  .evo-stage.current { background: #ffe0a3; }
+  .evo-stage img { width: 64px; height: 64px; }
+  .evo-stage span { font-size: 12px; text-transform: capitalize; }
+  .evo-arrow { font-size: 20px; color: #bbb; }
+
+  .eff-row { margin-bottom: 10px; }
+  .eff-row .eff-label { font-size: 13px; font-weight: bold; color: #666; margin-bottom: 6px; text-align: left; }
+  .eff-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .eff-badge {
+    padding: 5px 12px; border-radius: 999px; color: #fff; font-size: 13px; font-weight: bold;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .eff-badge .x { font-size: 11px; opacity: 0.85; }
+  .eff-none { font-size: 13px; color: #999; font-style: italic; }
+
+  .hint { text-align: center; color: #a6925a; margin-top: 16px; font-size: 13px; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 20px; padding: 20px;
+    max-width: 480px; width: 100%; max-height: 80vh; overflow-y: auto;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 22px; cursor: pointer; background: none; color: #999; padding: 4px;
+  }
+  .modal-box h3 { margin-top: 0; color: var(--accent-dark); text-align: center; }
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .type-grid button, .special-grid button {
+    color: #fff; border-radius: 12px; padding: 10px 6px; font-size: 14px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2);
+  }
+  .special-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .special-grid button:nth-child(1) { background: #f39c12; }
+  .special-grid button:nth-child(2) { background: #9b59b6; }
+  #filterResults { margin-top: 10px; }
+  #filterResults div.back-link { color: #3b6cdb; cursor: pointer; font-weight: bold; margin-bottom: 10px; text-align: center; }
+  .result-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+  .result-list button {
+    background: #f5f5f5; color: #333; text-transform: capitalize; text-align: left;
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; box-shadow: none;
+  }
+  .result-list button:hover { background: #ffe6cc; }
+
+  @media (max-width: 420px) {
+    .sprite-wrap img { width: 150px; height: 150px; }
+    .stat-bar-label { width: 90px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔴 Ayaz'ın Pokédex'i ⚡</h1>
+  <p>Bir Pokémon adı yaz, ya da rastgele dene!</p>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="örn: pikachu" autocomplete="off">
+    <div id="suggestions"></div>
+  </div>
+  <button id="searchBtn">Bul 🔍</button>
+  <button id="randomBtn">Rastgele 🎲</button>
+  <button id="filterBtn">Türe Göre Ara 🧭</button>
+  <a class="btn-link" id="myDexLink" href="mypokemon.html">⭐ Pokémonlarım</a>
+</div>
+
+<div class="modal-overlay" id="filterModal">
+  <div class="modal-box">
+    <button class="modal-close" id="filterClose">✕</button>
+    <h3>Türe Göre Pokémon Bul</h3>
+    <div class="special-grid">
+      <button data-special="legendary">✨ Efsanevi</button>
+      <button data-special="mythical">🌟 Mitik</button>
+    </div>
+    <div class="type-grid" id="typeGrid"></div>
+    <div id="filterResults"></div>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<div class="stage">
+  <button id="prevBtn" title="Önceki">⬅️</button>
+  <div class="card" id="card">
+    <div class="dex-num" id="dexNum"></div>
+    <div class="poke-name" id="pokeName"></div>
+    <div class="sprite-wrap">
+      <img id="sprite" src="" alt="" title="Büyütmek için dokun!">
+    </div>
+    <div class="types" id="types"></div>
+
+    <div class="meta-row">
+      <div class="stat-box"><b id="statHeight"></b>Boy</div>
+      <div class="stat-box"><b id="statWeight"></b>Ağırlık</div>
+    </div>
+
+    <div class="flavor" id="flavor"></div>
+
+    <div class="section-title">📊 Güç Puanları</div>
+    <div class="stat-bars" id="statBars"></div>
+    <div class="total-power">Toplam Güç: <b id="totalPower"></b></div>
+
+    <div class="section-title">⚔️ Güçlü ve Zayıf Olduğu Tipler</div>
+    <div id="effectivenessBox"></div>
+
+    <div class="section-title" id="evoTitle" style="display:none;">🔄 Evrim Zinciri</div>
+    <div class="evo-chain" id="evoChain"></div>
+
+    <div class="sound-row">
+      <button class="sound-btn" id="soundBtn">🔊 Sesini Dinle</button>
+      <button class="yt-btn" id="ytBtn">▶️ YouTube'da Ara</button>
+    </div>
+
+    <button id="addDexBtn">⭐ Ayaz'ın Pokédex'ine Ekle</button>
+  </div>
+  <button id="nextBtn" title="Sonraki">➡️</button>
+</div>
+
+<div class="hint">Toplam 1010 Pokémon var. İyi eğlenceler! 🎉</div>
+
+<script src="pokedex-data.js"></script>
+<script>
+let currentId = 25;
+let currentAudio = null;
+let allNames = [];
+let currentData = null;
+
+const el = (id) => document.getElementById(id);
+const statusEl = el('status');
+const card = el('card');
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+const getMyDex = getMyDexShared;
+const saveMyDex = saveMyDexShared;
+
+async function loadNameList() {
+  try {
+    const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1302');
+    const data = await res.json();
+    allNames = data.results.map(p => p.name);
+  } catch {}
+}
+
+function showSuggestions(matches) {
+  const box = el('suggestions');
+  if (!matches.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = matches.slice(0, 8).map(n => `<div data-name="${n}">${n}</div>`).join('');
+  box.style.display = 'block';
+  box.querySelectorAll('div').forEach(d => {
+    d.addEventListener('click', () => {
+      el('search').value = d.dataset.name;
+      box.style.display = 'none';
+      loadPokemon(d.dataset.name);
+    });
+  });
+}
+
+el('search').addEventListener('input', () => {
+  const q = el('search').value.toLowerCase().trim();
+  if (!q) { el('suggestions').style.display = 'none'; return; }
+  const matches = allNames.filter(n => n.startsWith(q));
+  showSuggestions(matches);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrap')) el('suggestions').style.display = 'none';
+});
+
+async function loadPokemon(query) {
+  setStatus('Aranıyor... ⏳');
+  card.classList.remove('show');
+  try {
+    const key = String(query).toLowerCase().trim();
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    await renderPokemon(data);
+    currentId = data.id;
+    setStatus('');
+  } catch (err) {
+    setStatus('Bulunamadı 😕 Başka bir ad veya numara dene.');
+  }
+}
+
+async function renderPokemon(data) {
+  currentData = data;
+  el('dexNum').textContent = '#' + String(data.id).padStart(3, '0');
+  el('pokeName').textContent = data.name;
+  const art = data.sprites?.other?.['official-artwork']?.front_default
+    || data.sprites?.front_default || '';
+  el('sprite').src = art;
+  el('sprite').alt = data.name;
+
+  const typesEl = el('types');
+  typesEl.innerHTML = '';
+  data.types.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'type-badge';
+    span.textContent = TYPE_TR[t.type.name] || t.type.name;
+    span.style.background = TYPE_COLORS[t.type.name] || '#888';
+    typesEl.appendChild(span);
+  });
+
+  el('statHeight').textContent = (data.height / 10) + ' m';
+  el('statWeight').textContent = (data.weight / 10) + ' kg';
+
+  const statBars = el('statBars');
+  statBars.innerHTML = '';
+  let total = 0;
+  data.stats.forEach(s => {
+    const label = STAT_TR[s.stat.name] || s.stat.name;
+    const val = s.base_stat;
+    total += val;
+    const pct = Math.min(100, (val / 255) * 100);
+    statBars.innerHTML += `
+      <div class="stat-bar-row">
+        <div class="stat-bar-label">${label}</div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
+        <div class="stat-bar-val">${val}</div>
+      </div>`;
+  });
+  el('totalPower').textContent = total;
+
+  const cryUrl = data.cries?.legacy || data.cries?.latest || null;
+  el('soundBtn').dataset.cry = cryUrl || '';
+  el('soundBtn').style.display = cryUrl ? 'inline-flex' : 'none';
+
+  el('ytBtn').onclick = () => {
+    window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(data.name + ' pokemon')}`, '_blank', 'noopener');
+  };
+
+  updateAddButton(data.id);
+  el('addDexBtn').onclick = () => toggleMyDex(data, total);
+
+  el('flavor').textContent = 'Açıklama yükleniyor...';
+  el('evoTitle').style.display = 'none';
+  el('evoChain').innerHTML = '';
+  el('effectivenessBox').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Hesaplanıyor...</p>';
+
+  card.classList.add('show');
+
+  loadSpeciesExtras(data);
+  loadTypeEffectiveness(data);
+}
+
+function effBadge(typeName, extraText) {
+  return `<span class="eff-badge" style="background:${TYPE_COLORS[typeName] || '#888'}">${TYPE_TR[typeName] || typeName}${extraText ? `<span class="x">${extraText}</span>` : ''}</span>`;
+}
+
+async function loadTypeEffectiveness(data) {
+  try {
+    const typeDatas = await Promise.all(data.types.map(t => fetch(t.type.url).then(r => r.json())));
+
+    const multiplier = {};
+    Object.keys(TYPE_TR).forEach(t => multiplier[t] = 1);
+    const strongAgainst = new Set();
+    const immuneTo = new Set();
+
+    typeDatas.forEach(td => {
+      const rel = td.damage_relations;
+      rel.double_damage_from.forEach(t => multiplier[t.name] = (multiplier[t.name] ?? 1) * 2);
+      rel.half_damage_from.forEach(t => multiplier[t.name] = (multiplier[t.name] ?? 1) * 0.5);
+      rel.no_damage_from.forEach(t => { multiplier[t.name] = 0; immuneTo.add(t.name); });
+      rel.double_damage_to.forEach(t => strongAgainst.add(t.name));
+    });
+
+    const weaknesses = Object.entries(multiplier)
+      .filter(([, m]) => m > 1)
+      .sort((a, b) => b[1] - a[1]);
+
+    let html = '';
+    html += `<div class="eff-row"><div class="eff-label">😣 Zayıf Olduğu Tipler (2x veya daha fazla hasar alır)</div>`;
+    html += weaknesses.length
+      ? `<div class="eff-badges">${weaknesses.map(([t, m]) => effBadge(t, 'x' + m)).join('')}</div>`
+      : `<div class="eff-none">Özel bir zayıflığı yok! 💪</div>`;
+    html += `</div>`;
+
+    html += `<div class="eff-row"><div class="eff-label">💥 Güçlü Olduğu Tipler (bunlara fazla hasar verir)</div>`;
+    html += strongAgainst.size
+      ? `<div class="eff-badges">${[...strongAgainst].map(t => effBadge(t)).join('')}</div>`
+      : `<div class="eff-none">Bilgi bulunamadı.</div>`;
+    html += `</div>`;
+
+    if (immuneTo.size) {
+      html += `<div class="eff-row"><div class="eff-label">🛡️ Hiç Hasar Almadığı Tipler</div>`;
+      html += `<div class="eff-badges">${[...immuneTo].map(t => effBadge(t)).join('')}</div></div>`;
+    }
+
+    el('effectivenessBox').innerHTML = html;
+  } catch {
+    el('effectivenessBox').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Yüklenemedi 😕</p>';
+  }
+}
+
+async function loadSpeciesExtras(data) {
+  try {
+    const speciesRes = await fetch(data.species.url);
+    const species = await speciesRes.json();
+
+    const entries = species.flavor_text_entries || [];
+    let flavor = entries.find(e => e.language.name === 'tr')
+      || entries.find(e => e.language.name === 'en');
+    el('flavor').textContent = flavor
+      ? '📝 ' + flavor.flavor_text.replace(/\f|\n/g, ' ')
+      : 'Bu Pokémon hakkında açıklama bulunamadı.';
+
+    if (species.evolution_chain?.url) {
+      const evoRes = await fetch(species.evolution_chain.url);
+      const evoData = await evoRes.json();
+      await renderEvoChain(evoData.chain, data.name);
+    }
+  } catch {
+    el('flavor').textContent = 'Açıklama yüklenemedi.';
+  }
+}
+
+async function getPokemonIcon(name) {
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+    const d = await res.json();
+    return d.sprites?.front_default || d.sprites?.other?.['official-artwork']?.front_default || '';
+  } catch { return ''; }
+}
+
+function flattenChain(node, depth, out) {
+  out.push({ name: node.species.name, depth });
+  (node.evolves_to || []).forEach(child => flattenChain(child, depth + 1, out));
+}
+
+async function renderEvoChain(chain, currentName) {
+  const stages = [];
+  flattenChain(chain, 0, stages);
+
+  if (stages.length <= 1) {
+    el('evoTitle').style.display = 'none';
+    el('evoChain').innerHTML = '';
+    return;
+  }
+  el('evoTitle').style.display = 'block';
+  const container = el('evoChain');
+  container.innerHTML = '<span style="font-size:13px;color:#999;">Yükleniyor...</span>';
+
+  const icons = await Promise.all(stages.map(s => getPokemonIcon(s.name)));
+
+  let html = '';
+  let lastDepth = -1;
+  stages.forEach((s, i) => {
+    if (i > 0 && stages[i].depth > lastDepth) {
+      html += '<span class="evo-arrow">➜</span>';
+    }
+    lastDepth = s.depth;
+    const isCurrent = s.name === currentName;
+    html += `
+      <div class="evo-stage ${isCurrent ? 'current' : ''}" data-name="${s.name}">
+        <img src="${icons[i]}" alt="${s.name}">
+        <span>${s.name}</span>
+      </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.evo-stage').forEach(stageEl => {
+    stageEl.addEventListener('click', () => loadPokemon(stageEl.dataset.name));
+  });
+}
+
+function updateAddButton(id) {
+  const mydex = getMyDex();
+  const exists = mydex.some(p => p.id === id);
+  const btn = el('addDexBtn');
+  btn.textContent = exists ? '✅ Pokédex\'te Var (Çıkar)' : '⭐ Ayaz\'ın Pokédex\'ine Ekle';
+  btn.classList.toggle('added', exists);
+}
+
+async function toggleMyDex(data, total) {
+  let mydex = getMyDex();
+  const exists = mydex.some(p => p.id === data.id);
+  if (exists) {
+    mydex = mydex.filter(p => p.id !== data.id);
+  } else {
+    const art = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+    mydex.push({
+      id: data.id,
+      name: data.name,
+      img: art,
+      power: total,
+      types: data.types.map(t => t.type.name)
+    });
+  }
+  saveMyDex(mydex);
+  updateAddButton(data.id);
+}
+
+function playCry() {
+  const url = el('soundBtn').dataset.cry;
+  if (!url) return;
+  if (currentAudio) { currentAudio.pause(); }
+  currentAudio = new Audio(url);
+  currentAudio.play().catch(() => setStatus('Ses çalınamadı 🔇'));
+}
+
+function randomPokemon() {
+  const id = Math.floor(Math.random() * MAX_ID) + 1;
+  loadPokemon(id);
+}
+
+el('searchBtn').addEventListener('click', () => {
+  const val = el('search').value.trim();
+  if (val) loadPokemon(val);
+  el('suggestions').style.display = 'none';
+});
+el('search').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') el('searchBtn').click();
+});
+el('randomBtn').addEventListener('click', randomPokemon);
+el('soundBtn').addEventListener('click', playCry);
+el('sprite').addEventListener('click', playCry);
+el('prevBtn').addEventListener('click', () => {
+  const id = currentId > 1 ? currentId - 1 : MAX_ID;
+  loadPokemon(id);
+});
+el('nextBtn').addEventListener('click', () => {
+  const id = currentId < MAX_ID ? currentId + 1 : 1;
+  loadPokemon(id);
+});
+
+function buildTypeGrid() {
+  const grid = el('typeGrid');
+  grid.innerHTML = Object.keys(TYPE_TR).map(t =>
+    `<button data-type="${t}" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t]}</button>`
+  ).join('');
+  grid.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => showTypeResults(b.dataset.type));
+  });
+}
+
+function renderResultList(names) {
+  const box = el('filterResults');
+  box.innerHTML = `
+    <div class="back-link" id="backToTypes">⬅️ Geri Dön</div>
+    <div class="result-list">${names.map(n => `<button data-name="${n}">${n}</button>`).join('')}</div>`;
+  el('backToTypes').addEventListener('click', () => { box.innerHTML = ''; });
+  box.querySelectorAll('.result-list button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      loadPokemon(btn.dataset.name);
+      closeFilterModal();
+    });
+  });
+}
+
+async function showTypeResults(type) {
+  const box = el('filterResults');
+  box.innerHTML = '<p style="text-align:center;color:#999;">Yükleniyor...</p>';
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+    const data = await res.json();
+    const names = data.pokemon.map(p => p.pokemon.name);
+    renderResultList(names);
+  } catch {
+    box.innerHTML = '<p style="text-align:center;">Yüklenemedi 😕</p>';
+  }
+}
+
+function showSpecialResults(kind) {
+  renderResultList(kind === 'legendary' ? LEGENDARY_NAMES : MYTHICAL_NAMES);
+}
+
+function openFilterModal() { el('filterModal').classList.add('show'); }
+function closeFilterModal() { el('filterModal').classList.remove('show'); el('filterResults').innerHTML = ''; }
+
+el('filterBtn').addEventListener('click', openFilterModal);
+el('filterClose').addEventListener('click', closeFilterModal);
+el('filterModal').addEventListener('click', (e) => { if (e.target.id === 'filterModal') closeFilterModal(); });
+document.querySelectorAll('.special-grid button').forEach(b => {
+  b.addEventListener('click', () => showSpecialResults(b.dataset.special));
+});
+buildTypeGrid();
+
+const urlParams = new URLSearchParams(window.location.search);
+const startPoke = urlParams.get('poke') || currentId;
+
+loadNameList();
+loadPokemon(startPoke);
+</script>
+
+</body>
+</html>
