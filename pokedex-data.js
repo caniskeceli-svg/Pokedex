@@ -219,13 +219,14 @@ function injectProfileBadge() {
 // ---- Battle challenges (real-time, between the two profiles) ----
 // A challenge snapshots the challenger's team so the fight is fair and
 // reproducible even if either team roster changes later.
-function sendChallenge(myTeamName, myMembers) {
+function sendChallenge(myTeamName, myMembers, hidden) {
   const toProfile = getOtherProfile(CURRENT_PROFILE);
   return cloudDb.collection("challenges").add({
     fromProfile: CURRENT_PROFILE,
     fromName: PROFILE_INFO[CURRENT_PROFILE].name,
     fromTeamName: myTeamName,
     fromTeam: myMembers,
+    hidden: !!hidden,
     toProfile,
     toName: PROFILE_INFO[toProfile].name,
     status: "pending",
