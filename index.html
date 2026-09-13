@@ -224,6 +224,21 @@
   .eff-badge .x { font-size: 11px; opacity: 0.85; }
   .eff-none { font-size: 13px; color: #999; font-style: italic; }
 
+  .ability-card {
+    background: #f3f0ff; border: 2px solid #d9cfff; border-radius: 12px;
+    padding: 8px 12px; margin-bottom: 8px; text-align: left;
+  }
+  .ability-card .a-name { font-weight: bold; color: #6c4bbf; text-transform: capitalize; font-size: 14px; }
+  .ability-card .a-name .hidden-tag { font-size: 10px; background: #6c4bbf; color: #fff; padding: 1px 6px; border-radius: 999px; margin-left: 6px; }
+  .ability-card .a-desc { font-size: 12px; color: #666; margin-top: 2px; }
+
+  .move-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .move-chip {
+    background: #eef6ff; border: 1px solid #cfe4ff; color: #2c5aa0; border-radius: 999px;
+    padding: 4px 10px; font-size: 12px; font-weight: bold; text-transform: capitalize;
+  }
+  .move-chip .lv { color: #999; font-weight: normal; margin-left: 4px; }
+
   .hint { text-align: center; color: #a6925a; margin-top: 16px; font-size: 13px; }
 
   .modal-overlay {
@@ -370,6 +385,12 @@
     <div class="section-title">⚔️ Güçlü ve Zayıf Olduğu Tipler</div>
     <div id="effectivenessBox"></div>
 
+    <div class="section-title">🔮 Yetenekler</div>
+    <div id="abilitiesBox"></div>
+
+    <div class="section-title">🎯 Öğrenebileceği Hareketler</div>
+    <div id="movesBox"></div>
+
     <div class="section-title" id="evoTitle" style="display:none;">🔄 Evrim Zinciri</div>
     <div class="evo-chain" id="evoChain"></div>
 
@@ -513,6 +534,8 @@ async function renderPokemon(data) {
   currentSpecies = null;
   loadSpeciesExtras(data);
   loadTypeEffectiveness(data);
+  loadAbilities(data);
+  renderMoves(data);
 
   const discoveryResult = processDiscovery(data);
   updateLevelBadge();
@@ -601,6 +624,50 @@ async function loadTypeEffectiveness(data) {
   } catch {
     el('effectivenessBox').innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Yüklenemedi 😕</p>';
   }
+}
+
+async function loadAbilities(data) {
+  const box = el('abilitiesBox');
+  box.innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Yükleniyor...</p>';
+  try {
+    const abilities = await Promise.all(data.abilities.map(async (a) => {
+      const res = await fetch(a.ability.url);
+      const abilityData = await res.json();
+      const entry = abilityData.effect_entries.find(e => e.language.name === 'en');
+      let desc = entry ? entry.short_effect.replace(/\s+/g, ' ') : null;
+      if (desc) {
+        const translated = await translateToTurkish(desc);
+        desc = translated || desc;
+      }
+      return { name: a.ability.name, hidden: a.is_hidden, desc };
+    }));
+    box.innerHTML = abilities.map(a => `
+      <div class="ability-card">
+        <div class="a-name">${a.name}${a.hidden ? '<span class="hidden-tag">Gizli</span>' : ''}</div>
+        <div class="a-desc">${a.desc || 'Açıklama bulunamadı.'}</div>
+      </div>`).join('');
+  } catch {
+    box.innerHTML = '<p style="text-align:center;color:#999;font-size:13px;">Yüklenemedi 😕</p>';
+  }
+}
+
+function renderMoves(data) {
+  const box = el('movesBox');
+  const levelMoves = {};
+  data.moves.forEach(m => {
+    const levelDetail = m.version_group_details.find(v => v.move_learn_method.name === 'level-up');
+    if (!levelDetail) return;
+    const lvl = levelDetail.level_learned_at || 1;
+    if (!(m.move.name in levelMoves) || lvl < levelMoves[m.move.name]) {
+      levelMoves[m.move.name] = lvl;
+    }
+  });
+  const sorted = Object.entries(levelMoves).sort((a, b) => a[1] - b[1]).slice(0, 8);
+  box.innerHTML = sorted.length
+    ? `<div class="move-chips">${sorted.map(([name, lvl]) =>
+        `<span class="move-chip">${name.replace(/-/g, ' ')}<span class="lv">Lv.${lvl}</span></span>`
+      ).join('')}</div>`
+    : '<p style="color:#999;font-size:13px;">Seviye atlayarak öğrenilen bir hareket bulunamadı.</p>';
 }
 
 async function translateToTurkish(text) {
