@@ -43,7 +43,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const cloudDb = firebase.firestore();
-const cloudDocRef = cloudDb.collection("pokedex").doc("ayaz");
 
 function safeParseLS(key, fallback) {
   try {
@@ -55,13 +54,33 @@ function safeParseLS(key, fallback) {
 const DEFAULT_PLAYER = { xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
 const DEFAULT_INVENTORY = { pokeball: 0, berry: 0, "evolution-stone": 0 };
 
+// ---- Player profiles ----
+// Two people share this app, each with their own catches/XP/teams. The
+// device remembers which profile it's playing as; a small chooser appears
+// the first time a page loads without one.
+const PROFILE_KEY = "ayaz_pokedex_profile_v1";
+const PROFILE_INFO = {
+  ayaz: { name: "Ayaz", emoji: "👦" },
+  baba: { name: "Baba", emoji: "👨" }
+};
+function getOtherProfile(id) {
+  return Object.keys(PROFILE_INFO).find(k => k !== id);
+}
+let CURRENT_PROFILE = null;
+let cloudDocRef = null;
+
 let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [] };
 let cloudReady = false;
 let cloudReadyResolvers = [];
 let cloudChangeCallbacks = [];
+let cloudBootstrapped = false;
 
 function onCloudChange(cb) { cloudChangeCallbacks.push(cb); }
 function waitForCloud() {
+  if (!cloudBootstrapped) {
+    cloudBootstrapped = true;
+    bootstrapProfileAndCloud();
+  }
   if (cloudReady) return Promise.resolve();
   return new Promise(resolve => cloudReadyResolvers.push(resolve));
 }
@@ -69,34 +88,95 @@ function pushCloud(partial) {
   cloudDocRef.set(partial, { merge: true }).catch(err => console.error("Firestore yazma hatası:", err));
 }
 
-cloudDocRef.onSnapshot((snap) => {
-  if (!snap.exists) {
-    // First time this device talks to the cloud doc: bring along anything
-    // that was already saved locally (from before cloud sync existed) so
-    // nothing Ayaz caught gets lost.
-    CLOUD_STATE = {
-      mydex: safeParseLS(MYDEX_KEY, []),
-      player: Object.assign({}, DEFAULT_PLAYER, safeParseLS(PLAYER_KEY, {})),
-      inventory: Object.assign({}, DEFAULT_INVENTORY, safeParseLS(INVENTORY_KEY, {})),
-      teams: safeParseLS(TEAMS_KEY, [])
-    };
-    cloudDocRef.set(CLOUD_STATE);
+function bootstrapProfileAndCloud() {
+  const existing = localStorage.getItem(PROFILE_KEY);
+  if (existing && PROFILE_INFO[existing]) {
+    startCloudSync(existing);
   } else {
-    const data = snap.data() || {};
-    CLOUD_STATE = {
-      mydex: data.mydex || [],
-      player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
-      inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
-      teams: data.teams || []
-    };
+    showProfileChooser();
   }
-  cloudReady = true;
-  cloudReadyResolvers.forEach(r => r());
-  cloudReadyResolvers = [];
-  cloudChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
-}, (err) => {
-  console.error("Firestore bağlantı hatası:", err);
-});
+}
+
+function showProfileChooser() {
+  const overlay = document.createElement("div");
+  overlay.id = "profileChooserOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;";
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:24px;padding:30px 26px;max-width:360px;width:100%;text-align:center;font-family:'Trebuchet MS','Segoe UI',sans-serif;box-shadow:0 12px 0 rgba(0,0,0,0.15);">
+      <div style="font-size:22px;font-weight:bold;color:#e3350d;margin-bottom:6px;">Sen kimsin? 🔴</div>
+      <div style="font-size:14px;color:#888;margin-bottom:20px;">Bu cihazda kim olarak oynayacaksın?</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        ${Object.entries(PROFILE_INFO).map(([id, info]) => `
+          <button data-profile="${id}" style="font-size:19px;font-weight:bold;padding:16px;border:none;border-radius:16px;background:#3b6cdb;color:#fff;cursor:pointer;">
+            ${info.emoji} ${info.name}
+          </button>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll("[data-profile]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.profile;
+      localStorage.setItem(PROFILE_KEY, id);
+      overlay.remove();
+      startCloudSync(id);
+    });
+  });
+}
+
+async function startCloudSync(profileId) {
+  CURRENT_PROFILE = profileId;
+  cloudDocRef = cloudDb.collection("profiles").doc(profileId);
+
+  cloudDocRef.onSnapshot(async (snap) => {
+    if (!snap.exists) {
+      let seed = null;
+      if (profileId === "ayaz") {
+        // Migrate the original single-profile document (from before the
+        // two-player system existed) so Ayaz doesn't lose his progress.
+        try {
+          const legacy = await cloudDb.collection("pokedex").doc("ayaz").get();
+          if (legacy.exists) seed = legacy.data();
+        } catch (e) { console.error(e); }
+      }
+      if (!seed) {
+        seed = {
+          mydex: safeParseLS(MYDEX_KEY, []),
+          player: Object.assign({}, DEFAULT_PLAYER, safeParseLS(PLAYER_KEY, {})),
+          inventory: Object.assign({}, DEFAULT_INVENTORY, safeParseLS(INVENTORY_KEY, {})),
+          teams: safeParseLS(TEAMS_KEY, [])
+        };
+      }
+      CLOUD_STATE = {
+        mydex: seed.mydex || [],
+        player: Object.assign({}, DEFAULT_PLAYER, seed.player || {}),
+        inventory: Object.assign({}, DEFAULT_INVENTORY, seed.inventory || {}),
+        teams: seed.teams || []
+      };
+      cloudDocRef.set(CLOUD_STATE);
+    } else {
+      const data = snap.data() || {};
+      CLOUD_STATE = {
+        mydex: data.mydex || [],
+        player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
+        inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
+        teams: data.teams || []
+      };
+    }
+    const firstTime = !cloudReady;
+    cloudReady = true;
+    cloudReadyResolvers.forEach(r => r());
+    cloudReadyResolvers = [];
+    cloudChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
+    if (firstTime) {
+      personalizeHeader();
+      injectProfileBadge();
+      injectChallengeBanner();
+      claimPendingChallengeRewards();
+    }
+  }, (err) => {
+    console.error("Firestore bağlantı hatası:", err);
+  });
+}
 
 function getMyDexShared() { return CLOUD_STATE.mydex; }
 function saveMyDexShared(list) { CLOUD_STATE.mydex = list; pushCloud({ mydex: list }); }
@@ -109,6 +189,118 @@ function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory
 
 function getTeams() { return CLOUD_STATE.teams; }
 function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
+
+// Swaps the hardcoded "Ayaz" in page headers for whoever is actually playing.
+function personalizeHeader() {
+  const info = PROFILE_INFO[CURRENT_PROFILE];
+  if (!info) return;
+  document.querySelectorAll("h1").forEach(h => {
+    h.textContent = h.textContent.replace(/Ayaz/g, info.name);
+  });
+}
+
+// ---- Small "who am I" badge shown on every page, with a way to switch ----
+function injectProfileBadge() {
+  if (document.getElementById("profileBadge")) return;
+  const info = PROFILE_INFO[CURRENT_PROFILE];
+  if (!info) return;
+  const badge = document.createElement("div");
+  badge.id = "profileBadge";
+  badge.style.cssText = "position:fixed;top:10px;right:10px;z-index:500;background:#2c3e50;color:#fff;padding:6px 12px;border-radius:999px;font-size:12px;font-family:'Trebuchet MS','Segoe UI',sans-serif;font-weight:bold;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.25);";
+  badge.textContent = `${info.emoji} ${info.name} (değiştir)`;
+  badge.addEventListener("click", () => {
+    if (!confirm(`Profili değiştirmek istiyor musun? (Şu an: ${info.name})`)) return;
+    localStorage.removeItem(PROFILE_KEY);
+    location.reload();
+  });
+  document.body.appendChild(badge);
+}
+
+// ---- Battle challenges (real-time, between the two profiles) ----
+// A challenge snapshots the challenger's team so the fight is fair and
+// reproducible even if either team roster changes later.
+function sendChallenge(myTeamName, myMembers) {
+  const toProfile = getOtherProfile(CURRENT_PROFILE);
+  return cloudDb.collection("challenges").add({
+    fromProfile: CURRENT_PROFILE,
+    fromName: PROFILE_INFO[CURRENT_PROFILE].name,
+    fromTeamName: myTeamName,
+    fromTeam: myMembers,
+    toProfile,
+    toName: PROFILE_INFO[toProfile].name,
+    status: "pending",
+    createdAt: Date.now(),
+    fromClaimed: true,
+    toClaimed: false
+  });
+}
+
+function listenIncomingChallenges(callback) {
+  return cloudDb.collection("challenges")
+    .where("toProfile", "==", CURRENT_PROFILE)
+    .where("status", "==", "pending")
+    .onSnapshot(snap => {
+      callback(snap.docs.map(d => Object.assign({ id: d.id }, d.data())));
+    }, err => console.error(err));
+}
+
+async function listenMyChallengeHistory(callback) {
+  const [asFrom, asTo] = await Promise.all([
+    cloudDb.collection("challenges").where("fromProfile", "==", CURRENT_PROFILE).get(),
+    cloudDb.collection("challenges").where("toProfile", "==", CURRENT_PROFILE).get()
+  ]);
+  const all = [...asFrom.docs, ...asTo.docs].map(d => Object.assign({ id: d.id }, d.data()));
+  all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  callback(all);
+}
+
+function declineChallenge(challengeId) {
+  return cloudDb.collection("challenges").doc(challengeId).set({ status: "declined" }, { merge: true });
+}
+
+function completeChallenge(challengeId, { toTeamName, rounds, winnerSide }) {
+  return cloudDb.collection("challenges").doc(challengeId).set({
+    status: "completed",
+    toTeamName,
+    rounds,
+    winnerSide,
+    toClaimed: true
+  }, { merge: true });
+}
+
+// Call once per page load (after cloud is ready): grants XP to the
+// challenger for any completed battle they haven't been credited for yet.
+async function claimPendingChallengeRewards() {
+  const snap = await cloudDb.collection("challenges")
+    .where("fromProfile", "==", CURRENT_PROFILE)
+    .where("status", "==", "completed")
+    .where("fromClaimed", "==", false)
+    .get();
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    if (data.winnerSide === "from") addXP(30);
+    await cloudDb.collection("challenges").doc(doc.id).set({ fromClaimed: true }, { merge: true });
+  }
+}
+
+// Global "you've been challenged" banner, shown on every page once cloud+profile are ready.
+function injectChallengeBanner() {
+  if (document.getElementById("challengeBanner")) return;
+  const banner = document.createElement("a");
+  banner.id = "challengeBanner";
+  banner.href = "battle.html";
+  banner.style.cssText = "position:fixed;top:10px;left:10px;z-index:500;background:#c0392b;color:#fff;padding:8px 14px;border-radius:999px;font-size:13px;font-family:'Trebuchet MS','Segoe UI',sans-serif;font-weight:bold;text-decoration:none;box-shadow:0 3px 10px rgba(0,0,0,0.3);display:none;animation:none;";
+  document.body.appendChild(banner);
+
+  listenIncomingChallenges(list => {
+    if (list.length) {
+      banner.textContent = `⚔️ ${list.length} yeni meydan okuma! Görüntüle ➜`;
+      banner.style.display = "inline-block";
+    } else {
+      banner.style.display = "none";
+    }
+  });
+}
 
 const LEGENDARY_NAMES = [
   "articuno","zapdos","moltres","mewtwo","raikou","entei","suicune","lugia","ho-oh",

@@ -127,6 +127,28 @@
   }
 
   .empty-box { text-align: center; color: #a6925a; font-size: 15px; background: #fff; border-radius: 18px; padding: 24px 20px; margin-top: 16px; }
+
+  .mode-tabs { display: flex; gap: 8px; justify-content: center; margin-top: 18px; }
+  .mode-tab {
+    background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 999px;
+    font-weight: bold; font-size: 14px; cursor: pointer;
+  }
+  .mode-tab.active { background: #c0392b; color: #fff; }
+
+  .challenge-section { background: #fff; border-radius: 20px; padding: 16px; margin-top: 16px; }
+  .challenge-section h3 { margin-top: 0; color: var(--accent-dark); font-size: 17px; }
+  .challenge-card {
+    background: #fff5f0; border: 2px solid #ffcfc0; border-radius: 14px; padding: 12px; margin-bottom: 10px;
+  }
+  .challenge-card .c-title { font-weight: bold; color: var(--accent-dark); margin-bottom: 6px; }
+  .challenge-card .c-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .challenge-card .c-actions button { flex: 1; padding: 8px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: #fff; }
+  .accept-btn { background: #27ae60; }
+  .decline-btn { background: #c0392b; }
+  .history-card {
+    background: #f9f9f9; border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; color: #555;
+  }
+  .history-card b { color: var(--accent-dark); }
 </style>
 </head>
 <body>
@@ -141,7 +163,12 @@
 </header>
 
 <div class="wrap">
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabPractice">🎮 Antrenman</button>
+    <button class="mode-tab" id="tabChallenge">⚔️ Meydan Okuma</button>
+  </div>
   <div id="setupArea"></div>
+  <div id="challengeArea" style="display:none;"></div>
   <div id="arenaLog" class="arena-log"></div>
 </div>
 
@@ -330,51 +357,50 @@ function renderGuestDetail() {
   el('guestTeamDetail').innerHTML = renderTeamDetailHtml(tempTeam.members);
 }
 
-// ---- Battle simulation ----
-let battleRounds = [];
-let battleIndex = 0;
-let winningSide = null;
-
-function startBattle() {
-  const myTeam = getSelectedMyTeam();
-  const myMembers = myTeam.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
-  const guestMembers = tempTeam.members;
-
-  if (!myMembers.length || !guestMembers.length) {
-    alert('Her iki takımda da en az 1 Pokémon olmalı!');
-    return;
-  }
-
-  battleRounds = [];
+// ---- Battle simulation (shared by practice mode and real challenges) ----
+function computeBattleRounds(membersA, membersB) {
+  const rounds = [];
   let i = 0, j = 0;
-  while (i < myMembers.length && j < guestMembers.length) {
-    const A = myMembers[i];
-    const B = guestMembers[j];
+  while (i < membersA.length && j < membersB.length) {
+    const A = membersA[i];
+    const B = membersB[j];
     const multA = bestMultiplier(A.types, B.types);
     const multB = bestMultiplier(B.types, A.types);
     const scoreA = Math.round((A.power || 100) * multA * (0.85 + Math.random() * 0.3));
     const scoreB = Math.round((B.power || 100) * multB * (0.85 + Math.random() * 0.3));
     const aWins = scoreA >= scoreB;
-    battleRounds.push({ A, B, multA, multB, scoreA, scoreB, aWins });
+    rounds.push({ A, B, multA, multB, scoreA, scoreB, aWins });
     if (aWins) j++; else i++;
   }
-  winningSide = (i < myMembers.length) ? 'me' : 'guest';
+  return { rounds, winnerSide: (i < membersA.length) ? 'A' : 'B' };
+}
 
-  battleIndex = 0;
+let uiRounds = [];
+let uiIndex = 0;
+let uiOnFinish = null;
+
+function runBattleUI(membersA, membersB, onFinish) {
+  const { rounds, winnerSide } = computeBattleRounds(membersA, membersB);
+  uiRounds = rounds;
+  uiIndex = 0;
+  uiOnFinish = () => onFinish(winnerSide, rounds);
+
+  el('setupArea').style.display = 'none';
+  el('challengeArea').style.display = 'none';
   el('arenaLog').classList.add('show');
   renderRound();
   el('arenaLog').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderRound() {
-  if (battleIndex >= battleRounds.length) {
-    renderFinal();
+  if (uiIndex >= uiRounds.length) {
+    uiOnFinish();
     return;
   }
-  const r = battleRounds[battleIndex];
+  const r = uiRounds[uiIndex];
   const log = el('arenaLog');
   log.innerHTML = `
-    <div class="round-title">Raunt ${battleIndex + 1} / ${battleRounds.length}</div>
+    <div class="round-title">Raunt ${uiIndex + 1} / ${uiRounds.length}</div>
     <div class="round-fighters">
       <div class="fighter ${!r.aWins ? 'loser' : ''}">
         <img src="${r.A.img}" alt="${r.A.name}">
@@ -389,29 +415,184 @@ function renderRound() {
       </div>
     </div>
     <div class="round-result won">${r.aWins ? '🛡️ ' + (r.A.nickname || r.A.name) : '🎮 ' + (r.B.nickname || r.B.name)} kazandı! ${r.aWins ? (r.B.nickname || r.B.name) : (r.A.nickname || r.A.name)} yenildi 💫</div>
-    <button class="next-round-btn" id="nextRoundBtn">${battleIndex + 1 < battleRounds.length ? 'Sonraki Raunt ➜' : 'Sonucu Gör 🏆'}</button>
+    <button class="next-round-btn" id="nextRoundBtn">${uiIndex + 1 < uiRounds.length ? 'Sonraki Raunt ➜' : 'Sonucu Gör 🏆'}</button>
   `;
   el('nextRoundBtn').addEventListener('click', () => {
-    battleIndex++;
+    uiIndex++;
     renderRound();
   });
 }
 
-function renderFinal() {
-  const log = el('arenaLog');
-  const myWon = winningSide === 'me';
-  if (myWon) {
-    addXP(30);
+function startBattle() {
+  const myTeam = getSelectedMyTeam();
+  const myMembers = myTeam.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+  const guestMembers = tempTeam.members;
+
+  if (!myMembers.length || !guestMembers.length) {
+    alert('Her iki takımda da en az 1 Pokémon olmalı!');
+    return;
   }
-  log.innerHTML = `
-    <div class="final-banner">${myWon ? '🏆 Ayaz\'ın Takımı Kazandı! 🏆' : '🎮 Rakip Takım Kazandı!'}</div>
-    <div style="font-size:40px;margin-bottom:14px;">${myWon ? '🥳🎉🛡️' : '😮💥'}</div>
-    ${myWon ? '<div style="color:#27ae60;font-weight:bold;margin-bottom:16px;">+30 XP kazandın!</div>' : ''}
-    <button class="next-round-btn" id="battleAgainBtn">🔄 Tekrar Savaştır</button>
+
+  runBattleUI(myMembers, guestMembers, (winnerSide) => {
+    const myWon = winnerSide === 'A';
+    if (myWon) addXP(30);
+    el('arenaLog').innerHTML = `
+      <div class="final-banner">${myWon ? '🏆 Kazandın! 🏆' : '🎮 Rakip Takım Kazandı!'}</div>
+      <div style="font-size:40px;margin-bottom:14px;">${myWon ? '🥳🎉🛡️' : '😮💥'}</div>
+      ${myWon ? '<div style="color:#27ae60;font-weight:bold;margin-bottom:16px;">+30 XP kazandın!</div>' : ''}
+      <button class="next-round-btn" id="battleAgainBtn">🔄 Tekrar Savaştır</button>
+    `;
+    el('battleAgainBtn').addEventListener('click', () => {
+      el('arenaLog').classList.remove('show');
+      el('setupArea').style.display = '';
+      renderSetup();
+    });
+  });
+}
+
+// ---- Meydan Okuma (real challenges between profiles) ----
+function switchTab(tab) {
+  const practice = tab === 'practice';
+  el('tabPractice').classList.toggle('active', practice);
+  el('tabChallenge').classList.toggle('active', !practice);
+  el('setupArea').style.display = practice ? '' : 'none';
+  el('challengeArea').style.display = practice ? 'none' : '';
+  el('arenaLog').classList.remove('show');
+  if (!practice) renderChallengeTab();
+}
+el('tabPractice').addEventListener('click', () => switchTab('practice'));
+el('tabChallenge').addEventListener('click', () => switchTab('challenge'));
+
+let unsubscribeIncoming = null;
+
+function renderChallengeTab() {
+  const area = el('challengeArea');
+  const teams = getTeams();
+  const otherName = PROFILE_INFO[getOtherProfile(CURRENT_PROFILE)].name;
+
+  area.innerHTML = `
+    <div class="challenge-section">
+      <h3>📥 Gelen Meydan Okumalar</h3>
+      <div id="incomingList"><p style="color:#999;font-size:13px;">Yükleniyor...</p></div>
+    </div>
+    <div class="challenge-section">
+      <h3>📤 ${otherName}'a Meydan Oku</h3>
+      ${teams.length ? `
+        <select id="challengeTeamSelect">${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}</select>
+        <button class="next-round-btn" id="sendChallengeBtn" style="width:100%;">⚔️ Meydan Oku!</button>
+        <div id="sendChallengeStatus" style="font-size:12px;color:#c0392b;margin-top:6px;"></div>
+      ` : `<p style="color:#999;font-size:13px;">Önce Takımlarım sayfasından bir takım kurman lazım.</p>`}
+    </div>
+    <div class="challenge-section">
+      <h3>📜 Geçmiş</h3>
+      <div id="historyList"><p style="color:#999;font-size:13px;">Yükleniyor...</p></div>
+    </div>
   `;
-  el('battleAgainBtn').addEventListener('click', () => {
-    el('arenaLog').classList.remove('show');
-    renderSetup();
+
+  if (teams.length) {
+    el('sendChallengeBtn').addEventListener('click', () => {
+      const team = teams.find(t => t.id === el('challengeTeamSelect').value);
+      const members = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+      if (!members.length) {
+        el('sendChallengeStatus').textContent = 'Bu takımda hiç Pokémon yok!';
+        return;
+      }
+      sendChallenge(team.name, members).then(() => {
+        el('sendChallengeStatus').textContent = '✅ Meydan okuma gönderildi!';
+      }).catch(() => {
+        el('sendChallengeStatus').textContent = 'Gönderilemedi, tekrar dene.';
+      });
+    });
+  }
+
+  if (unsubscribeIncoming) unsubscribeIncoming();
+  unsubscribeIncoming = listenIncomingChallenges(renderIncomingList);
+  renderHistoryList();
+}
+
+function renderIncomingList(list) {
+  const box = el('incomingList');
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = `<p style="color:#999;font-size:13px;">Şu an bekleyen bir meydan okuma yok.</p>`;
+    return;
+  }
+  box.innerHTML = list.map(c => `
+    <div class="challenge-card" data-id="${c.id}">
+      <div class="c-title">${c.fromName} sana meydan okudu: "${c.fromTeamName}"</div>
+      <div id="acceptArea-${c.id}"></div>
+      <div class="c-actions">
+        <button class="accept-btn" data-accept="${c.id}">✅ Kabul Et</button>
+        <button class="decline-btn" data-decline="${c.id}">❌ Reddet</button>
+      </div>
+    </div>`).join('');
+
+  box.querySelectorAll('[data-decline]').forEach(b => {
+    b.addEventListener('click', () => declineChallenge(b.dataset.decline));
+  });
+  box.querySelectorAll('[data-accept]').forEach(b => {
+    b.addEventListener('click', () => {
+      const challenge = list.find(c => c.id === b.dataset.accept);
+      openAcceptPicker(challenge);
+    });
+  });
+}
+
+function openAcceptPicker(challenge) {
+  const teams = getTeams();
+  if (!teams.length) {
+    alert('Önce Takımlarım sayfasından bir takım kurman lazım!');
+    return;
+  }
+  const acceptArea = document.getElementById(`acceptArea-${challenge.id}`);
+  acceptArea.innerHTML = `
+    <select id="defendTeamSelect-${challenge.id}">${teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}</select>
+    <button class="next-round-btn" style="width:100%;margin-top:6px;" id="confirmAccept-${challenge.id}">⚔️ Onayla ve Savaş!</button>
+  `;
+  document.getElementById(`confirmAccept-${challenge.id}`).addEventListener('click', () => {
+    const team = teams.find(t => t.id === document.getElementById(`defendTeamSelect-${challenge.id}`).value);
+    const myMembers = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
+    if (!myMembers.length) { alert('Bu takımda hiç Pokémon yok!'); return; }
+
+    runBattleUI(myMembers, challenge.fromTeam, (winnerSide, rounds) => {
+      const iWon = winnerSide === 'A';
+      if (iWon) addXP(30);
+      completeChallenge(challenge.id, {
+        toTeamName: team.name,
+        rounds,
+        winnerSide: iWon ? 'to' : 'from'
+      });
+      el('arenaLog').innerHTML = `
+        <div class="final-banner">${iWon ? '🏆 Meydan Okumayı Kazandın! 🏆' : '😮 Meydan Okumayı Kaybettin'}</div>
+        <div style="font-size:40px;margin-bottom:14px;">${iWon ? '🥳🎉🛡️' : '😮💥'}</div>
+        ${iWon ? '<div style="color:#27ae60;font-weight:bold;margin-bottom:16px;">+30 XP kazandın!</div>' : ''}
+        <button class="next-round-btn" id="backToChallengeBtn">⬅️ Meydan Okumalara Dön</button>
+      `;
+      document.getElementById('backToChallengeBtn').addEventListener('click', () => {
+        el('arenaLog').classList.remove('show');
+        el('challengeArea').style.display = '';
+        renderChallengeTab();
+      });
+    });
+  });
+}
+
+function renderHistoryList() {
+  const box = el('historyList');
+  if (!box) return;
+  listenMyChallengeHistory(list => {
+    const finished = list.filter(c => c.status === 'completed' || c.status === 'declined');
+    if (!finished.length) {
+      box.innerHTML = `<p style="color:#999;font-size:13px;">Henüz tamamlanmış bir meydan okuma yok.</p>`;
+      return;
+    }
+    box.innerHTML = finished.slice(0, 10).map(c => {
+      if (c.status === 'declined') {
+        return `<div class="history-card">${c.fromName} → ${c.toName}: reddedildi</div>`;
+      }
+      const winnerName = c.winnerSide === 'from' ? c.fromName : c.toName;
+      return `<div class="history-card">${c.fromName} (${c.fromTeamName}) vs ${c.toName} (${c.toTeamName || '?'}) — kazanan: <b>${winnerName}</b></div>`;
+    }).join('');
   });
 }
 

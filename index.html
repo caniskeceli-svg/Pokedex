@@ -699,7 +699,8 @@ function updateAddButton(id) {
   const mydex = getMyDex();
   const exists = mydex.some(p => p.id === id);
   const btn = el('addDexBtn');
-  btn.textContent = exists ? '✅ Pokédex\'te Var (Çıkar)' : '⭐ Ayaz\'ın Pokédex\'ine Ekle';
+  const myName = PROFILE_INFO[CURRENT_PROFILE]?.name || 'Benim';
+  btn.textContent = exists ? '✅ Pokédex\'te Var (Çıkar)' : `⭐ ${myName}'ın Pokédex'ine Ekle`;
   btn.classList.toggle('added', exists);
 }
 
