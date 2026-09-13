@@ -24,7 +24,91 @@ const STAT_TR = {
   "special-attack": "Özel Saldırı", "special-defense": "Özel Savunma", speed: "Hız"
 };
 const MAX_ID = 1010;
+
+// ---- Shared cloud state (Firebase Firestore) ----
+// One document holds everything Ayaz's Pokédex needs to share across every
+// device/browser: caught Pokémon, trainer XP, bag items, and saved teams.
 const MYDEX_KEY = "ayaz_pokedex_v1";
+const PLAYER_KEY = "ayaz_trainer_v1";
+const INVENTORY_KEY = "ayaz_inventory_v1";
+const TEAMS_KEY = "ayaz_teams_v1";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOC2CO_lS-2C_s4xq_eLH9SVvH1hru5KY",
+  authDomain: "ayaz-pokedex.firebaseapp.com",
+  projectId: "ayaz-pokedex",
+  storageBucket: "ayaz-pokedex.firebasestorage.app",
+  messagingSenderId: "881422199985",
+  appId: "1:881422199985:web:0683bd269e8eb195cb4690"
+};
+firebase.initializeApp(firebaseConfig);
+const cloudDb = firebase.firestore();
+const cloudDocRef = cloudDb.collection("pokedex").doc("ayaz");
+
+function safeParseLS(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    return v === null || v === undefined ? fallback : v;
+  } catch { return fallback; }
+}
+
+const DEFAULT_PLAYER = { xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
+const DEFAULT_INVENTORY = { pokeball: 0, berry: 0, "evolution-stone": 0 };
+
+let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [] };
+let cloudReady = false;
+let cloudReadyResolvers = [];
+let cloudChangeCallbacks = [];
+
+function onCloudChange(cb) { cloudChangeCallbacks.push(cb); }
+function waitForCloud() {
+  if (cloudReady) return Promise.resolve();
+  return new Promise(resolve => cloudReadyResolvers.push(resolve));
+}
+function pushCloud(partial) {
+  cloudDocRef.set(partial, { merge: true }).catch(err => console.error("Firestore yazma hatası:", err));
+}
+
+cloudDocRef.onSnapshot((snap) => {
+  if (!snap.exists) {
+    // First time this device talks to the cloud doc: bring along anything
+    // that was already saved locally (from before cloud sync existed) so
+    // nothing Ayaz caught gets lost.
+    CLOUD_STATE = {
+      mydex: safeParseLS(MYDEX_KEY, []),
+      player: Object.assign({}, DEFAULT_PLAYER, safeParseLS(PLAYER_KEY, {})),
+      inventory: Object.assign({}, DEFAULT_INVENTORY, safeParseLS(INVENTORY_KEY, {})),
+      teams: safeParseLS(TEAMS_KEY, [])
+    };
+    cloudDocRef.set(CLOUD_STATE);
+  } else {
+    const data = snap.data() || {};
+    CLOUD_STATE = {
+      mydex: data.mydex || [],
+      player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
+      inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
+      teams: data.teams || []
+    };
+  }
+  cloudReady = true;
+  cloudReadyResolvers.forEach(r => r());
+  cloudReadyResolvers = [];
+  cloudChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
+}, (err) => {
+  console.error("Firestore bağlantı hatası:", err);
+});
+
+function getMyDexShared() { return CLOUD_STATE.mydex; }
+function saveMyDexShared(list) { CLOUD_STATE.mydex = list; pushCloud({ mydex: list }); }
+
+function getPlayer() { return CLOUD_STATE.player; }
+function savePlayer(p) { CLOUD_STATE.player = p; pushCloud({ player: p }); }
+
+function getInventory() { return CLOUD_STATE.inventory; }
+function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory: inv }); }
+
+function getTeams() { return CLOUD_STATE.teams; }
+function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
 
 const LEGENDARY_NAMES = [
   "articuno","zapdos","moltres","mewtwo","raikou","entei","suicune","lugia","ho-oh",
@@ -42,28 +126,9 @@ const MYTHICAL_NAMES = [
   "marshadow","zeraora","meltan","melmetal","zarude","pecharunt"
 ];
 
-function getMyDexShared() {
-  try { return JSON.parse(localStorage.getItem(MYDEX_KEY)) || []; }
-  catch { return []; }
-}
-function saveMyDexShared(list) {
-  try { localStorage.setItem(MYDEX_KEY, JSON.stringify(list)); } catch {}
-}
-
 // ---- Trainer profile (XP / level / discoveries) ----
-const PLAYER_KEY = "ayaz_trainer_v1";
 const XP_PER_LEVEL = 1000;
 
-function getPlayer() {
-  try {
-    const p = JSON.parse(localStorage.getItem(PLAYER_KEY));
-    if (p) return Object.assign({ xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] }, p);
-  } catch {}
-  return { xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
-}
-function savePlayer(p) {
-  try { localStorage.setItem(PLAYER_KEY, JSON.stringify(p)); } catch {}
-}
 function addXP(amount) {
   const p = getPlayer();
   p.xp += amount;
@@ -77,37 +142,16 @@ function levelInfo(xp) {
 }
 
 // ---- Inventory / bag ----
-const INVENTORY_KEY = "ayaz_inventory_v1";
 const ITEM_INFO = {
   pokeball: { name: "Poké Ball", emoji: "⚪" },
   berry: { name: "Berry", emoji: "🍒" },
   "evolution-stone": { name: "Evrim Taşı", emoji: "💎" }
 };
-function getInventory() {
-  try {
-    const inv = JSON.parse(localStorage.getItem(INVENTORY_KEY));
-    if (inv) return Object.assign({ pokeball: 0, berry: 0, "evolution-stone": 0 }, inv);
-  } catch {}
-  return { pokeball: 0, berry: 0, "evolution-stone": 0 };
-}
-function saveInventory(inv) {
-  try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv)); } catch {}
-}
 function addItems(itemKey, qty) {
   const inv = getInventory();
   inv[itemKey] = (inv[itemKey] || 0) + qty;
   saveInventory(inv);
   return inv;
-}
-
-// ---- Teams ----
-const TEAMS_KEY = "ayaz_teams_v1";
-function getTeams() {
-  try { return JSON.parse(localStorage.getItem(TEAMS_KEY)) || []; }
-  catch { return []; }
-}
-function saveTeams(teams) {
-  try { localStorage.setItem(TEAMS_KEY, JSON.stringify(teams)); } catch {}
 }
 
 // ---- Achievements ----

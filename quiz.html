@@ -90,6 +90,8 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
@@ -150,7 +152,7 @@ function answer(btn) {
 
 el('nextBtn').addEventListener('click', newQuestion);
 
-newQuestion();
+waitForCloud().then(newQuestion);
 </script>
 
 </body>

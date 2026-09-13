@@ -383,6 +383,8 @@
 
 <div class="hint">Toplam 1010 Pokémon var. İyi eğlenceler! 🎉</div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
 <script>
 let currentId = 25;
@@ -868,8 +870,14 @@ const urlParams = new URLSearchParams(window.location.search);
 const startPoke = urlParams.get('poke') || currentId;
 
 loadNameList();
-loadPokemon(startPoke);
-updateLevelBadge();
+waitForCloud().then(() => {
+  loadPokemon(startPoke);
+  updateLevelBadge();
+});
+onCloudChange(() => {
+  updateLevelBadge();
+  if (currentData) updateFavNickUI(currentData.id);
+});
 </script>
 
 </body>
