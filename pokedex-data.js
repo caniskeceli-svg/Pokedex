@@ -190,6 +190,31 @@ function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory
 function getTeams() { return CLOUD_STATE.teams; }
 function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
 
+// Adds a Pokémon fetched elsewhere (e.g. the full list page) straight to the
+// current profile's dex, running the same catch rewards as the main detail
+// page (minus the evolution bonus, which needs species data we skip here for speed).
+function addPokemonToMyDex(data) {
+  const mydex = getMyDexShared();
+  if (mydex.some(p => p.id === data.id)) return { added: false, gained: null };
+
+  const statMap = {};
+  data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
+  const power = data.stats.reduce((s, st) => s + st.base_stat, 0);
+  mydex.push({
+    id: data.id,
+    name: data.name,
+    img: data.sprites?.other?.["official-artwork"]?.front_default || data.sprites?.front_default || "",
+    power,
+    types: data.types.map(t => t.type.name),
+    stats: statMap,
+    favorite: false,
+    nickname: null
+  });
+  saveMyDexShared(mydex);
+  const gained = processCatch(data, null);
+  return { added: true, gained };
+}
+
 // Swaps the hardcoded "Ayaz" in page headers for whoever is actually playing.
 function personalizeHeader() {
   const info = PROFILE_INFO[CURRENT_PROFILE];

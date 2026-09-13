@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tüm Pokémon Listesi</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(22px, 6vw, 34px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+  .nav-mine { background: #f39c12; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+
+  .controls-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center;
+    margin-top: 16px; background: #fff; padding: 12px; border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.06);
+  }
+  .controls-bar select, .controls-bar button {
+    padding: 9px 14px; border-radius: 10px; border: 2px solid #eee; font-size: 14px; font-weight: bold; cursor: pointer;
+  }
+  .controls-bar button { background: #3b6cdb; color: #fff; border: none; }
+  .controls-bar .load-all-btn { background: #27ae60; }
+  .load-status { text-align: center; font-size: 13px; color: #888; margin-top: 8px; min-height: 18px; }
+  .load-bar-track { max-width: 300px; margin: 6px auto 0; background: #eee; border-radius: 999px; height: 8px; overflow: hidden; display: none; }
+  .load-bar-track.show { display: block; }
+  .load-bar-fill { height: 100%; background: #27ae60; width: 0%; }
+
+  .table-wrap { overflow-x: auto; margin-top: 16px; background: #fff; border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.06); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 720px; }
+  th, td { padding: 8px 10px; text-align: center; white-space: nowrap; }
+  thead th { background: #2c3e50; color: #fff; position: sticky; top: 0; }
+  thead th.sortable { cursor: pointer; user-select: none; }
+  thead th.sortable:hover { background: #3b4f66; }
+  thead th.active-sort { background: #c0392b; }
+  .sort-arrow { margin-left: 3px; }
+  tbody tr:nth-child(even) { background: #f9f9f9; }
+  tbody tr:hover { background: #fff3dc; }
+  td.name-cell { text-align: left; text-transform: capitalize; font-weight: bold; }
+  td.name-cell img { width: 32px; height: 32px; vertical-align: middle; margin-right: 6px; }
+  .type-dot { font-size: 10px; padding: 2px 6px; border-radius: 999px; color: #fff; margin: 0 2px; display: inline-block; }
+  .add-btn {
+    background: #8e44ad; color: #fff; border: none; padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: bold; cursor: pointer;
+  }
+  .add-btn.added { background: #27ae60; }
+  .loading-row td { color: #bbb; }
+
+  .pager { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+  .pager button {
+    background: #3b6cdb; color: #fff; border: none; padding: 8px 16px; border-radius: 999px; font-weight: bold; cursor: pointer;
+  }
+  .pager button:disabled { background: #ccc; cursor: default; }
+  .pager span { font-size: 14px; color: #666; }
+
+  .toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: #27ae60; color: #fff; padding: 10px 20px; border-radius: 999px;
+    font-weight: bold; font-size: 14px; z-index: 300; display: none; box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  }
+  .toast.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Tüm Pokémon Listesi</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="index.html">⬅️ Pokédex</a>
+    <a class="nav-mine" href="mypokemon.html">⭐ Pokémonlarım</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="controls-bar">
+    <span style="font-size:13px;color:#666;">👆 Sıralamak için bir sütun başlığına dokun</span>
+    <button class="load-all-btn" id="loadAllBtn">📦 Tümünü Yükle</button>
+  </div>
+  <div class="load-status" id="loadStatus"></div>
+  <div class="load-bar-track" id="loadBarTrack"><div class="load-bar-fill" id="loadBarFill"></div></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-field="id">#<span class="sort-arrow"></span></th>
+          <th>Pokémon</th>
+          <th>Tip</th>
+          <th class="sortable" data-field="hp">Can<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="attack">Saldırı<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="defense">Savunma<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="special-attack">Öz.Sal.<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="special-defense">Öz.Sav.<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="speed">Hız<span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="power">Toplam<span class="sort-arrow"></span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <button id="prevPageBtn">⬅️ Önceki</button>
+    <span id="pageInfo">Sayfa 1</span>
+    <button id="nextPageBtn">Sonraki ➡️</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const PAGE_SIZE = 50;
+
+let nameList = [];       // [{name, url, id}] in national dex order
+let detailCache = {};    // id -> full pokemon data
+let allLoaded = false;
+let currentPage = 0;
+let sortField = 'id';
+let sortDir = 'asc';
+
+function showToast(text) {
+  const t = el('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function idFromUrl(url) {
+  const parts = url.split('/').filter(Boolean);
+  return Number(parts[parts.length - 1]);
+}
+
+async function loadNameList() {
+  const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1302');
+  const data = await res.json();
+  nameList = data.results.map(p => ({ name: p.name, url: p.url, id: idFromUrl(p.url) }));
+}
+
+async function fetchDetail(id) {
+  if (detailCache[id]) return detailCache[id];
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+  const data = await res.json();
+  detailCache[id] = data;
+  return data;
+}
+
+async function fetchBatch(ids) {
+  const missing = ids.filter(id => !detailCache[id]);
+  const CONCURRENCY = 15;
+  for (let i = 0; i < missing.length; i += CONCURRENCY) {
+    const chunk = missing.slice(i, i + CONCURRENCY);
+    await Promise.all(chunk.map(fetchDetail));
+  }
+}
+
+function getSortedList() {
+  const field = sortField;
+  const dir = sortDir;
+
+  if (field === 'id') {
+    const arr = [...nameList];
+    if (dir === 'desc') arr.reverse();
+    return arr;
+  }
+
+  // Any stat-based sort needs every Pokémon's numbers loaded.
+  const arr = nameList.map(n => {
+    const d = detailCache[n.id];
+    let val = 0;
+    if (d) {
+      if (field === 'power') val = d.stats.reduce((s, st) => s + st.base_stat, 0);
+      else val = d.stats.find(s => s.stat.name === field)?.base_stat || 0;
+    }
+    return { name: n.name, url: n.url, id: n.id, sortVal: val };
+  });
+  arr.sort((a, b) => dir === 'asc' ? a.sortVal - b.sortVal : b.sortVal - a.sortVal);
+  return arr;
+}
+
+async function loadAll() {
+  el('loadAllBtn').disabled = true;
+  el('loadBarTrack').classList.add('show');
+  const allIds = nameList.map(n => n.id);
+  const CONCURRENCY = 20;
+  let done = 0;
+  for (let i = 0; i < allIds.length; i += CONCURRENCY) {
+    const chunk = allIds.slice(i, i + CONCURRENCY).filter(id => !detailCache[id]);
+    await Promise.all(chunk.map(fetchDetail));
+    done = Math.min(i + CONCURRENCY, allIds.length);
+    const pct = Math.round((done / allIds.length) * 100);
+    el('loadBarFill').style.width = pct + '%';
+    el('loadStatus').textContent = `${done} / ${allIds.length} yükleniyor...`;
+  }
+  allLoaded = true;
+  el('loadStatus').textContent = '✅ Tüm Pokémon yüklendi! Artık her sütuna göre sıralayabilirsin.';
+  el('loadBarTrack').classList.remove('show');
+  el('loadAllBtn').style.display = 'none';
+  renderPage();
+}
+
+el('loadAllBtn').addEventListener('click', loadAll);
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const field = th.dataset.field;
+    if (field === sortField) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortField = field;
+      sortDir = field === 'id' ? 'asc' : 'desc';
+    }
+    currentPage = 0;
+    updateSortHeaders();
+    if (sortField !== 'id' && !allLoaded) {
+      loadAll();
+    } else {
+      renderPage();
+    }
+  });
+});
+
+function updateSortHeaders() {
+  document.querySelectorAll('th.sortable').forEach(th => {
+    const isActive = th.dataset.field === sortField;
+    th.classList.toggle('active-sort', isActive);
+    th.querySelector('.sort-arrow').textContent = isActive ? (sortDir === 'asc' ? '⬆️' : '⬇️') : '';
+  });
+}
+
+el('prevPageBtn').addEventListener('click', () => { if (currentPage > 0) { currentPage--; renderPage(); } });
+el('nextPageBtn').addEventListener('click', () => {
+  const totalPages = Math.ceil(nameList.length / PAGE_SIZE);
+  if (currentPage < totalPages - 1) { currentPage++; renderPage(); }
+});
+
+function typeDot(t) {
+  return `<span class="type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`;
+}
+
+async function renderPage() {
+  const sorted = getSortedList();
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+  const pageItems = sorted.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+
+  el('pageInfo').textContent = `Sayfa ${currentPage + 1} / ${totalPages}`;
+  el('prevPageBtn').disabled = currentPage === 0;
+  el('nextPageBtn').disabled = currentPage >= totalPages - 1;
+
+  const tbody = el('tableBody');
+  tbody.innerHTML = pageItems.map(p => `
+    <tr class="loading-row" data-row-id="${p.id}">
+      <td>#${String(p.id).padStart(3, '0')}</td>
+      <td class="name-cell">${p.name}</td>
+      <td colspan="7">Yükleniyor...</td>
+      <td></td>
+    </tr>`).join('');
+
+  await fetchBatch(pageItems.map(p => p.id));
+  renderRows(pageItems);
+}
+
+function renderRows(pageItems) {
+  const mydex = getMyDexShared();
+  const tbody = el('tableBody');
+  tbody.innerHTML = pageItems.map(p => {
+    const d = detailCache[p.id];
+    if (!d) {
+      return `<tr><td>#${String(p.id).padStart(3, '0')}</td><td class="name-cell">${p.name}</td><td colspan="7">Yüklenemedi</td><td></td></tr>`;
+    }
+    const stat = (key) => d.stats.find(s => s.stat.name === key)?.base_stat ?? '-';
+    const total = d.stats.reduce((s, st) => s + st.base_stat, 0);
+    const sprite = d.sprites?.front_default || '';
+    const owned = mydex.some(m => m.id === d.id);
+    return `
+      <tr data-row-id="${d.id}">
+        <td>#${String(d.id).padStart(3, '0')}</td>
+        <td class="name-cell"><img src="${sprite}" alt="${d.name}">${d.name}</td>
+        <td>${d.types.map(t => typeDot(t.type.name)).join('')}</td>
+        <td>${stat('hp')}</td>
+        <td>${stat('attack')}</td>
+        <td>${stat('defense')}</td>
+        <td>${stat('special-attack')}</td>
+        <td>${stat('special-defense')}</td>
+        <td>${stat('speed')}</td>
+        <td><b>${total}</b></td>
+        <td><button class="add-btn ${owned ? 'added' : ''}" data-add="${d.id}">${owned ? '✅ Ekli' : '➕ Ekle'}</button></td>
+      </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.add);
+      const data = detailCache[id];
+      const result = addPokemonToMyDex(data);
+      if (result.added) {
+        btn.textContent = '✅ Ekli';
+        btn.classList.add('added');
+        const xpTotal = result.gained.xpEvents.reduce((s, e) => s + e.xp, 0);
+        showToast(`🎉 ${data.name} eklendi! +${xpTotal} XP`);
+      } else {
+        showToast(`${data.name} zaten Pokédex'inde!`);
+      }
+    });
+  });
+}
+
+waitForCloud().then(async () => {
+  await loadNameList();
+  updateSortHeaders();
+  renderPage();
+});
+onCloudChange(() => { if (nameList.length) renderPage(); });
+</script>
+
+</body>
+</html>

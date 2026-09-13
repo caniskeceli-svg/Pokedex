@@ -42,6 +42,8 @@
     box-shadow: 0 6px 0 rgba(0,0,0,0.08);
   }
   .team-card h3 { margin: 0 0 8px; color: var(--accent-dark); font-size: 20px; }
+  .rename-icon { cursor: pointer; font-size: 15px; opacity: 0.6; }
+  .rename-icon:hover { opacity: 1; }
   .team-members { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .team-member { text-align: center; width: 70px; }
   .team-member img { width: 52px; height: 52px; }
@@ -125,7 +127,7 @@ function renderList() {
     const memberObjs = team.memberIds.map(id => mydex.find(p => p.id === id)).filter(Boolean);
     return `
       <div class="team-card" data-id="${team.id}">
-        <h3>${team.name}</h3>
+        <h3>${team.name} <span class="rename-icon" data-rename="${team.id}" title="İsmi değiştir">✏️</span></h3>
         ${renderTeamDetailHtml(memberObjs)}
         <div class="team-actions">
           <button class="edit-btn" data-edit="${team.id}">✏️ Düzenle</button>
@@ -134,6 +136,18 @@ function renderList() {
       </div>`;
   }).join('');
 
+  wrap.querySelectorAll('[data-rename]').forEach(b => {
+    b.addEventListener('click', () => {
+      const teams2 = getTeams();
+      const team = teams2.find(t => t.id === b.dataset.rename);
+      if (!team) return;
+      const newName = prompt('Takıma yeni bir isim ver:', team.name);
+      if (!newName || !newName.trim()) return;
+      team.name = newName.trim();
+      saveTeams(teams2);
+      renderList();
+    });
+  });
   wrap.querySelectorAll('[data-edit]').forEach(b => {
     b.addEventListener('click', () => openEditor(b.dataset.edit));
   });
