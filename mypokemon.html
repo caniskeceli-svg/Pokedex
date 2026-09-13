@@ -187,6 +187,10 @@
   .mydex-item .m-power { font-size: 13px; color: var(--accent-dark); font-weight: bold; }
   .mydex-item .m-types { display: flex; gap: 3px; justify-content: center; margin: 4px 0; flex-wrap: wrap; }
   .mydex-item .m-type-dot { font-size: 11px; padding: 2px 6px; border-radius: 999px; color: #fff; }
+  .mydex-item .card-link {
+    display: block; margin-top: 6px; font-size: 11px; font-weight: bold; color: #fff;
+    background: #8e44ad; border-radius: 999px; padding: 3px 0; text-decoration: none;
+  }
   .mydex-item .remove-x {
     position: absolute; top: 4px; right: 6px;
     color: #c0392b; font-weight: bold; font-size: 16px; cursor: pointer;
@@ -372,11 +376,12 @@ async function renderDashboard() {
         `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`
       ).join('')}</div>
       <div class="m-power">💪 ${p.power || 0}</div>
+      <a class="card-link" href="card.html?id=${p.id}" data-card="1">🎴 Kart</a>
     </div>`).join('')}</div>`;
 
   area.querySelectorAll('.mydex-item').forEach(item => {
     item.addEventListener('click', (e) => {
-      if (e.target.dataset.remove) return;
+      if (e.target.dataset.remove || e.target.dataset.card) return;
       window.location.href = `index.html?poke=${item.dataset.name}`;
     });
   });

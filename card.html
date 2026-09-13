@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokémon Kartı</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(22px, 6vw, 32px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; background: #3b6cdb; }
+
+  .wrap { max-width: 420px; margin: 0 auto; padding: 0 16px; text-align: center; }
+  canvas { max-width: 100%; height: auto; border-radius: 16px; box-shadow: 0 10px 24px rgba(0,0,0,0.2); margin-top: 16px; }
+
+  .actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .actions button {
+    padding: 12px 20px; border-radius: 999px; border: none; font-weight: bold; font-size: 14px;
+    cursor: pointer; color: #fff;
+  }
+  .download-btn { background: #27ae60; }
+  .status { font-size: 13px; color: #888; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎴 Pokémon Kartı</h1>
+  <div class="nav-row">
+    <a href="mypokemon.html">⬅️ Pokémonlarım</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <canvas id="cardCanvas" width="600" height="840"></canvas>
+  <div class="status" id="status">Kart hazırlanıyor...</div>
+  <div class="actions">
+    <button class="download-btn" id="downloadBtn" style="display:none;">📥 Kartı İndir (PNG)</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const canvas = el('cardCanvas');
+const ctx = canvas.getContext('2d');
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+async function buildCard() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) { el('status').textContent = 'Pokémon belirtilmedi.'; return; }
+
+  const [pokeRes, speciesRes] = await Promise.all([
+    fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
+    fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`)
+  ]);
+  const data = await pokeRes.json();
+  const species = await speciesRes.json();
+
+  const primaryType = data.types[0].type.name;
+  const color = TYPE_COLORS[primaryType] || '#888';
+  const isLegendary = LEGENDARY_NAMES.includes(data.name) || MYTHICAL_NAMES.includes(data.name);
+
+  // ---- Background ----
+  const grad = ctx.createLinearGradient(0, 0, 0, 840);
+  grad.addColorStop(0, lighten(color, 40));
+  grad.addColorStop(1, color);
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, 0, 600, 840, 28);
+  ctx.fill();
+
+  ctx.strokeStyle = isLegendary ? '#ffd24a' : '#ffffff';
+  ctx.lineWidth = isLegendary ? 14 : 10;
+  roundRect(ctx, 14, 14, 572, 812, 22);
+  ctx.stroke();
+
+  if (isLegendary) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    for (let i = 0; i < 20; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * 600, Math.random() * 840, Math.random() * 3 + 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ---- Inner white panel ----
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  roundRect(ctx, 34, 100, 532, 560, 20);
+  ctx.fill();
+
+  // ---- Header: name + dex number ----
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#2b2b2b';
+  ctx.font = 'bold 40px "Trebuchet MS", sans-serif';
+  const displayName = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+  ctx.fillText(displayName, 50, 65);
+
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 24px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#5a4400';
+  ctx.fillText('#' + String(data.id).padStart(3, '0'), 550, 60);
+
+  // ---- Sprite ----
+  try {
+    const spriteUrl = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default;
+    const img = await loadImage(spriteUrl);
+    const size = 260;
+    ctx.drawImage(img, 300 - size / 2, 110, size, size);
+  } catch {}
+
+  // ---- Type badges ----
+  let tx = 50;
+  data.types.forEach(t => {
+    const label = (TYPE_TR[t.type.name] || t.type.name).toUpperCase();
+    ctx.font = 'bold 18px "Trebuchet MS", sans-serif';
+    const w = ctx.measureText(label).width + 30;
+    ctx.fillStyle = TYPE_COLORS[t.type.name] || '#888';
+    roundRect(ctx, tx, 385, w, 34, 17);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, tx + 15, 408);
+    tx += w + 10;
+  });
+
+  // ---- Stats ----
+  const statLabels = { hp: 'CAN', attack: 'SALDIRI', defense: 'SAVUNMA', 'special-attack': 'ÖZ.SALDIRI', 'special-defense': 'ÖZ.SAVUNMA', speed: 'HIZ' };
+  let sy = 450;
+  ctx.font = '16px "Trebuchet MS", sans-serif';
+  data.stats.forEach(s => {
+    const label = statLabels[s.stat.name] || s.stat.name;
+    const val = s.base_stat;
+    ctx.fillStyle = '#555';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, 50, sy + 14);
+
+    ctx.fillStyle = '#eee';
+    roundRect(ctx, 190, sy, 300, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = color;
+    roundRect(ctx, 190, sy, Math.min(300, (val / 180) * 300), 16, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#2b2b2b';
+    ctx.textAlign = 'right';
+    ctx.fillText(val, 550, sy + 14);
+    sy += 30;
+  });
+
+  const totalPower = data.stats.reduce((s, st) => s + st.base_stat, 0);
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 20px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#a82008';
+  ctx.fillText(`⚔️ TOPLAM GÜÇ: ${totalPower}`, 300, sy + 26);
+
+  // ---- Flavor text ----
+  const entries = species.flavor_text_entries || [];
+  const flavor = (entries.find(e => e.language.name === 'en') || {}).flavor_text || '';
+  const cleanFlavor = flavor.replace(/\f|\n/g, ' ');
+  ctx.font = 'italic 15px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.textAlign = 'left';
+  wrapText(ctx, cleanFlavor, 50, sy + 65, 500, 20, 3);
+
+  // ---- Footer ----
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 18px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillText("AYAZ'IN POKÉDEX'İ", 300, 800);
+
+  el('status').textContent = '✅ Kart hazır!';
+  el('downloadBtn').style.display = 'inline-block';
+  el('downloadBtn').addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = `${data.name}-karti.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+  const words = text.split(' ');
+  let line = '';
+  let lines = [];
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word + ' ';
+    } else {
+      line = test;
+    }
+  }
+  lines.push(line);
+  lines.slice(0, maxLines).forEach((l, i) => ctx.fillText(l.trim(), x, y + i * lineHeight));
+}
+
+function lighten(hex, amt) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  let r = (num >> 16) + amt, g = ((num >> 8) & 0xff) + amt, b = (num & 0xff) + amt;
+  r = Math.min(255, r); g = Math.min(255, g); b = Math.min(255, b);
+  return `rgb(${r},${g},${b})`;
+}
+
+buildCard().catch(err => { el('status').textContent = 'Kart oluşturulamadı 😕'; console.error(err); });
+</script>
+
+</body>
+</html>

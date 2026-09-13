@@ -312,6 +312,10 @@
   .catch-items span { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: bold; color: #555; }
   .catch-items span b { font-size: 20px; }
   #catchCloseBtn { background: #27ae60; font-size: 18px; padding: 12px 30px; }
+  .card-link-btn {
+    display: block; margin: 0 auto 12px; width: fit-content; background: #8e44ad; color: #fff;
+    font-size: 14px; font-weight: bold; padding: 10px 20px; border-radius: 999px; text-decoration: none;
+  }
   .badge-toast {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     background: #2c3e50; color: #ffd24a; font-weight: bold; padding: 12px 22px;
@@ -369,6 +373,7 @@
     <div class="catch-progress" id="catchProgress"></div>
     <div class="catch-xp-list" id="catchXpList"></div>
     <div class="catch-items" id="catchItems"></div>
+    <a id="catchCardLink" href="#" class="card-link-btn">🎴 Kartını Gör</a>
     <button id="catchCloseBtn">Harika! 🎊</button>
   </div>
 </div>
@@ -911,6 +916,8 @@ function showCatchModal(data, collectionCount, gained) {
     const info = ITEM_INFO[it.key];
     return `<span>${info.emoji}<b>+${it.qty}</b>${info.name}</span>`;
   }).join('');
+
+  el('catchCardLink').href = `card.html?id=${data.id}`;
 
   el('catchModal').classList.add('show');
 
