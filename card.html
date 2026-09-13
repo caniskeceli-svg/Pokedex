@@ -88,10 +88,24 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-async function buildCard() {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
-  if (!id) { el('status').textContent = 'Pokémon belirtilmedi.'; return; }
+const STAT_ORDER = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
+
+async function loadCardData(id) {
+  // Fusion creatures (from the Çiftleştirme feature) aren't real PokeAPI
+  // entries, so their data lives only in this profile's own dex.
+  if (Number(id) >= 900000000) {
+    const entry = getMyDexShared().find(p => p.id === Number(id));
+    if (!entry) throw new Error('fusion not found');
+    return {
+      id: entry.id,
+      name: entry.name,
+      spriteUrl: entry.img,
+      types: entry.types,
+      statsArr: STAT_ORDER.map(k => ({ key: k, val: entry.stats?.[k] || 0 })),
+      flavorText: `🧬 ${entry.parents?.join(' ve ') || 'iki Pokémon'}'in özgün füzyonu! Doğada bulunmaz, sadece bu Pokédex'te var.`,
+      isLegendary: false
+    };
+  }
 
   const [pokeRes, speciesRes] = await Promise.all([
     fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
@@ -99,10 +113,30 @@ async function buildCard() {
   ]);
   const data = await pokeRes.json();
   const species = await speciesRes.json();
+  const entries = species.flavor_text_entries || [];
+  const flavor = (entries.find(e => e.language.name === 'en') || {}).flavor_text || '';
 
-  const primaryType = data.types[0].type.name;
+  return {
+    id: data.id,
+    name: data.name,
+    spriteUrl: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default,
+    types: data.types.map(t => t.type.name),
+    statsArr: data.stats.map(s => ({ key: s.stat.name, val: s.base_stat })),
+    flavorText: flavor.replace(/\f|\n/g, ' '),
+    isLegendary: LEGENDARY_NAMES.includes(data.name) || MYTHICAL_NAMES.includes(data.name)
+  };
+}
+
+async function buildCard() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) { el('status').textContent = 'Pokémon belirtilmedi.'; return; }
+
+  const card = await loadCardData(id);
+
+  const primaryType = card.types[0];
   const color = TYPE_COLORS[primaryType] || '#888';
-  const isLegendary = LEGENDARY_NAMES.includes(data.name) || MYTHICAL_NAMES.includes(data.name);
+  const isLegendary = card.isLegendary;
 
   // ---- Background ----
   const grad = ctx.createLinearGradient(0, 0, 0, 840);
@@ -135,29 +169,28 @@ async function buildCard() {
   ctx.textAlign = 'left';
   ctx.fillStyle = '#2b2b2b';
   ctx.font = 'bold 40px "Trebuchet MS", sans-serif';
-  const displayName = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+  const displayName = card.name.charAt(0).toUpperCase() + card.name.slice(1);
   ctx.fillText(displayName, 50, 65);
 
   ctx.textAlign = 'right';
   ctx.font = 'bold 24px "Trebuchet MS", sans-serif';
   ctx.fillStyle = '#5a4400';
-  ctx.fillText('#' + String(data.id).padStart(3, '0'), 550, 60);
+  ctx.fillText('#' + String(card.id).padStart(3, '0'), 550, 60);
 
   // ---- Sprite ----
   try {
-    const spriteUrl = data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default;
-    const img = await loadImage(spriteUrl);
+    const img = await loadImage(card.spriteUrl);
     const size = 260;
     ctx.drawImage(img, 300 - size / 2, 110, size, size);
   } catch {}
 
   // ---- Type badges ----
   let tx = 50;
-  data.types.forEach(t => {
-    const label = (TYPE_TR[t.type.name] || t.type.name).toUpperCase();
+  card.types.forEach(t => {
+    const label = (TYPE_TR[t] || t).toUpperCase();
     ctx.font = 'bold 18px "Trebuchet MS", sans-serif';
     const w = ctx.measureText(label).width + 30;
-    ctx.fillStyle = TYPE_COLORS[t.type.name] || '#888';
+    ctx.fillStyle = TYPE_COLORS[t] || '#888';
     roundRect(ctx, tx, 385, w, 34, 17);
     ctx.fill();
     ctx.fillStyle = '#fff';
@@ -170,9 +203,9 @@ async function buildCard() {
   const statLabels = { hp: 'CAN', attack: 'SALDIRI', defense: 'SAVUNMA', 'special-attack': 'ÖZ.SALDIRI', 'special-defense': 'ÖZ.SAVUNMA', speed: 'HIZ' };
   let sy = 450;
   ctx.font = '16px "Trebuchet MS", sans-serif';
-  data.stats.forEach(s => {
-    const label = statLabels[s.stat.name] || s.stat.name;
-    const val = s.base_stat;
+  card.statsArr.forEach(s => {
+    const label = statLabels[s.key] || s.key;
+    const val = s.val;
     ctx.fillStyle = '#555';
     ctx.textAlign = 'left';
     ctx.fillText(label, 50, sy + 14);
@@ -190,20 +223,17 @@ async function buildCard() {
     sy += 30;
   });
 
-  const totalPower = data.stats.reduce((s, st) => s + st.base_stat, 0);
+  const totalPower = card.statsArr.reduce((s, st) => s + st.val, 0);
   ctx.textAlign = 'center';
   ctx.font = 'bold 20px "Trebuchet MS", sans-serif';
   ctx.fillStyle = '#a82008';
   ctx.fillText(`⚔️ TOPLAM GÜÇ: ${totalPower}`, 300, sy + 26);
 
   // ---- Flavor text ----
-  const entries = species.flavor_text_entries || [];
-  const flavor = (entries.find(e => e.language.name === 'en') || {}).flavor_text || '';
-  const cleanFlavor = flavor.replace(/\f|\n/g, ' ');
   ctx.font = 'italic 15px "Trebuchet MS", sans-serif';
   ctx.fillStyle = '#666';
   ctx.textAlign = 'left';
-  wrapText(ctx, cleanFlavor, 50, sy + 65, 500, 20, 3);
+  wrapText(ctx, card.flavorText, 50, sy + 65, 500, 20, 3);
 
   // ---- Footer ----
   ctx.textAlign = 'center';
@@ -215,7 +245,7 @@ async function buildCard() {
   el('downloadBtn').style.display = 'inline-block';
   el('downloadBtn').addEventListener('click', () => {
     const link = document.createElement('a');
-    link.download = `${data.name}-karti.png`;
+    link.download = `${card.name}-karti.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   });
@@ -245,7 +275,7 @@ function lighten(hex, amt) {
   return `rgb(${r},${g},${b})`;
 }
 
-buildCard().catch(err => { el('status').textContent = 'Kart oluşturulamadı 😕'; console.error(err); });
+waitForCloud().then(buildCard).catch(err => { el('status').textContent = 'Kart oluşturulamadı 😕'; console.error(err); });
 </script>
 
 </body>

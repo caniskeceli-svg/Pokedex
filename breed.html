@@ -147,19 +147,6 @@ function updateBreedBtn() {
   el('breedBtn').disabled = !(parentA && parentB && parentA.id !== parentB.id);
 }
 
-async function getEggGroups(id) {
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
-  const species = await res.json();
-  return { species, eggGroups: species.egg_groups.map(g => g.name) };
-}
-
-async function getBabyForm(species) {
-  if (!species.evolution_chain) return species.name;
-  const res = await fetch(species.evolution_chain.url);
-  const evo = await res.json();
-  return evo.chain.species.name;
-}
-
 el('breedBtn').addEventListener('click', async () => {
   const box = el('resultBox');
   box.classList.add('show');
@@ -167,48 +154,24 @@ el('breedBtn').addEventListener('click', async () => {
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   try {
-    const [dataA, dataB] = await Promise.all([getEggGroups(parentA.id), getEggGroups(parentB.id)]);
-
-    if (dataA.eggGroups.includes('no-eggs') || dataB.eggGroups.includes('no-eggs')) {
-      box.innerHTML = `
-        <div style="font-size:50px;">🚫</div>
-        <div class="result-msg">Bu Pokémon'lardan biri üreyemiyor (efsanevi ya da özel bir tür)!</div>
-        <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Dene</button>`;
-      el('tryAgainBtn').addEventListener('click', resetBreeding);
-      return;
-    }
-
-    const shared = dataA.eggGroups.some(g => dataB.eggGroups.includes(g));
-    if (!shared) {
-      box.innerHTML = `
-        <div style="font-size:50px;">😅</div>
-        <div class="result-msg">Uyumsuzlar! Farklı yumurta gruplarındalar:<br>
-        <b>${parentA.name}</b>: ${dataA.eggGroups.join(', ')}<br>
-        <b>${parentB.name}</b>: ${dataB.eggGroups.join(', ')}</div>
-        <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Dene</button>`;
-      el('tryAgainBtn').addEventListener('click', resetBreeding);
-      return;
-    }
-
     box.innerHTML = `<div class="egg hatch">🥚</div><div class="result-msg">Yumurta çatlıyor...</div>`;
     await new Promise(r => setTimeout(r, 1500));
 
-    const pickSpecies = Math.random() < 0.5 ? dataA.species : dataB.species;
-    const babyName = await getBabyForm(pickSpecies);
-    const babyRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${babyName}`);
-    const babyData = await babyRes.json();
-    const art = babyData.sprites?.other?.['official-artwork']?.front_default || babyData.sprites?.front_default || '';
+    const fusion = await createFusion(parentA, parentB);
 
     box.innerHTML = `
       <div style="font-size:50px;">🐣</div>
-      <img class="baby-img" src="${art}" alt="${babyData.name}">
-      <div class="baby-name">${babyData.name}</div>
-      <div class="result-msg">${parentA.name} ve ${parentB.name}'in yavrusu!</div>
+      <img class="baby-img" src="${fusion.img}" alt="${fusion.name}">
+      <div class="baby-name">${fusion.name}</div>
+      <div class="types" style="display:flex;justify-content:center;gap:8px;margin-top:6px;">
+        ${fusion.types.map(t => `<span class="type-chip" style="background:${TYPE_COLORS[t]};padding:5px 14px;border-radius:999px;color:#fff;font-size:13px;font-weight:bold;">${TYPE_TR[t] || t}</span>`).join('')}
+      </div>
+      <div class="result-msg">${parentA.name} + ${parentB.name}'in özgün füzyonu! 💪 Toplam Güç: ${fusion.power}</div>
       <button class="add-baby-btn" id="addBabyBtn">⭐ Pokédex'ime Ekle</button>
       <button class="again-btn" id="tryAgainBtn">🔄 Tekrar Çiftleştir</button>`;
 
     el('addBabyBtn').addEventListener('click', () => {
-      const result = addPokemonToMyDex(babyData);
+      const result = addFusionToMyDex(fusion);
       if (result.added) {
         const xpTotal = result.gained.xpEvents.reduce((s, e) => s + e.xp, 0);
         el('addBabyBtn').textContent = `✅ Eklendi! (+${xpTotal} XP)`;

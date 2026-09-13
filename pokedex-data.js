@@ -191,6 +191,70 @@ function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory
 function getTeams() { return CLOUD_STATE.teams; }
 function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
 
+// ---- Fusion breeding: makes up a brand-new creature from two owned Pokémon ----
+// (Not real Pokémon biology — a fun made-up mechanic, unlike the egg-group
+// logic real breeding would use. Every pair always produces the same fused
+// creature, so breeding the same two Pokémon again is consistent.)
+function fusionId(idA, idB) {
+  const lo = Math.min(idA, idB), hi = Math.max(idA, idB);
+  return 900000000 + lo * 100000 + hi;
+}
+
+function fuseName(nameA, nameB) {
+  const a = nameA.toLowerCase();
+  const b = nameB.toLowerCase();
+  const cut = Math.max(2, Math.ceil(a.length * 0.5));
+  const tail = b.slice(Math.max(1, Math.floor(b.length * 0.4)));
+  const raw = a.slice(0, cut) + tail;
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+async function blendSprites(urlA, urlB, size) {
+  const loadImg = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+  const [imgA, imgB] = await Promise.all([loadImg(urlA), loadImg(urlB)]);
+  const canvas = document.createElement("canvas");
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.globalAlpha = 0.55;
+  ctx.drawImage(imgA, 0, 0, size, size);
+  ctx.globalAlpha = 0.55;
+  ctx.drawImage(imgB, 0, 0, size, size);
+  ctx.globalAlpha = 1;
+  return canvas.toDataURL("image/png");
+}
+
+async function createFusion(parentA, parentB) {
+  const id = fusionId(parentA.id, parentB.id);
+  const name = fuseName(parentA.name, parentB.name);
+  const img = await blendSprites(parentA.img, parentB.img, 260);
+
+  const typeSet = [...new Set([parentA.types[0], parentB.types[0]])].slice(0, 2);
+
+  const statKeys = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
+  const stats = {};
+  statKeys.forEach(k => {
+    stats[k] = Math.round(((parentA.stats?.[k] || 50) + (parentB.stats?.[k] || 50)) / 2);
+  });
+  const power = Object.values(stats).reduce((s, v) => s + v, 0);
+
+  return { id, name, img, power, types: typeSet, stats, isFusion: true, parents: [parentA.name, parentB.name] };
+}
+
+function addFusionToMyDex(fusion) {
+  const mydex = getMyDexShared();
+  if (mydex.some(p => p.id === fusion.id)) return { added: false, gained: null };
+  mydex.push(Object.assign({ favorite: false, nickname: null }, fusion));
+  saveMyDexShared(mydex);
+  const gained = processCatch(fusion, null);
+  return { added: true, gained };
+}
+
 // Adds a Pokémon fetched elsewhere (e.g. the full list page) straight to the
 // current profile's dex, running the same catch rewards as the main detail
 // page (minus the evolution bonus, which needs species data we skip here for speed).
