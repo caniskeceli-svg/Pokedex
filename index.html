@@ -693,8 +693,7 @@ function showBadgeToast(text) {
 }
 
 function setupDailyPokemon() {
-  const dayIndex = Math.floor(Date.now() / 86400000);
-  const dailyId = (dayIndex % MAX_ID) + 1;
+  const dailyId = todayDailyId;
   const link = el('dailyPokeLink');
   link.textContent = `🌟 Günün Pokémonu: #${String(dailyId).padStart(3, '0')} yükleniyor...`;
   fetch(`https://pokeapi.co/api/v2/pokemon/${dailyId}`)
@@ -1125,7 +1124,9 @@ document.querySelectorAll('.special-grid button').forEach(b => {
 buildTypeGrid();
 
 const urlParams = new URLSearchParams(window.location.search);
-const startPoke = urlParams.get('poke') || currentId;
+const todayDayIndex = Math.floor(Date.now() / 86400000);
+const todayDailyId = (todayDayIndex % MAX_ID) + 1;
+const startPoke = urlParams.get('poke') || todayDailyId;
 
 loadNameList();
 setupDailyPokemon();
