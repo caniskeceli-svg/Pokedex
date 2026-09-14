@@ -114,7 +114,10 @@ async function loadCardData(id) {
   const data = await pokeRes.json();
   const species = await speciesRes.json();
   const entries = species.flavor_text_entries || [];
-  const flavor = (entries.find(e => e.language.name === 'en') || {}).flavor_text || '';
+  const trEntry = entries.find(e => e.language.name === 'tr');
+  const enEntry = entries.find(e => e.language.name === 'en');
+  const rawFlavor = ((trEntry || enEntry || {}).flavor_text || '').replace(/\f|\n/g, ' ');
+  const flavorText = trEntry ? rawFlavor : (await translateToTurkish(rawFlavor)) || rawFlavor;
 
   return {
     id: data.id,
@@ -122,7 +125,7 @@ async function loadCardData(id) {
     spriteUrl: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default,
     types: data.types.map(t => t.type.name),
     statsArr: data.stats.map(s => ({ key: s.stat.name, val: s.base_stat })),
-    flavorText: flavor.replace(/\f|\n/g, ' '),
+    flavorText,
     isLegendary: LEGENDARY_NAMES.includes(data.name) || MYTHICAL_NAMES.includes(data.name)
   };
 }
