@@ -390,7 +390,16 @@ async function claimPendingChallengeRewards() {
 }
 
 // Global "you've been challenged" banner, shown on every page once cloud+profile are ready.
-let lastSeenChallengeCount = 0;
+// Which challenge ids we've already fired a browser notification for — kept in
+// localStorage (not a page-lifetime variable) so switching pages doesn't
+// re-notify for a challenge that's still just sitting there pending.
+function getNotifiedChallengeIds() {
+  return new Set(safeParseLS(`notified_challenges_${CURRENT_PROFILE}`, []));
+}
+function saveNotifiedChallengeIds(idSet) {
+  try { localStorage.setItem(`notified_challenges_${CURRENT_PROFILE}`, JSON.stringify([...idSet])); } catch {}
+}
+
 function injectChallengeBanner() {
   if (document.getElementById("challengeBanner")) return;
   const banner = document.createElement("a");
@@ -403,8 +412,11 @@ function injectChallengeBanner() {
     if (list.length) {
       banner.textContent = `⚔️ ${list.length} yeni meydan okuma! Görüntüle ➜`;
       banner.style.display = "inline-block";
-      if (list.length > lastSeenChallengeCount && window.Notification && Notification.permission === "granted") {
-        const latest = list[0];
+
+      const notified = getNotifiedChallengeIds();
+      const freshOnes = list.filter(c => !notified.has(c.id));
+      if (freshOnes.length && window.Notification && Notification.permission === "granted") {
+        const latest = freshOnes[0];
         try {
           new Notification("⚔️ Yeni Meydan Okuma!", {
             body: `${latest.fromName} sana meydan okudu!`,
@@ -412,10 +424,11 @@ function injectChallengeBanner() {
           });
         } catch (e) { console.error(e); }
       }
-      lastSeenChallengeCount = list.length;
+      list.forEach(c => notified.add(c.id));
+      saveNotifiedChallengeIds(notified);
     } else {
       banner.style.display = "none";
-      lastSeenChallengeCount = 0;
+      saveNotifiedChallengeIds(new Set());
     }
   });
 }
