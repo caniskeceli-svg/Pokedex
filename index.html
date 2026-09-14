@@ -29,13 +29,76 @@
   }
   header { text-align: center; padding: 20px 16px 10px; }
 
+  .poke-intro {
+    position: relative;
+    width: 220px;
+    height: 210px;
+    margin: 0 auto 4px;
+  }
+  .poke-ball {
+    position: absolute;
+    left: 50%; bottom: 6px;
+    width: 100px; height: 100px;
+    margin-left: -50px;
+    transform-origin: 50% 90%;
+    animation: ballShake 0.55s ease-in-out 2;
+  }
+  .poke-ball-top, .poke-ball-bottom {
+    position: absolute;
+    left: 0; width: 100px; height: 50px;
+    border: 5px solid #2b2b2b;
+    box-sizing: border-box;
+  }
+  .poke-ball-top {
+    top: 0; border-radius: 100px 100px 0 0; border-bottom: none;
+    background: var(--accent);
+    animation: ballOpenTop 0.5s ease-in 1.1s forwards;
+  }
+  .poke-ball-bottom {
+    bottom: 0; border-radius: 0 0 100px 100px; border-top: none;
+    background: #fff;
+    animation: ballOpenBottom 0.5s ease-in 1.1s forwards;
+  }
+  .poke-ball-band {
+    position: absolute; left: 0; top: 45px; width: 100px; height: 10px;
+    background: #2b2b2b; z-index: 2;
+    animation: ballFadeOut 0.3s ease-in 1.1s forwards;
+  }
+  .poke-ball-button {
+    position: absolute; left: 50%; top: 50%; width: 28px; height: 28px;
+    margin: -14px 0 0 -14px; border-radius: 50%;
+    background: #fff; border: 5px solid #2b2b2b; z-index: 3;
+    animation: ballFadeOut 0.3s ease-in 1.1s forwards;
+  }
   .header-mascot {
-    display: block;
+    position: absolute;
+    left: 50%; bottom: 20px;
     width: 210px;
     height: auto;
-    margin: 0 auto 4px;
+    margin-left: -105px;
+    opacity: 0;
+    transform: scale(0.15) translateY(10px);
     border-radius: 18px;
     box-shadow: 0 6px 0 rgba(0,0,0,0.12);
+    animation: charEmerge 0.7s cubic-bezier(.22,1.6,.4,1) 1.15s forwards;
+  }
+  @keyframes ballShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(10deg); }
+  }
+  @keyframes ballOpenTop {
+    to { transform: translate(-20px, -30px) rotate(-35deg); opacity: 0; }
+  }
+  @keyframes ballOpenBottom {
+    to { transform: translate(20px, 14px) rotate(20deg); opacity: 0; }
+  }
+  @keyframes ballFadeOut {
+    to { opacity: 0; }
+  }
+  @keyframes charEmerge {
+    to { opacity: 1; transform: scale(1) translateY(-14px); }
   }
 
   header h1 {
@@ -350,7 +413,15 @@
 <body>
 
 <header>
-  <img class="header-mascot" src="header-charizard.jpg" alt="Charizard">
+  <div class="poke-intro">
+    <img class="header-mascot" src="header-charizard.jpg" alt="Charizard">
+    <div class="poke-ball">
+      <div class="poke-ball-top"></div>
+      <div class="poke-ball-band"></div>
+      <div class="poke-ball-bottom"></div>
+      <div class="poke-ball-button"></div>
+    </div>
+  </div>
   <h1>🔴 Ayaz'ın Pokédex'i ⚡</h1>
   <p>Bir Pokémon adı yaz, ya da rastgele dene!</p>
   <a href="mypokemon.html" class="level-badge" id="levelBadge">🎮 Seviye ...</a>
