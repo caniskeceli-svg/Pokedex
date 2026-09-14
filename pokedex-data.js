@@ -209,6 +209,9 @@ function fuseName(nameA, nameB) {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+// Builds a "head-from-A, body-from-B" hybrid instead of a flat double-exposure:
+// each sprite is masked with a soft gradient (A fades out past the middle,
+// B fades in past the middle) so they knit together at a blended seam.
 async function blendSprites(urlA, urlB, size) {
   const loadImg = (src) => new Promise((resolve, reject) => {
     const img = new Image();
@@ -218,15 +221,37 @@ async function blendSprites(urlA, urlB, size) {
     img.src = src;
   });
   const [imgA, imgB] = await Promise.all([loadImg(urlA), loadImg(urlB)]);
-  const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  ctx.globalAlpha = 0.55;
-  ctx.drawImage(imgA, 0, 0, size, size);
-  ctx.globalAlpha = 0.55;
-  ctx.drawImage(imgB, 0, 0, size, size);
-  ctx.globalAlpha = 1;
-  return canvas.toDataURL("image/png");
+
+  function drawContained(img) {
+    const c = document.createElement("canvas");
+    c.width = size; c.height = size;
+    const ctx = c.getContext("2d");
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale, h = img.height * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return c;
+  }
+
+  function applyVerticalFade(canvas, stops) {
+    const ctx = canvas.getContext("2d");
+    ctx.globalCompositeOperation = "destination-in";
+    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    stops.forEach(([pos, alpha]) => grad.addColorStop(pos, `rgba(0,0,0,${alpha})`));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    ctx.globalCompositeOperation = "source-over";
+    return canvas;
+  }
+
+  const topHalf = applyVerticalFade(drawContained(imgA), [[0, 1], [0.38, 1], [0.62, 0], [1, 0]]);
+  const bottomHalf = applyVerticalFade(drawContained(imgB), [[0, 0], [0.38, 0], [0.62, 1], [1, 1]]);
+
+  const out = document.createElement("canvas");
+  out.width = size; out.height = size;
+  const ctx = out.getContext("2d");
+  ctx.drawImage(bottomHalf, 0, 0);
+  ctx.drawImage(topHalf, 0, 0);
+  return out.toDataURL("image/png");
 }
 
 async function createFusion(parentA, parentB) {
