@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e3350d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Macera Haritası</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0;
+    font-size: clamp(24px, 6vw, 34px);
+    color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+  .region-banner {
+    background: var(--accent); color: #fff; text-align: center; border-radius: 18px;
+    padding: 14px; margin-top: 18px; font-weight: bold; font-size: 18px;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.12);
+  }
+
+  .path {
+    position: relative; margin-top: 24px; padding-left: 34px;
+  }
+  .path::before {
+    content: ""; position: absolute; left: 15px; top: 10px; bottom: 10px; width: 4px;
+    background: #e6d9b0; border-radius: 4px;
+  }
+
+  .node {
+    position: relative; margin-bottom: 18px; cursor: pointer;
+  }
+  .node .dot {
+    position: absolute; left: -34px; top: 6px; width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    background: #ccc; border: 3px solid #fff; box-shadow: 0 0 0 3px #e6d9b0;
+  }
+  .node.unlocked .dot { background: #49a84c; }
+  .node.visited .dot { background: #3b6cdb; }
+  .node.locked .dot { background: #bbb; }
+  .node-card {
+    background: #fff; border-radius: 16px; padding: 12px 16px; box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+  }
+  .node.locked .node-card { opacity: 0.55; }
+  .node-name { font-weight: bold; font-size: 16px; }
+  .node-type { font-size: 12px; color: #888; text-transform: capitalize; }
+  .node-tag {
+    display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 999px;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .tag-gym { background: #ffe0b3; color: #a35b00; }
+  .tag-visited { background: #dff3e0; color: #237a34; }
+  .tag-locked { background: #eee; color: #999; }
+
+  .detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none;
+    align-items: flex-end; justify-content: center; z-index: 200;
+  }
+  .detail-overlay.show { display: flex; }
+  .detail-box {
+    background: #fff; border-radius: 24px 24px 0 0; padding: 24px 20px 30px; width: 100%; max-width: 480px;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .detail-box h2 { margin: 0 0 4px; color: var(--accent-dark); }
+  .detail-box .d-type { color: #888; font-size: 13px; margin-bottom: 14px; text-transform: capitalize; }
+  .encounter-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .encounter-chip {
+    background: #f7f7f7; border-radius: 12px; padding: 8px 12px; text-align: center; font-size: 12px; min-width: 70px;
+  }
+  .encounter-chip img { width: 40px; height: 40px; display: block; margin: 0 auto; }
+  .encounter-chip .lv { color: #888; }
+  .explore-btn {
+    display: block; width: 100%; background: var(--accent); color: #fff; border: none; padding: 14px;
+    border-radius: 999px; font-size: 17px; font-weight: bold; cursor: pointer;
+  }
+  .explore-btn:disabled { background: #ccc; cursor: default; }
+  .close-btn {
+    display: block; margin: 10px auto 0; background: none; border: none; color: #888; font-size: 14px; cursor: pointer;
+  }
+  .coming-soon { font-size: 13px; color: #a68a4a; background: #fff7e0; border: 1px dashed #ffd27a; border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗺️ Macera Haritası</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="mypokemon.html">⬅️ Trainer HQ</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="region-banner" id="regionBanner">KANTO</div>
+  <div class="path" id="pathList"></div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-box" id="detailBox"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script src="region-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const CURRENT_REGION = "kanto";
+
+function typeEmojiFor(type) {
+  return type === "town" ? "🏠" : "🌿";
+}
+
+function renderPath() {
+  const state = getAdventureState();
+  const locations = getLocationsForRegion(CURRENT_REGION);
+  el('regionBanner').textContent = `📍 ${REGIONS[CURRENT_REGION].name.toUpperCase()}`;
+
+  el('pathList').innerHTML = locations.map(loc => {
+    const visited = state.visitedLocations.includes(loc.id);
+    const unlocked = isLocationUnlocked(loc, state);
+    const statusClass = visited ? 'visited' : (unlocked ? 'unlocked' : 'locked');
+    const tag = loc.gymId ? `<span class="node-tag tag-gym">🏟️ Gym</span>` : '';
+    const statusTag = visited
+      ? `<span class="node-tag tag-visited">✔ Keşfedildi</span>`
+      : (unlocked ? '' : `<span class="node-tag tag-locked">🔒 Kilitli</span>`);
+    return `
+      <div class="node ${statusClass}" data-id="${loc.id}">
+        <div class="dot">${visited ? '✔' : (unlocked ? typeEmojiFor(loc.type) : '🔒')}</div>
+        <div class="node-card">
+          <div class="node-name">${loc.name}${tag}${statusTag}</div>
+          <div class="node-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  el('pathList').querySelectorAll('.node').forEach(nodeEl => {
+    nodeEl.addEventListener('click', () => openDetail(nodeEl.dataset.id));
+  });
+}
+
+async function openDetail(locationId) {
+  const state = getAdventureState();
+  const loc = getLocationById(locationId);
+  if (!loc) return;
+  const unlocked = isLocationUnlocked(loc, state);
+  const visited = state.visitedLocations.includes(locationId);
+
+  let encounterHtml = '<p style="color:#999;font-size:13px;">Bu bölgede vahşi Pokémon yok.</p>';
+  if (loc.encounters.length) {
+    const chips = await Promise.all(loc.encounters.map(async (enc) => {
+      let name = `#${enc.speciesId}`;
+      let img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${enc.speciesId}.png`;
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${enc.speciesId}`);
+        const data = await res.json();
+        name = data.name;
+      } catch {}
+      return `<div class="encounter-chip">
+        <img src="${img}" alt="${name}">
+        <div>${name}</div>
+        <div class="lv">Lv.${enc.minLevel}-${enc.maxLevel}</div>
+      </div>`;
+    }));
+    encounterHtml = `<div class="encounter-list">${chips.join('')}</div>`;
+  }
+
+  el('detailBox').innerHTML = `
+    <h2>${loc.name}</h2>
+    <div class="d-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}${loc.gymId ? ' · 🏟️ Gym Şehri' : ''}</div>
+    ${!unlocked ? '<p style="color:#a33;font-size:13px;">🔒 Bu bölgeye ulaşmak için önceki bölgeyi keşfetmelisin.</p>' : ''}
+    ${unlocked && loc.encounters.length ? '<div class="coming-soon">⚔️ Vahşi Pokémon savaşı ve yakalama yakında burada olacak. Şimdilik sadece bölgeyi keşfedip haritada ilerleyebilirsin.</div>' : ''}
+    ${unlocked ? encounterHtml : ''}
+    <button class="explore-btn" id="exploreBtn" ${!unlocked ? 'disabled' : ''}>${visited ? '✔ Tekrar Keşfet' : '🚶 Bu Bölgeyi Keşfet'}</button>
+    <button class="close-btn" id="closeDetailBtn">Kapat</button>
+  `;
+  el('detailOverlay').classList.add('show');
+
+  if (unlocked) {
+    el('exploreBtn').addEventListener('click', () => {
+      visitLocation(locationId);
+      closeDetail();
+      renderPath();
+    });
+  }
+  el('closeDetailBtn').addEventListener('click', closeDetail);
+}
+
+function closeDetail() {
+  el('detailOverlay').classList.remove('show');
+}
+
+el('detailOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'detailOverlay') closeDetail();
+});
+
+waitForCloud().then(renderPath);
+onCloudChange(renderPath);
+</script>
+
+</body>
+</html>

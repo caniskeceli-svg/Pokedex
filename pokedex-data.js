@@ -107,6 +107,11 @@ const DEFAULT_INVENTORY = {
   berry: 0, "rare-candy": 0, "evolution-stone": 0
 };
 
+// Adventure/map progression (Phase 2). Kept generic here (no reference to
+// any specific location id) so pokedex-data.js stays independent of
+// region-data.js, which only adventure.html loads.
+const DEFAULT_ADVENTURE = { visitedLocations: [], currentLocationId: null };
+
 // ---- Adventure RPG foundations (Phase 1) ----
 // Each owned Pokémon is becoming an "instance" distinct from its species:
 // its own level/XP/friendship/shiny flag, separate from the shared species
@@ -161,7 +166,7 @@ function getOtherProfile(id) {
 let CURRENT_PROFILE = null;
 let cloudDocRef = null;
 
-let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [] };
+let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [], adventure: DEFAULT_ADVENTURE };
 let cloudReady = false;
 let cloudReadyResolvers = [];
 let cloudChangeCallbacks = [];
@@ -242,7 +247,8 @@ async function startCloudSync(profileId) {
         mydex: seed.mydex || [],
         player: Object.assign({}, DEFAULT_PLAYER, seed.player || {}),
         inventory: Object.assign({}, DEFAULT_INVENTORY, seed.inventory || {}),
-        teams: seed.teams || []
+        teams: seed.teams || [],
+        adventure: Object.assign({}, DEFAULT_ADVENTURE, seed.adventure || {})
       };
       cloudDocRef.set(CLOUD_STATE);
     } else {
@@ -251,7 +257,8 @@ async function startCloudSync(profileId) {
         mydex: data.mydex || [],
         player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
-        teams: data.teams || []
+        teams: data.teams || [],
+        adventure: Object.assign({}, DEFAULT_ADVENTURE, data.adventure || {})
       };
     }
     const { migrated, changed } = migrateMyDexToInstances(CLOUD_STATE.mydex);
@@ -283,6 +290,24 @@ function savePlayer(p) { CLOUD_STATE.player = p; pushCloud({ player: p }); }
 
 function getInventory() { return CLOUD_STATE.inventory; }
 function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory: inv }); }
+
+// ---- Adventure/map progression (Phase 2 - visited locations only; wild
+// encounters/battle/catch are separate follow-up phases) ----
+function getAdventureState() { return CLOUD_STATE.adventure; }
+function saveAdventureState(state) { CLOUD_STATE.adventure = state; pushCloud({ adventure: state }); }
+
+// Marks a location visited (idempotent - calling it again for an already
+// visited location is a no-op) and makes it the current location.
+function visitLocation(locationId) {
+  const state = getAdventureState();
+  const alreadyVisited = state.visitedLocations.includes(locationId);
+  const next = {
+    visitedLocations: alreadyVisited ? state.visitedLocations : [...state.visitedLocations, locationId],
+    currentLocationId: locationId
+  };
+  saveAdventureState(next);
+  return next;
+}
 
 function getTeams() { return CLOUD_STATE.teams; }
 function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
