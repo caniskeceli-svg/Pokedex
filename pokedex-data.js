@@ -243,8 +243,8 @@ async function blendSprites(urlA, urlB, size) {
     return canvas;
   }
 
-  const topHalf = applyVerticalFade(drawContained(imgA), [[0, 1], [0.38, 1], [0.62, 0], [1, 0]]);
-  const bottomHalf = applyVerticalFade(drawContained(imgB), [[0, 0], [0.38, 0], [0.62, 1], [1, 1]]);
+  const topHalf = applyVerticalFade(drawContained(imgA), [[0, 1], [0.44, 1], [0.5, 0], [1, 0]]);
+  const bottomHalf = applyVerticalFade(drawContained(imgB), [[0, 0], [0.5, 0], [0.56, 1], [1, 1]]);
 
   const out = document.createElement("canvas");
   out.width = size; out.height = size;
