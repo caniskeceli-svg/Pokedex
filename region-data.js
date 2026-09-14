@@ -96,3 +96,47 @@ function isLocationUnlocked(location, adventureState) {
   if (adventureState.visitedLocations.includes(location.id)) return true;
   return adventureState.visitedLocations.includes(location.requires);
 }
+
+function weightedPick(entries) {
+  const total = entries.reduce((s, e) => s + e.weight, 0);
+  let roll = Math.random() * total;
+  for (const e of entries) {
+    roll -= e.weight;
+    if (roll <= 0) return e;
+  }
+  return entries[entries.length - 1];
+}
+
+const SHINY_CHANCE = 1 / 50;
+
+// Picks a wild encounter for `location`, respecting the "no duplicate normal
+// species" and "shiny is a separate slot" rules:
+//  - a species already owned as non-shiny can still be encountered shiny
+//  - a species already owned as shiny can still be encountered non-shiny
+// Returns { speciesId, level, shiny } or null if every possible outcome for
+// this location is already owned (caller should fall back to a small
+// consolation reward instead of a battle).
+function generateWildEncounter(location, mydex) {
+  const encounters = location.encounters || [];
+  if (!encounters.length) return null;
+
+  const ownedNormal = new Set(mydex.filter(p => !p.shiny).map(p => p.id));
+  const ownedShiny = new Set(mydex.filter(p => p.shiny).map(p => p.id));
+
+  const wantShiny = Math.random() < SHINY_CHANCE;
+  const primaryPool = encounters.filter(e => !(wantShiny ? ownedShiny : ownedNormal).has(e.speciesId));
+  // If the rolled rarity has nothing left, try the other rarity before giving up entirely.
+  const fallbackPool = encounters.filter(e => !(wantShiny ? ownedNormal : ownedShiny).has(e.speciesId));
+
+  let pool = primaryPool;
+  let shiny = wantShiny;
+  if (!pool.length) {
+    pool = fallbackPool;
+    shiny = !wantShiny;
+  }
+  if (!pool.length) return null;
+
+  const picked = weightedPick(pool);
+  const level = picked.minLevel + Math.floor(Math.random() * (picked.maxLevel - picked.minLevel + 1));
+  return { speciesId: picked.speciesId, level, shiny };
+}

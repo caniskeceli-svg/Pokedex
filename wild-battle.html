@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e3350d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Vahşi Pokémon</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #cfe8d8 0%, #fff7e6 260px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header { text-align: center; padding: 16px 16px 6px; }
+  header h1 {
+    margin: 0; font-size: clamp(20px, 5.5vw, 28px); color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+  .card { background: #fff; border-radius: 20px; padding: 16px; margin-top: 14px; box-shadow: 0 6px 0 rgba(0,0,0,0.08); }
+
+  .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
+  .pick-item.disabled { opacity: 0.4; cursor: default; }
+  .pick-item:hover:not(.disabled) { background: #ffe6cc; }
+  .pick-item img { width: 44px; height: 44px; }
+  .pick-item .p-name { font-weight: bold; text-transform: capitalize; }
+  .pick-item .p-sub { font-size: 12px; color: #888; }
+
+  .vs-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mon-box { text-align: center; flex: 1; }
+  .mon-box img { width: 90px; height: 90px; }
+  .mon-name { font-weight: bold; text-transform: capitalize; font-size: 15px; }
+  .mon-name .shiny { color: #e6a700; }
+  .mon-lv { font-size: 12px; color: #888; }
+  .hp-track { background: #eee; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 4px; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); transition: width 0.3s ease; }
+  .hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
+  .vs-text { font-weight: bold; font-size: 20px; color: var(--accent); }
+
+  .log-box { background: #fff9ec; border: 2px dashed #ffd27a; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin-top: 12px; min-height: 40px; }
+
+  .move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .move-btn {
+    background: #3b6cdb; color: #fff; border: none; padding: 12px; border-radius: 12px;
+    font-size: 14px; font-weight: bold; cursor: pointer; text-transform: capitalize;
+  }
+  .move-btn:disabled { background: #ccc; cursor: default; }
+
+  .ball-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .ball-btn {
+    flex: 1; min-width: 90px; background: #e3350d; color: #fff; border: none; padding: 10px; border-radius: 12px;
+    font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+  .ball-btn:disabled { background: #ccc; cursor: default; }
+  .run-btn { display: block; width: 100%; margin-top: 10px; background: none; border: 2px solid #ccc; color: #888; padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+  .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
+  .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
+  .reward-chip { background: #f0f8f0; border-radius: 999px; padding: 6px 14px; font-weight: bold; }
+  .continue-btn {
+    display: block; width: 100%; background: #27ae60; color: #fff; border: none; padding: 14px;
+    border-radius: 999px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header><h1>⚔️ Vahşi Pokémon Karşılaşması</h1></header>
+
+<div class="wrap" id="wrap"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script src="region-data.js"></script>
+<script src="battle-engine.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const params = new URLSearchParams(window.location.search);
+const locationId = params.get('location');
+const wildSpeciesId = Number(params.get('species'));
+const wildLevel = Number(params.get('level'));
+const wildIsShiny = params.get('shiny') === '1';
+
+let wild = null;   // { id, name, types, baseStats, sprite, power, maxHp, hp, moves }
+let player = null; // { instanceId, id, name, types, level, maxHp, hp, moves }
+let battleEnded = false;
+let catchLocked = false;
+let logLines = [];
+
+function log(msg) {
+  logLines.unshift(msg);
+  logLines = logLines.slice(0, 4);
+}
+
+function spriteFor(speciesId, shiny) {
+  return shiny
+    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${speciesId}.png`
+    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`;
+}
+
+async function fetchWildSpecies() {
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${wildSpeciesId}`);
+  const data = await res.json();
+  const statMap = {};
+  data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
+  return {
+    id: data.id,
+    name: data.name,
+    types: data.types.map(t => t.type.name),
+    baseStats: statMap,
+    power: data.stats.reduce((s, st) => s + st.base_stat, 0)
+  };
+}
+
+function renderPartyPicker() {
+  const mydex = getMyDexShared().filter(p => p.id < 900000000); // fusions can't be sent into wild battles (Phase 3 scope)
+  const wrap = el('wrap');
+  wrap.innerHTML = `
+    <div class="card">
+      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Bir vahşi Pokémon çıktı! Hangi Pokémon'unla savaşmak istersin?</div>
+      <div id="pickList"></div>
+    </div>`;
+  const pickList = el('pickList');
+  if (!mydex.length) {
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Pokémon\'un yok. Önce Pokédex\'ten birini ekle!</p>';
+    return;
+  }
+  pickList.innerHTML = mydex.map(p => {
+    const fainted = p.fainted === true;
+    return `
+      <div class="pick-item ${fainted ? 'disabled' : ''}" data-instance="${p.instanceId || ''}">
+        <img src="${p.img}" alt="${p.name}">
+        <div>
+          <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
+          <div class="p-sub">Lv.${p.level || 1}${fainted ? ' · 😵 Baygın' : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  pickList.querySelectorAll('.pick-item:not(.disabled)').forEach(itemEl => {
+    itemEl.addEventListener('click', () => {
+      const mon = mydex.find(p => p.instanceId === itemEl.dataset.instance);
+      startBattle(mon);
+    });
+  });
+
+  if (mydex.every(p => p.fainted === true)) {
+    pickList.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:#a33;font-size:13px;margin-top:8px;">Tüm Pokémon\'ların baygın! Şimdilik savaşamazsın. 🏃</p>');
+  }
+}
+
+function startBattle(playerMon) {
+  const pStats = computeBattleStats(playerMon.stats || {}, playerMon.level || 1);
+  player = {
+    instanceId: playerMon.instanceId,
+    id: playerMon.id,
+    name: playerMon.nickname || playerMon.name,
+    types: playerMon.types,
+    level: playerMon.level || 1,
+    maxHp: pStats.maxHp,
+    hp: pStats.maxHp,
+    battleStats: pStats,
+    moves: buildMoveset(playerMon.types)
+  };
+  const wStats = computeBattleStats(wild.baseStats, wildLevel);
+  wild.level = wildLevel;
+  wild.maxHp = wStats.maxHp;
+  wild.hp = wStats.maxHp;
+  wild.battleStats = wStats;
+  wild.moves = buildMoveset(wild.types);
+  wild.sprite = spriteFor(wild.id, wildIsShiny);
+
+  logLines = [];
+  log(`Vahşi ${wild.name} ile savaş başladı!`);
+  renderBattle();
+}
+
+function hpBarClass(hp, maxHp) {
+  return (hp / maxHp) < 0.25 ? 'hp-fill low' : 'hp-fill';
+}
+
+function renderBattle() {
+  const wrap = el('wrap');
+  const inv = getInventory();
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="vs-row">
+        <div class="mon-box">
+          <img src="${wild.sprite}" alt="${wild.name}">
+          <div class="mon-name">${wildIsShiny ? '<span class="shiny">✨</span> ' : ''}${wild.name}</div>
+          <div class="mon-lv">Lv.${wild.level}</div>
+          <div class="hp-track"><div class="${hpBarClass(wild.hp, wild.maxHp)}" style="width:${Math.max(0, wild.hp / wild.maxHp * 100)}%"></div></div>
+        </div>
+        <div class="vs-text">VS</div>
+        <div class="mon-box">
+          <img src="${player.imgUrl || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${player.id}.png`}" alt="${player.name}">
+          <div class="mon-name">${player.name}</div>
+          <div class="mon-lv">Lv.${player.level}</div>
+          <div class="hp-track"><div class="${hpBarClass(player.hp, player.maxHp)}" style="width:${Math.max(0, player.hp / player.maxHp * 100)}%"></div></div>
+        </div>
+      </div>
+
+      <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
+
+      <div class="move-grid" id="moveGrid">
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}">${m.name}</button>`).join('')}
+      </div>
+
+      <div class="ball-row" id="ballRow">
+        ${['pokeball', 'greatball', 'ultraball'].map(key => `
+          <button class="ball-btn" data-ball="${key}" ${(inv[key] || 0) <= 0 ? 'disabled' : ''}>
+            ${ITEM_INFO[key].emoji} ${ITEM_INFO[key].name} (${inv[key] || 0})
+          </button>`).join('')}
+      </div>
+      <button class="run-btn" id="runBtn">🏃 Kaç</button>
+    </div>`;
+
+  el('moveGrid').querySelectorAll('.move-btn').forEach(btn => {
+    btn.addEventListener('click', () => useMove(Number(btn.dataset.move)));
+  });
+  el('ballRow').querySelectorAll('.ball-btn').forEach(btn => {
+    btn.addEventListener('click', () => throwBall(btn.dataset.ball));
+  });
+  el('runBtn').addEventListener('click', runAway);
+}
+
+function useMove(moveIndex) {
+  if (battleEnded) return;
+  const move = player.moves[moveIndex];
+  const r = calcDamage({ move, attackerTypes: player.types, attackerStats: player.battleStats, defenderTypes: wild.types, defenderStats: wild.battleStats });
+  wild.hp = Math.max(0, wild.hp - r.damage);
+  log(`${player.name}, ${move.name} kullandı! ${r.damage} hasar${r.effectiveness > 1 ? ' (Etkili! 💥)' : r.effectiveness < 1 && r.effectiveness > 0 ? ' (Etkisiz...)' : r.effectiveness === 0 ? ' (Etkisiz!)' : ''}${r.isCrit ? ' Kritik vuruş!' : ''}`);
+
+  if (wild.hp <= 0) {
+    endBattle('win');
+    return;
+  }
+
+  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
+  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  player.hp = Math.max(0, player.hp - r2.damage);
+  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
+
+  if (player.hp <= 0) {
+    endBattle('loss');
+    return;
+  }
+  renderBattle();
+}
+
+function throwBall(ballType) {
+  if (battleEnded || catchLocked) return;
+  const inv = getInventory();
+  if ((inv[ballType] || 0) <= 0) return;
+  catchLocked = true;
+
+  addItems(ballType, -1);
+  const hpFraction = wild.hp / wild.maxHp;
+  const rarityFactor = rarityFactorForPower(wild.power);
+  const success = attemptCatch({ hpFraction, ballType, rarityFactor });
+
+  if (success) {
+    endBattle('catch', ballType);
+    return;
+  }
+
+  log(`${ITEM_INFO[ballType].name} attın... ama ${wild.name} kaçtı!`);
+  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
+  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  player.hp = Math.max(0, player.hp - r2.damage);
+  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
+  catchLocked = false;
+
+  if (player.hp <= 0) {
+    endBattle('loss');
+    return;
+  }
+  renderBattle();
+}
+
+function runAway() {
+  if (battleEnded) return;
+  battleEnded = true;
+  visitLocation(locationId);
+  showResult({ title: '🏃 Kaçtın!', rewards: [], continueLabel: 'Haritaya Dön' });
+}
+
+// Applies XP to the party Pokemon that fought and to the trainer, saves both.
+function awardBattleXp(pokemonXp, trainerXp) {
+  const mydex = getMyDexShared();
+  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
+  if (idx !== -1) {
+    const mon = mydex[idx];
+    const newPxp = (mon.pxp || 0) + pokemonXp;
+    const { level } = pokemonLevelInfo(newPxp);
+    mydex[idx] = Object.assign({}, mon, { pxp: newPxp, level });
+    saveMyDexShared(mydex);
+  }
+  const p = getPlayer();
+  p.xp += trainerXp;
+  savePlayer(p);
+}
+
+function markPlayerMonFainted() {
+  const mydex = getMyDexShared();
+  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
+  if (idx !== -1) {
+    mydex[idx] = Object.assign({}, mydex[idx], { fainted: true });
+    saveMyDexShared(mydex);
+  }
+}
+
+function endBattle(outcome, ballType) {
+  battleEnded = true;
+  visitLocation(locationId);
+
+  if (outcome === 'win') {
+    const trainerXp = 15;
+    const pokemonXp = 20;
+    const coins = 10;
+    awardBattleXp(pokemonXp, trainerXp);
+    const p = getPlayer();
+    p.coins = (p.coins || 0) + coins;
+    p.wildWins = (p.wildWins || 0) + 1;
+    savePlayer(p);
+    showResult({
+      title: `🏆 ${wild.name} savaşı kazandın!`,
+      rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${coins} PokéCoin`],
+      continueLabel: 'Haritaya Dön'
+    });
+  } else if (outcome === 'loss') {
+    markPlayerMonFainted();
+    const p = getPlayer();
+    p.wildLosses = (p.wildLosses || 0) + 1;
+    savePlayer(p);
+    showResult({
+      title: `😵 ${player.name} baygın düştü...`,
+      rewards: [],
+      continueLabel: 'Haritaya Dön',
+      note: 'Baygın Pokémon\'lar dinlenene kadar savaşamaz.'
+    });
+  } else if (outcome === 'catch') {
+    const trainerXp = 25;
+    const pokemonXp = 15;
+    const coins = 20;
+    awardBattleXp(pokemonXp, trainerXp);
+
+    const newMon = {
+      instanceId: makeInstanceId(wild.id),
+      id: wild.id,
+      name: wild.name,
+      nickname: null,
+      img: spriteFor(wild.id, wildIsShiny),
+      types: wild.types,
+      stats: wild.baseStats,
+      power: wild.power,
+      level: wildLevel,
+      pxp: 0,
+      friendship: 5,
+      shiny: wildIsShiny,
+      source: 'wild',
+      caughtAt: Date.now(),
+      favorite: false,
+      fainted: false
+    };
+    const mydex = getMyDexShared();
+    mydex.push(newMon);
+    saveMyDexShared(mydex);
+
+    const gained = processCatch({ id: wild.id, name: wild.name, types: wild.types.map(t => ({ type: { name: t } })) }, null);
+    const p = getPlayer();
+    p.coins = (p.coins || 0) + coins;
+    p.wildWins = (p.wildWins || 0) + 1;
+    savePlayer(p);
+
+    showResult({
+      title: `🎉 ${wild.name}${wildIsShiny ? ' ✨' : ''} yakalandı!`,
+      rewards: [
+        `👑 +${trainerXp + gained.xpEvents.reduce((s, e) => s + e.xp, 0)} Eğitmen XP`,
+        `⭐ +${pokemonXp} Pokémon XP`,
+        `💰 +${coins} PokéCoin`
+      ],
+      continueLabel: 'Haritaya Dön'
+    });
+  }
+}
+
+function showResult({ title, rewards, continueLabel, note }) {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <div class="result-title">${title}</div>
+      ${rewards.length ? `<div class="reward-row">${rewards.map(r => `<span class="reward-chip">${r}</span>`).join('')}</div>` : ''}
+      ${note ? `<p style="text-align:center;color:#888;font-size:13px;">${note}</p>` : ''}
+      <button class="continue-btn" id="continueBtn">${continueLabel}</button>
+    </div>`;
+  el('continueBtn').addEventListener('click', () => {
+    window.location.href = `adventure.html`;
+  });
+}
+
+async function init() {
+  if (!locationId || !wildSpeciesId || !wildLevel) {
+    el('wrap').innerHTML = '<div class="card"><p>Geçersiz karşılaşma. <a href="adventure.html">Haritaya dön</a>.</p></div>';
+    return;
+  }
+  el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
+  try {
+    wild = await fetchWildSpecies();
+    renderPartyPicker();
+  } catch (e) {
+    el('wrap').innerHTML = '<div class="card"><p>Vahşi Pokémon yüklenemedi 😕 <a href="adventure.html">Haritaya dön</a>.</p></div>';
+  }
+}
+
+waitForCloud().then(init);
+</script>
+
+</body>
+</html>
