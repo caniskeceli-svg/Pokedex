@@ -10,7 +10,8 @@ const SHELL_FILES = [
   "pokedex-data.js",
   "manifest.json",
   "icon-192.png",
-  "icon-512.png"
+  "icon-512.png",
+  "header-charizard.jpg"
 ];
 
 self.addEventListener("install", (event) => {
