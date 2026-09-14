@@ -254,10 +254,34 @@ async function blendSprites(urlA, urlB, size) {
   return out.toDataURL("image/png");
 }
 
+// Community fusion generator (pokemon.alexonsager.net) that actually redraws
+// a head-from-A/body-from-B creature instead of overlaying two sprites. It
+// only has art for the original 151 Kanto Pokémon, so anything outside that
+// range (or our own fusion-of-a-fusion ids) falls back to blendSprites.
+function realFusionImageUrl(headId, bodyId) {
+  return `https://images.alexonsager.net/pokemon/fused/${headId}/${headId}.${bodyId}.png`;
+}
+
+function tryLoadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img.naturalWidth > 0 ? src : null);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 async function createFusion(parentA, parentB) {
   const id = fusionId(parentA.id, parentB.id);
   const name = fuseName(parentA.name, parentB.name);
-  const img = await blendSprites(parentA.img, parentB.img, 260);
+
+  let img = null;
+  if (parentA.id >= 1 && parentA.id <= 151 && parentB.id >= 1 && parentB.id <= 151) {
+    img = await tryLoadImage(realFusionImageUrl(parentA.id, parentB.id));
+  }
+  if (!img) {
+    img = await blendSprites(parentA.img, parentB.img, 260);
+  }
 
   const typeSet = [...new Set([parentA.types[0], parentB.types[0]])].slice(0, 2);
 
