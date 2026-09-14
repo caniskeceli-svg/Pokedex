@@ -165,21 +165,75 @@ async function loadNameList() {
   nameList = data.results.map(p => ({ name: p.name, url: p.url, id: idFromUrl(p.url) }));
 }
 
-async function fetchDetail(id) {
+// Fetching all ~1300 Pokémon one request each used to take forever, so instead
+// we pull PokeAPI's own bulk CSV data tables (a handful of small files covering
+// every Pokémon's stats/types at once) and build the same per-Pokémon shape
+// (data.stats/data.types/data.sprites) that the rest of this page expects.
+const BULK_CSV_BASE = 'https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/';
+let bulkStatsById = {};
+let bulkTypesById = {};
+let bulkDataLoaded = false;
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const cols = line.split(',');
+    const row = {};
+    headers.forEach((h, i) => { row[h] = cols[i]; });
+    return row;
+  });
+}
+
+async function loadBulkData() {
+  if (bulkDataLoaded) return;
+  const [statsRows, typesRows, pokemonStatsRows, pokemonTypesRows] = await Promise.all([
+    fetch(BULK_CSV_BASE + 'stats.csv').then(r => r.text()).then(parseCSV),
+    fetch(BULK_CSV_BASE + 'types.csv').then(r => r.text()).then(parseCSV),
+    fetch(BULK_CSV_BASE + 'pokemon_stats.csv').then(r => r.text()).then(parseCSV),
+    fetch(BULK_CSV_BASE + 'pokemon_types.csv').then(r => r.text()).then(parseCSV),
+  ]);
+
+  const statIdToName = {};
+  statsRows.forEach(row => { statIdToName[row.id] = row.identifier; });
+  const typeIdToName = {};
+  typesRows.forEach(row => { typeIdToName[row.id] = row.identifier; });
+
+  pokemonStatsRows.forEach(row => {
+    const statName = statIdToName[row.stat_id];
+    if (!statName) return;
+    if (!bulkStatsById[row.pokemon_id]) bulkStatsById[row.pokemon_id] = {};
+    bulkStatsById[row.pokemon_id][statName] = Number(row.base_stat);
+  });
+
+  pokemonTypesRows.forEach(row => {
+    if (!bulkTypesById[row.pokemon_id]) bulkTypesById[row.pokemon_id] = [];
+    bulkTypesById[row.pokemon_id][Number(row.slot) - 1] = typeIdToName[row.type_id];
+  });
+
+  bulkDataLoaded = true;
+}
+
+function fetchDetail(id, name) {
   if (detailCache[id]) return detailCache[id];
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-  const data = await res.json();
+  const stats = bulkStatsById[id] || {};
+  const types = (bulkTypesById[id] || []).filter(Boolean);
+  const data = {
+    id,
+    name,
+    sprites: { front_default: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` },
+    types: types.map(t => ({ type: { name: t } })),
+    stats: Object.entries(stats).map(([k, v]) => ({ stat: { name: k }, base_stat: v }))
+  };
   detailCache[id] = data;
   return data;
 }
 
 async function fetchBatch(ids) {
-  const missing = ids.filter(id => !detailCache[id]);
-  const CONCURRENCY = 15;
-  for (let i = 0; i < missing.length; i += CONCURRENCY) {
-    const chunk = missing.slice(i, i + CONCURRENCY);
-    await Promise.all(chunk.map(fetchDetail));
-  }
+  await loadBulkData();
+  const byId = {};
+  nameList.forEach(n => { byId[n.id] = n.name; });
+  ids.forEach(id => fetchDetail(id, byId[id]));
 }
 
 function getSortedList() {
@@ -209,17 +263,9 @@ function getSortedList() {
 async function loadAll() {
   el('loadAllBtn').disabled = true;
   el('loadBarTrack').classList.add('show');
-  const allIds = nameList.map(n => n.id);
-  const CONCURRENCY = 20;
-  let done = 0;
-  for (let i = 0; i < allIds.length; i += CONCURRENCY) {
-    const chunk = allIds.slice(i, i + CONCURRENCY).filter(id => !detailCache[id]);
-    await Promise.all(chunk.map(fetchDetail));
-    done = Math.min(i + CONCURRENCY, allIds.length);
-    const pct = Math.round((done / allIds.length) * 100);
-    el('loadBarFill').style.width = pct + '%';
-    el('loadStatus').textContent = `${done} / ${allIds.length} yükleniyor...`;
-  }
+  el('loadStatus').textContent = 'Yükleniyor...';
+  await fetchBatch(nameList.map(n => n.id));
+  el('loadBarFill').style.width = '100%';
   allLoaded = true;
   el('loadStatus').textContent = '✅ Tüm Pokémon yüklendi! Artık her sütuna göre sıralayabilirsin.';
   el('loadBarTrack').classList.remove('show');
