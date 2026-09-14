@@ -25,6 +25,55 @@ const STAT_TR = {
 };
 const MAX_ID = 1010;
 
+// ---- Turkish translation (PokeAPI has no Turkish text for species flavor
+// text, abilities, or moves) with a persistent cache so we only ever
+// translate each English string once, even across visits/devices restarts.
+const TRANSLATION_CACHE_KEY = "ayaz_pokedex_translations_v1";
+let translationCache = safeParseLS(TRANSLATION_CACHE_KEY, {});
+
+function saveTranslationCache() {
+  try { localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(translationCache)); } catch {}
+}
+
+async function translateViaMyMemory(text) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|tr`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("translate failed");
+  const data = await res.json();
+  // MyMemory answers HTTP 200 even when the daily quota is used up, with the
+  // real failure only visible in this field, so check it before trusting the text.
+  if (data.responseStatus && Number(data.responseStatus) !== 200) throw new Error("quota/translate error");
+  const translated = data.responseData?.translatedText;
+  if (!translated) throw new Error("no translation");
+  return translated;
+}
+
+async function translateViaGoogleUnofficial(text) {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=${encodeURIComponent(text)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("translate failed");
+  const data = await res.json();
+  const translated = data[0].map(chunk => chunk[0]).join('');
+  if (!translated) throw new Error("no translation");
+  return translated;
+}
+
+async function translateToTurkish(text) {
+  if (!text) return text;
+  if (translationCache[text]) return translationCache[text];
+  let translated = null;
+  try {
+    translated = await translateViaMyMemory(text);
+  } catch {
+    try { translated = await translateViaGoogleUnofficial(text); } catch { translated = null; }
+  }
+  if (!translated) return null;
+  const clean = translated.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  translationCache[text] = clean;
+  saveTranslationCache();
+  return clean;
+}
+
 // ---- Shared cloud state (Firebase Firestore) ----
 // One document holds everything Ayaz's Pokédex needs to share across every
 // device/browser: caught Pokémon, trainer XP, bag items, and saved teams.

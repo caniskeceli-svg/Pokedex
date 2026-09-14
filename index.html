@@ -120,18 +120,6 @@
     border-radius: 999px;
     text-decoration: none;
   }
-  .daily-badge {
-    display: inline-block;
-    margin-top: 8px;
-    background: #ffb703;
-    color: #4a3600;
-    font-weight: bold;
-    font-size: 13px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    text-decoration: none;
-    text-transform: capitalize;
-  }
 
   .controls {
     max-width: 560px;
@@ -425,7 +413,6 @@
   <h1>🔴 Ayaz'ın Pokédex'i ⚡</h1>
   <p>Bir Pokémon adı yaz, ya da rastgele dene!</p>
   <a href="mypokemon.html" class="level-badge" id="levelBadge">🎮 Seviye ...</a>
-  <div><a href="#" id="dailyPokeLink" class="daily-badge">🌟 Günün Pokémonu: ...</a></div>
 </header>
 
 <div class="controls">
@@ -692,21 +679,6 @@ function showBadgeToast(text) {
   showBadgeToast._t = setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-function setupDailyPokemon() {
-  const dailyId = todayDailyId;
-  const link = el('dailyPokeLink');
-  link.textContent = `🌟 Günün Pokémonu: #${String(dailyId).padStart(3, '0')} yükleniyor...`;
-  fetch(`https://pokeapi.co/api/v2/pokemon/${dailyId}`)
-    .then(r => r.json())
-    .then(d => { link.textContent = `🌟 Günün Pokémonu: ${d.name}`; })
-    .catch(() => { link.textContent = `🌟 Günün Pokémonu: #${dailyId}`; });
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    loadPokemon(dailyId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
 function updateLevelBadge() {
   const player = getPlayer();
   const { level, xpIntoLevel, xpForNextLevel } = levelInfo(player.xp);
@@ -775,7 +747,10 @@ async function loadAbilities(data) {
         const translated = await translateToTurkish(desc);
         desc = translated || desc;
       }
-      return { name: a.ability.name, hidden: a.is_hidden, desc };
+      const rawName = a.ability.name.replace(/-/g, ' ');
+      const translatedName = await translateToTurkish(rawName);
+      const name = translatedName || rawName;
+      return { name, hidden: a.is_hidden, desc };
     }));
     box.innerHTML = abilities.map(a => `
       <div class="ability-card">
@@ -787,7 +762,7 @@ async function loadAbilities(data) {
   }
 }
 
-function renderMoves(data) {
+async function renderMoves(data) {
   const box = el('movesBox');
   const levelMoves = {};
   data.moves.forEach(m => {
@@ -799,23 +774,17 @@ function renderMoves(data) {
     }
   });
   const sorted = Object.entries(levelMoves).sort((a, b) => a[1] - b[1]).slice(0, 8);
-  box.innerHTML = sorted.length
-    ? `<div class="move-chips">${sorted.map(([name, lvl]) =>
-        `<span class="move-chip">${name.replace(/-/g, ' ')}<span class="lv">Lv.${lvl}</span></span>`
-      ).join('')}</div>`
-    : '<p style="color:#999;font-size:13px;">Seviye atlayarak öğrenilen bir hareket bulunamadı.</p>';
-}
-
-async function translateToTurkish(text) {
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('translate failed');
-    const data = await res.json();
-    return data[0].map(chunk => chunk[0]).join('');
-  } catch {
-    return null;
+  if (!sorted.length) {
+    box.innerHTML = '<p style="color:#999;font-size:13px;">Seviye atlayarak öğrenilen bir hareket bulunamadı.</p>';
+    return;
   }
+  box.innerHTML = `<div class="move-chips">${sorted.map(([name, lvl]) =>
+    `<span class="move-chip">${name.replace(/-/g, ' ')}<span class="lv">Lv.${lvl}</span></span>`
+  ).join('')}</div>`;
+  const translatedNames = await Promise.all(sorted.map(([name]) => translateToTurkish(name.replace(/-/g, ' '))));
+  box.innerHTML = `<div class="move-chips">${sorted.map(([name, lvl], i) =>
+    `<span class="move-chip">${translatedNames[i] || name.replace(/-/g, ' ')}<span class="lv">Lv.${lvl}</span></span>`
+  ).join('')}</div>`;
 }
 
 function renderCatchDifficulty(captureRate) {
@@ -1129,7 +1098,6 @@ const todayDailyId = (todayDayIndex % MAX_ID) + 1;
 const startPoke = urlParams.get('poke') || todayDailyId;
 
 loadNameList();
-setupDailyPokemon();
 waitForCloud().then(() => {
   loadPokemon(startPoke);
   updateLevelBadge();
