@@ -100,8 +100,51 @@ function safeParseLS(key, fallback) {
   } catch { return fallback; }
 }
 
-const DEFAULT_PLAYER = { xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
-const DEFAULT_INVENTORY = { pokeball: 0, berry: 0, "evolution-stone": 0 };
+const DEFAULT_PLAYER = { xp: 0, coins: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
+const DEFAULT_INVENTORY = {
+  pokeball: 0, greatball: 0, ultraball: 0,
+  potion: 0, "super-potion": 0, revive: 0,
+  berry: 0, "rare-candy": 0, "evolution-stone": 0
+};
+
+// ---- Adventure RPG foundations (Phase 1) ----
+// Each owned Pokémon is becoming an "instance" distinct from its species:
+// its own level/XP/friendship/shiny flag, separate from the shared species
+// data everyone sees in the Pokédex. Existing entries (added before this
+// existed) are upgraded in place the first time they're loaded — additive
+// only, so battle.html/teams.html (which still key off plain `id`) keep working.
+const POKEMON_XP_PER_LEVEL = 100; // flat cost per level for now; revisit if leveling feels too fast/slow
+
+function pokemonLevelInfo(pxp) {
+  const level = Math.min(100, Math.floor(pxp / POKEMON_XP_PER_LEVEL) + 1);
+  const xpIntoLevel = pxp - (level - 1) * POKEMON_XP_PER_LEVEL;
+  const xpForNextLevel = level >= 100 ? 0 : POKEMON_XP_PER_LEVEL;
+  return { level, xpIntoLevel, xpForNextLevel };
+}
+
+function makeInstanceId(speciesId) {
+  return `inst_${speciesId}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function migrateMyDexToInstances(mydex) {
+  let changed = false;
+  const migrated = mydex.map(p => {
+    const needsMigration = !p.instanceId || typeof p.level !== 'number' ||
+      typeof p.pxp !== 'number' || typeof p.friendship !== 'number' ||
+      typeof p.shiny !== 'boolean' || !p.source;
+    if (!needsMigration) return p;
+    changed = true;
+    return Object.assign({}, p, {
+      instanceId: p.instanceId || makeInstanceId(p.id),
+      level: typeof p.level === 'number' ? p.level : 1,
+      pxp: typeof p.pxp === 'number' ? p.pxp : 0,
+      friendship: typeof p.friendship === 'number' ? p.friendship : 0,
+      shiny: typeof p.shiny === 'boolean' ? p.shiny : false,
+      source: p.source || 'direct'
+    });
+  });
+  return { migrated, changed };
+}
 
 // ---- Player profiles ----
 // Two people share this app, each with their own catches/XP/teams. The
@@ -211,6 +254,10 @@ async function startCloudSync(profileId) {
         teams: data.teams || []
       };
     }
+    const { migrated, changed } = migrateMyDexToInstances(CLOUD_STATE.mydex);
+    CLOUD_STATE.mydex = migrated;
+    if (changed) pushCloud({ mydex: migrated });
+
     const firstTime = !cloudReady;
     cloudReady = true;
     cloudReadyResolvers.forEach(r => r());
@@ -585,7 +632,13 @@ function levelInfo(xp) {
 // ---- Inventory / bag ----
 const ITEM_INFO = {
   pokeball: { name: "Poké Ball", emoji: "⚪" },
+  greatball: { name: "Great Ball", emoji: "🔵" },
+  ultraball: { name: "Ultra Ball", emoji: "🟡" },
+  potion: { name: "Potion", emoji: "🧪" },
+  "super-potion": { name: "Super Potion", emoji: "💊" },
+  revive: { name: "Revive", emoji: "✨" },
   berry: { name: "Berry", emoji: "🍒" },
+  "rare-candy": { name: "Rare Candy", emoji: "🍬" },
   "evolution-stone": { name: "Evrim Taşı", emoji: "💎" }
 };
 function addItems(itemKey, qty) {
