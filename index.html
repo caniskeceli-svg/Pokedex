@@ -120,18 +120,6 @@
     border-radius: 999px;
     text-decoration: none;
   }
-  .daily-badge {
-    display: inline-block;
-    margin-top: 8px;
-    background: #ffb703;
-    color: #4a3600;
-    font-weight: bold;
-    font-size: 13px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    text-decoration: none;
-    text-transform: capitalize;
-  }
 
   .controls {
     max-width: 560px;
@@ -425,7 +413,6 @@
   <h1>🔴 Ayaz'ın Pokédex'i ⚡</h1>
   <p>Bir Pokémon adı yaz, ya da rastgele dene!</p>
   <a href="mypokemon.html" class="level-badge" id="levelBadge">🎮 Seviye ...</a>
-  <div><a href="#" id="dailyPokeLink" class="daily-badge">🌟 Günün Pokémonu: ...</a></div>
 </header>
 
 <div class="controls">
@@ -690,21 +677,6 @@ function showBadgeToast(text) {
   toast.classList.add('show');
   clearTimeout(showBadgeToast._t);
   showBadgeToast._t = setTimeout(() => toast.classList.remove('show'), 3500);
-}
-
-function setupDailyPokemon() {
-  const dailyId = todayDailyId;
-  const link = el('dailyPokeLink');
-  link.textContent = `🌟 Günün Pokémonu: #${String(dailyId).padStart(3, '0')} yükleniyor...`;
-  fetch(`https://pokeapi.co/api/v2/pokemon/${dailyId}`)
-    .then(r => r.json())
-    .then(d => { link.textContent = `🌟 Günün Pokémonu: ${d.name}`; })
-    .catch(() => { link.textContent = `🌟 Günün Pokémonu: #${dailyId}`; });
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    loadPokemon(dailyId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
 }
 
 function updateLevelBadge() {
@@ -1126,7 +1098,6 @@ const todayDailyId = (todayDayIndex % MAX_ID) + 1;
 const startPoke = urlParams.get('poke') || todayDailyId;
 
 loadNameList();
-setupDailyPokemon();
 waitForCloud().then(() => {
   loadPokemon(startPoke);
   updateLevelBadge();
