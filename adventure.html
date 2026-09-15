@@ -169,6 +169,9 @@
 <script src="starter-data.js"></script>
 <script src="gym-data.js"></script>
 <script src="league-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="adventure-achievement-data.js"></script>
+<script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const CURRENT_REGION = "kanto";
@@ -321,13 +324,15 @@ async function openDetail(locationId) {
         // Every possible encounter here is already owned (normal + shiny) - a
         // small consolation reward instead of an empty "nothing happened".
         addAdventureCoins(15);
-        visitAdventureLocation(locationId);
+        const visit1 = visitAdventureLocation(locationId);
+        if (visit1.wasNewVisit) recordAdventureEvent('explore_location');
         closeDetail();
         renderPath();
         alert(`Bu bölgedeki tüm Pokémon türleri zaten sende! 💰 +15 PokéCoin kazandın.`);
         return;
       }
-      visitAdventureLocation(locationId);
+      const visit2 = visitAdventureLocation(locationId);
+      if (visit2.wasNewVisit) recordAdventureEvent('explore_location');
       closeDetail();
       renderPath();
     });

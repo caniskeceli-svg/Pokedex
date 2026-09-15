@@ -92,6 +92,9 @@
 <script src="region-data.js"></script>
 <script src="battle-engine.js"></script>
 <script src="item-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="adventure-achievement-data.js"></script>
+<script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const params = new URLSearchParams(window.location.search);
@@ -269,7 +272,10 @@ function useHealItemInBattle(itemKey) {
   if (!result.ok) return;
   player.hp = result.newHp;
   log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
-  if (itemKey === 'berry') increaseFriendship(player.instanceId, 3, 'berry');
+  if (itemKey === 'berry') {
+    increaseFriendship(player.instanceId, 3, 'berry');
+    recordAdventureEvent('use_berry');
+  }
 
   // Using an item still costs your turn - the wild Pokemon gets to attack.
   const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
@@ -366,7 +372,8 @@ function awardBattleXp(pokemonXp, trainerXp) {
 
 function endBattle(outcome, ballType) {
   battleEnded = true;
-  visitAdventureLocation(locationId);
+  const visit = visitAdventureLocation(locationId);
+  if (visit.wasNewVisit) recordAdventureEvent('explore_location');
   // Win/loss/catch all leave player.hp at its final value for this fight;
   // persistPlayerHp() was already called after the last HP-changing action
   // (or player.hp never changed if the fight ended on the attacker's own
@@ -382,6 +389,7 @@ function endBattle(outcome, ballType) {
     const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
     saveAdventurePlayer(p);
+    recordAdventureEvent('win_wild_battle');
     showResult({
       title: `🏆 ${wild.name} savaşı kazandın!`,
       rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${coins} PokéCoin`],
@@ -430,6 +438,8 @@ function endBattle(outcome, ballType) {
     const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
     saveAdventurePlayer(p);
+    recordAdventureEvent('win_wild_battle');
+    recordAdventureEvent('catch_pokemon');
 
     showResult({
       title: `🎉 ${wild.name}${wildIsShiny ? ' ✨' : ''} yakalandı!`,

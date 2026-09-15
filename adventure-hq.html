@@ -64,6 +64,31 @@
   .region-pill.locked-pill { background: #eee; color: #999; }
   .region-pill.unlocked-pill { background: #e6e0ff; color: #5e3a9c; }
 
+  .quest-card { background: #fff; border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .quest-card.claimed { opacity: 0.55; }
+  .quest-title { font-weight: bold; font-size: 14px; }
+  .quest-desc { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .quest-track { background: #eee; border-radius: 999px; height: 12px; overflow: hidden; }
+  .quest-fill { height: 100%; background: linear-gradient(90deg,#3b6cdb,#6ea8ff); }
+  .quest-fill.done { background: linear-gradient(90deg,#27ae60,#5fd88a); }
+  .quest-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .quest-reward { font-size: 12px; color: #6b3500; font-weight: bold; }
+  .claim-btn { background: #ffd24a; color: #6b3500; border: none; padding: 6px 14px; border-radius: 999px; font-weight: bold; font-size: 12px; cursor: pointer; }
+  .claim-btn:disabled { background: #ddd; color: #999; cursor: default; }
+
+  .achievement-summary { text-align: center; font-size: 14px; color: #888; margin-bottom: 10px; }
+  .achievement-category-title { font-size: 14px; font-weight: bold; color: var(--accent-dark); margin: 12px 0 6px; }
+  .achievement-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .achievement-card { background: #fff; border-radius: 14px; padding: 10px 12px; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .achievement-card.locked { opacity: 0.5; }
+  .ach-top { display: flex; align-items: center; gap: 6px; }
+  .ach-icon { font-size: 20px; }
+  .ach-name { font-weight: bold; font-size: 12px; }
+  .ach-desc { font-size: 11px; color: #888; margin: 4px 0; }
+  .ach-track { background: #eee; border-radius: 999px; height: 6px; overflow: hidden; margin-bottom: 4px; }
+  .ach-fill { height: 100%; background: linear-gradient(90deg,#8e44ad,#c58aef); }
+  .ach-reward { font-size: 10px; color: #6b3500; }
+
   .bag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .bag-card { background: #fff; border-radius: 16px; padding: 14px 8px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
   .bag-card .b-emoji { font-size: 30px; }
@@ -151,6 +176,13 @@
   <div class="badge-grid" id="badgeGrid"></div>
   <div class="region-row" id="regionRow"></div>
 
+  <div class="section-title">🎯 Daily Quests</div>
+  <div id="questArea"></div>
+
+  <div class="section-title">🏆 Achievements</div>
+  <div class="achievement-summary" id="achievementSummary"></div>
+  <div id="achievementArea"></div>
+
   <div class="section-title">🎒 Adventure Çantası</div>
   <div class="bag-grid" id="bagGrid"></div>
   <button class="pokemon-center-btn" id="pokemonCenterBtn">🏥 Pokémon Center - Tüm Pokémon'ları Ücretsiz İyileştir</button>
@@ -171,6 +203,9 @@
 <script src="region-data.js"></script>
 <script src="gym-data.js"></script>
 <script src="league-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="adventure-achievement-data.js"></script>
+<script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 
@@ -227,6 +262,81 @@ function renderProgression() {
       alert(`${g.badge.icon} ${g.badge.name}\n\n${g.leader}'yi (${TYPE_TR[g.type] || g.type} tipi) yenerek kazanıldı.`);
     });
   });
+}
+
+function renderQuests() {
+  const player = getAdventurePlayer();
+  const dq = player.dailyQuests;
+  const area = el('questArea');
+  if (!dq || !dq.quests.length) {
+    area.innerHTML = `<p style="text-align:center;color:#999;font-size:13px;">Görevler yükleniyor...</p>`;
+    return;
+  }
+  area.innerHTML = dq.quests.map(q => {
+    const catalogEntry = getQuestCatalogEntry(q.id);
+    if (!catalogEntry) return '';
+    const done = q.progress >= catalogEntry.targetValue;
+    const pct = Math.round(Math.min(1, q.progress / catalogEntry.targetValue) * 100);
+    const rewardLabel = [
+      catalogEntry.reward.coins ? `🪙 ${catalogEntry.reward.coins}` : null,
+      catalogEntry.reward.trainerXp ? `⭐ ${catalogEntry.reward.trainerXp} XP` : null
+    ].filter(Boolean).join(' + ');
+    return `
+      <div class="quest-card ${q.claimed ? 'claimed' : ''}">
+        <div class="quest-title">${catalogEntry.icon} ${catalogEntry.name}</div>
+        <div class="quest-desc">${catalogEntry.description}</div>
+        <div class="quest-track"><div class="quest-fill ${done ? 'done' : ''}" style="width:${pct}%"></div></div>
+        <div class="quest-foot">
+          <span class="quest-reward">${q.progress}/${catalogEntry.targetValue} · ${rewardLabel}</span>
+          <button class="claim-btn" data-quest="${q.id}" ${(!done || q.claimed) ? 'disabled' : ''}>
+            ${q.claimed ? '✅ Alındı' : 'CLAIM'}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+  area.querySelectorAll('.claim-btn:not(:disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const result = claimDailyQuest(btn.dataset.quest);
+      if (!result.ok) { renderAll(); return; }
+      alert(`🎉 Görev tamamlandı! 🪙 +${result.reward.coins || 0} · ⭐ +${result.reward.trainerXp || 0} XP`);
+      renderAll();
+    });
+  });
+}
+
+function renderAchievements() {
+  const player = getAdventurePlayer();
+  const dex = getAdventureDex();
+  const progress = getAdventureProgress();
+  const ctx = buildAdventureAchievementContext(player, dex, progress);
+  const unlockedCount = (player.adventureAchievements || []).length;
+
+  el('achievementSummary').textContent = `${unlockedCount} / ${ACHIEVEMENT_CATALOG.length} unlocked`;
+
+  const area = el('achievementArea');
+  area.innerHTML = getAdventureAchievementCategories().map(category => {
+    const items = ACHIEVEMENT_CATALOG.filter(a => a.category === category);
+    return `
+      <div class="achievement-category-title">${category}</div>
+      <div class="achievement-grid">
+        ${items.map(a => {
+          const target = adventureAchievementTargetValue(a, ctx);
+          const value = Math.min(target, a.metric(ctx));
+          const unlocked = isAdventureAchievementUnlocked(player, a.id);
+          const pct = target > 0 ? Math.round((value / target) * 100) : 0;
+          const rewardLabel = a.reward
+            ? [a.reward.coins ? `🪙${a.reward.coins}` : null, a.reward.trainerXp ? `⭐${a.reward.trainerXp}` : null].filter(Boolean).join(' ')
+            : '';
+          return `
+            <div class="achievement-card ${unlocked ? '' : 'locked'}">
+              <div class="ach-top"><span class="ach-icon">${unlocked ? a.icon : '🔒'}</span><span class="ach-name">${a.name}</span></div>
+              <div class="ach-desc">${a.description}</div>
+              <div class="ach-track"><div class="ach-fill" style="width:${pct}%"></div></div>
+              ${rewardLabel ? `<div class="ach-reward">${value}/${target} · ${rewardLabel}</div>` : `<div class="ach-reward">${value}/${target}</div>`}
+            </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
 }
 
 function renderBag() {
@@ -334,6 +444,8 @@ function renderCollection() {
 function renderAll() {
   renderTrainerCard();
   renderProgression();
+  renderQuests();
+  renderAchievements();
   renderBag();
   renderCollection();
 }
@@ -348,9 +460,17 @@ el('pokemonCenterBtn').addEventListener('click', () => {
   centerLocked = false;
 });
 
-function init() {
+async function init() {
   const shown = renderStarterGate(el('starterOverlay'), () => renderAll());
   if (!shown) renderAll();
+  if (!needsStarter()) {
+    // Catch-all achievement re-check (cheap and idempotent - see
+    // adventure-achievement-data.js) plus the daily quest bootstrap; either
+    // one's own save triggers onAdventureCloudChange below, which re-renders
+    // with the final state, so no extra render call is needed here.
+    checkAndUnlockAdventureAchievements();
+    await ensureDailyQuests();
+  }
 }
 waitForAdventureCloud().then(init);
 onAdventureCloudChange(() => { if (!needsStarter()) renderAll(); });
