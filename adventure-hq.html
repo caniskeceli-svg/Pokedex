@@ -210,8 +210,10 @@
 
   <div class="progress-summary" id="progressSummary"></div>
 
-  <div class="section-title">🏅 Rozetler</div>
-  <div class="badge-grid" id="badgeGrid"></div>
+  <div class="section-title">🏅 Kanto Rozetleri</div>
+  <div class="badge-grid" id="badgeGridKanto"></div>
+  <div class="section-title">🏅 Johto Rozetleri</div>
+  <div class="badge-grid" id="badgeGridJohto"></div>
   <div class="region-row" id="regionRow"></div>
 
   <div class="section-title">🎯 Daily Quests</div>
@@ -263,21 +265,45 @@ function renderTrainerCard() {
   el('coinBadge').textContent = `💰 ${player.coins || 0}`;
 }
 
+// Renders one region's badge grid into `elementId`, wiring up the same
+// "tap an earned badge to see how it was won" alert Kanto has always had -
+// shared by Kanto and Johto so there's no per-region duplicate of this
+// rendering logic.
+function renderBadgeGrid(elementId, gyms, player) {
+  el(elementId).innerHTML = gyms.map(g => {
+    const earned = isGymDefeated(g, player);
+    return `
+      <div class="badge-cell ${earned ? '' : 'locked'}" data-gym="${g.gymId}">
+        <div class="bg-icon">${earned ? g.badge.icon : '❔'}</div>
+        <div class="bg-name">${earned ? g.badge.name : '???'}</div>
+      </div>`;
+  }).join('');
+  el(elementId).querySelectorAll('.badge-cell:not(.locked)').forEach(cellEl => {
+    cellEl.addEventListener('click', () => {
+      const g = getGymById(cellEl.dataset.gym);
+      alert(`${g.badge.icon} ${g.badge.name}\n\n${g.leader}'yi (${TYPE_TR[g.type] || g.type} tipi) yenerek kazanıldı.`);
+    });
+  });
+}
+
 function renderProgression() {
   const player = getAdventurePlayer();
   const { level } = levelInfo(player.xp);
-  const badgeCount = (player.badges || []).length;
-  const gymCount = GYM_CATALOG.filter(g => isGymDefeated(g, player)).length;
+
+  const kantoGyms = getGymsForRegion('kanto');
+  const johtoGyms = getGymsForRegion('johto');
+  const kantoGymCount = kantoGyms.filter(g => isGymDefeated(g, player)).length;
+  const johtoGymCount = johtoGyms.filter(g => isGymDefeated(g, player)).length;
 
   const kantoLeague = getLeagueById('kanto');
   const leagueStatusVal = leagueStatus(kantoLeague, player);
   const leagueLabel = leagueStatusVal === 'completed' ? '🏆 Tamamlandı' : (leagueStatusVal === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
 
   el('progressSummary').innerHTML = `
-    <div class="progress-stat"><div class="p-num">${badgeCount}/${GYM_CATALOG.length}</div><div class="p-label">🏅 Rozet</div></div>
-    <div class="progress-stat"><div class="p-num">${gymCount}/${GYM_CATALOG.length}</div><div class="p-label">🏆 Gym</div></div>
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
+    <div class="progress-stat"><div class="p-num">${kantoGymCount}/${kantoGyms.length}</div><div class="p-label">🏆 Kanto Gym</div></div>
     <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto League</div></div>
+    <div class="progress-stat"><div class="p-num">${johtoGymCount}/${johtoGyms.length}</div><div class="p-label">🏆 Johto Gym</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
@@ -297,20 +323,12 @@ function renderProgression() {
     el('openJohtoBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=johto'; });
   }
 
-  el('badgeGrid').innerHTML = GYM_CATALOG.map(g => {
-    const earned = isGymDefeated(g, player);
-    return `
-      <div class="badge-cell ${earned ? '' : 'locked'}" data-gym="${g.gymId}">
-        <div class="bg-icon">${earned ? g.badge.icon : '❔'}</div>
-        <div class="bg-name">${earned ? g.badge.name : '???'}</div>
-      </div>`;
-  }).join('');
-  el('badgeGrid').querySelectorAll('.badge-cell:not(.locked)').forEach(cellEl => {
-    cellEl.addEventListener('click', () => {
-      const g = getGymById(cellEl.dataset.gym);
-      alert(`${g.badge.icon} ${g.badge.name}\n\n${g.leader}'yi (${TYPE_TR[g.type] || g.type} tipi) yenerek kazanıldı.`);
-    });
-  });
+  renderBadgeGrid('badgeGridKanto', kantoGyms, player);
+  // Johto badges stay visible (all locked) even before the region itself
+  // unlocks - identical to how Kanto's own gym cards already show
+  // "locked" rather than disappearing, just one level up (region instead
+  // of badge prerequisite).
+  renderBadgeGrid('badgeGridJohto', johtoGyms, player);
 }
 
 function renderQuests() {
@@ -490,10 +508,11 @@ function renderCollection() {
   });
 }
 
-function renderHallOfFame() {
-  const player = getAdventurePlayer();
-  const league = getLeagueById('kanto');
-  const rows = GYM_CATALOG.map(g => {
+// Builds the Hall of Fame rows for one region's gyms - shared by Kanto and
+// Johto so the memory/selfie wiring (victoryKeyForGym is already region-
+// agnostic) never needs a per-region copy.
+function renderGymHofRows(gyms, player) {
+  return gyms.map(g => {
     const defeated = isGymDefeated(g, player);
     const victoryKey = victoryKeyForGym(g.gymId);
     const memory = getMemoryByVictoryKey(victoryKey);
@@ -512,6 +531,13 @@ function renderHallOfFame() {
         ${btn}
       </div>`;
   }).join('');
+}
+
+function renderHallOfFame() {
+  const player = getAdventurePlayer();
+  const league = getLeagueById('kanto');
+  const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
+  const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
 
   const champCompleted = isLeagueCompleted(player, 'kanto');
   const champVictoryKey = victoryKeyForChampion('kanto');
@@ -531,7 +557,13 @@ function renderHallOfFame() {
       ${champBtn}
     </div>`;
 
-  el('hofArea').innerHTML = rows + champRow;
+  el('hofArea').innerHTML = `
+    <div class="achievement-category-title">Kanto Gyms</div>
+    ${kantoRows}
+    ${champRow}
+    <div class="achievement-category-title">Johto Gyms</div>
+    ${johtoRows}
+  `;
   el('hofArea').querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => {
       const memory = getAdventureMemories().find(m => m.id === btn.dataset.view);
