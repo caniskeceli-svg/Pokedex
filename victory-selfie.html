@@ -174,10 +174,10 @@ function renderAlreadyHasMemory(memory) {
   el('wrap').innerHTML = `
     <div class="card">
       <h2>✅ Bu zafer için zaten bir anın var!</h2>
-      <p class="status-msg">Her zafer için yalnızca bir Hall of Fame anısı oluşturulabilir.</p>
+      <p class="status-msg">Her zafer için yalnızca bir Onur Listesi anısı oluşturulabilir.</p>
       <div class="btn-row">
         <button class="btn btn-primary" id="viewBtn">🖼️ Anıyı Görüntüle</button>
-        <button class="btn btn-secondary" id="backBtn">Adventure HQ'ya Dön</button>
+        <button class="btn btn-secondary" id="backBtn">Macera Karargâhı'na Dön</button>
       </div>
     </div>`;
   el('viewBtn').addEventListener('click', () => showMemoryViewer(memory));
@@ -257,7 +257,7 @@ function renderCameraError(e) {
       <p class="error-msg">📵 ${reason}</p>
       <p class="status-msg">Selfie çekmeden devam edebilirsin - rozetin/ödüllerin zaten kazanıldı.</p>
       <div class="btn-row">
-        <button class="btn btn-secondary" id="skipBtn">Adventure HQ'ya Dön</button>
+        <button class="btn btn-secondary" id="skipBtn">Macera Karargâhı'na Dön</button>
       </div>
     </div>`;
   el('skipBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
@@ -446,10 +446,10 @@ function renderSaved(memory) {
   el('wrap').innerHTML = `
     <div class="card">
       <h2>✅ Memory Saved!</h2>
-      <p class="status-msg">Bu anı artık Adventure HQ'daki Hall of Fame'de.</p>
+      <p class="status-msg">Bu anı artık Macera Karargâhı'ndaki Onur Listesi'nde.</p>
       <div class="btn-row">
         <button class="btn btn-primary" id="viewBtn">🖼️ Anıyı Görüntüle</button>
-        <button class="btn btn-secondary" id="backBtn">Adventure HQ'ya Dön</button>
+        <button class="btn btn-secondary" id="backBtn">Macera Karargâhı'na Dön</button>
       </div>
     </div>`;
   el('viewBtn').addEventListener('click', () => showMemoryViewer(memory));

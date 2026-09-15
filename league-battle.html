@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pokédex">
-<title>Pokémon League</title>
+<title>Pokémon Ligi</title>
 <style>
   :root { --card: #ffffff; --ink: #2b2b2b; --accent: #8e44ad; --accent-dark: #5e3a9c; }
   * { box-sizing: border-box; }
@@ -89,7 +89,7 @@
 </head>
 <body>
 
-<header><h1>🏟️ Pokémon League</h1></header>
+<header><h1>🏟️ Pokémon Ligi</h1></header>
 
 <div class="wrap" id="wrap"></div>
 
@@ -146,17 +146,17 @@ function renderPartyPicker() {
   wrap.innerHTML = `
     <div class="card">
       <div class="leader-banner">
-        <div class="leader-name">🏟️ Pokémon League</div>
-        <div class="leader-sub">Elite Four + Champion</div>
+        <div class="leader-name">🏟️ Pokémon Ligi</div>
+        <div class="leader-sub">Elit Dörtlü + Şampiyon</div>
         ${gauntletTrackHtml()}
       </div>
-      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla League'e gireceksin?</div>
-      <p style="text-align:center;color:#888;font-size:12px;">Bu Pokémon tüm gauntlet boyunca (Elite Four + Champion) aynı HP ile devam edecek.</p>
+      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla Lige gireceksin?</div>
+      <p style="text-align:center;color:#888;font-size:12px;">Bu Pokémon tüm mücadele boyunca (Elit Dörtlü + Şampiyon) aynı HP ile devam edecek.</p>
       <div id="pickList"></div>
     </div>`;
   const pickList = el('pickList');
   if (!mydex.length) {
-    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Adventure HQ\'ya dön</a>.</p>';
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Macera Karargâhı\'na dön</a>.</p>';
     return;
   }
   pickList.innerHTML = mydex.map(p => {
@@ -179,7 +179,7 @@ function renderPartyPicker() {
     });
   });
   if (mydex.every(p => p.fainted === true)) {
-    pickList.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:#a33;font-size:13px;margin-top:8px;">Tüm Pokémon\'ların baygın! Şimdilik League\'e giremezsin. 🏥</p>');
+    pickList.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:#a33;font-size:13px;margin-top:8px;">Tüm Pokémon\'ların baygın! Şimdilik Lige giremezsin. 🏥</p>');
   }
 }
 
@@ -412,7 +412,7 @@ function giveUp() {
   if (battleEnded) return;
   battleEnded = true;
   endLeagueAttempt(leagueId);
-  showResult({ title: '🏳️ League\'den vazgeçtin.', rewards: [], continueLabel: 'Geri Dön', note: 'Bir sonraki denemede Elite Four\'un başından başlarsın.' });
+  showResult({ title: '🏳️ Ligden vazgeçtin.', rewards: [], continueLabel: 'Geri Dön', note: 'Bir sonraki denemede Elit Dörtlü\'nün başından başlarsın.' });
 }
 
 // Called when the current stage's whole team has been defeated - either
@@ -456,7 +456,7 @@ function endBattle(outcome) {
     const regionName = REGIONS[league.regionId] ? REGIONS[league.regionId].name : league.regionId;
     if (result.alreadyCompleted) {
       showResult({
-        title: `🏆 ${regionName} Champion'ı tekrar yendin!`,
+        title: `🏆 ${regionName} Şampiyonu'nu tekrar yendin!`,
         rewards: [],
         note: `${regionName} zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.`,
         continueLabel: 'Haritaya Dön'
@@ -470,7 +470,7 @@ function endBattle(outcome) {
           `💰 +${result.coins} PokéCoin`,
           ...(unlockRegionName ? [`🌎 ${unlockRegionName} Unlocked!`] : [])
         ],
-        note: `${regionName} League'i tamamladın!${unlockRegionName ? ` ${unlockRegionName}\'nun içeriği yakında geliyor.` : ''}`,
+        note: `${regionName} Ligini tamamladın!${unlockRegionName ? ` ${unlockRegionName}\'nun içeriği yakında geliyor.` : ''}`,
         continueLabel: 'Haritaya Dön',
         selfieUrl: `victory-selfie.html?type=league_champion&leagueId=${leagueId}`
       });
@@ -481,7 +481,7 @@ function endBattle(outcome) {
       title: `😵 ${stages[stageIdx].data.name} seni yendi...`,
       rewards: [],
       continueLabel: 'Haritaya Dön',
-      note: 'Pokémon\'unu iyileştirip tekrar deneyebilirsin - ancak bir sonraki denemede Elite Four\'un başından başlarsın.'
+      note: 'Pokémon\'unu iyileştirip tekrar deneyebilirsin - ancak bir sonraki denemede Elit Dörtlü\'nün başından başlarsın.'
     });
   }
 }
@@ -504,7 +504,7 @@ function showResult({ title, rewards, continueLabel, note, selfieUrl }) {
 
 function init() {
   if (!league) {
-    el('wrap').innerHTML = '<div class="card"><p>Geçersiz League. <a href="adventure.html">Haritaya dön</a>.</p></div>';
+    el('wrap').innerHTML = '<div class="card"><p>Geçersiz Lig. <a href="adventure.html">Haritaya dön</a>.</p></div>';
     return;
   }
   const player0 = getAdventurePlayer();
@@ -513,7 +513,7 @@ function init() {
     return;
   }
   if (!isLeagueUnlocked(league, player0)) {
-    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Pokémon League'e girmek için önce 8 Gym rozetini kazanmalısın.</p></div>`;
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Pokémon Ligine girmek için önce 8 Salon rozetini kazanmalısın.</p></div>`;
     return;
   }
   const attempt = getActiveLeagueAttempt(leagueId);

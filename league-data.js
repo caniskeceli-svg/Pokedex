@@ -12,7 +12,7 @@ const LEAGUE_CATALOG = [
     eliteFour: [
       {
         id: "lorelei", order: 1, name: "Lorelei", type: "ice",
-        description: "Buzun ustası Lorelei, Elite Four'un ilk üyesi.",
+        description: "Buzun ustası Lorelei, Elit Dörtlü'nün ilk üyesi.",
         team: [
           { speciesId: 124, level: 50 }, // Jynx
           { speciesId: 80, level: 52 },  // Slowbro
@@ -42,7 +42,7 @@ const LEAGUE_CATALOG = [
       },
       {
         id: "lance", order: 4, name: "Lance", type: "dragon",
-        description: "Ejderha ustası Lance, Elite Four'un son üyesi.",
+        description: "Ejderha ustası Lance, Elit Dörtlü'nün son üyesi.",
         team: [
           { speciesId: 130, level: 54 }, // Gyarados
           { speciesId: 142, level: 56 }, // Aerodactyl
@@ -53,7 +53,7 @@ const LEAGUE_CATALOG = [
     ],
     champion: {
       id: "champion", order: 5, name: "Blue (Şampiyon)", type: "mixed",
-      description: "Rakibin Blue, Kanto Champion'ı! Son sınav.",
+      description: "Rakibin Blue, Kanto Şampiyonu! Son sınav.",
       team: [
         { speciesId: 18, level: 58 },  // Pidgeot
         { speciesId: 103, level: 58 }, // Exeggutor
@@ -76,7 +76,7 @@ const LEAGUE_CATALOG = [
     eliteFour: [
       {
         id: "will", order: 1, name: "Will", type: "psychic",
-        description: "Psişik ustası Will, Johto Elite Four'un ilk üyesi.",
+        description: "Psişik ustası Will, Johto Elit Dörtlü'nün ilk üyesi.",
         team: [
           { speciesId: 178, level: 40 }, // Xatu
           { speciesId: 124, level: 41 }, // Jynx
@@ -111,7 +111,7 @@ const LEAGUE_CATALOG = [
       },
       {
         id: "karen", order: 4, name: "Karen", type: "dark",
-        description: "Karanlık ustası Karen, Johto Elite Four'un son üyesi.",
+        description: "Karanlık ustası Karen, Johto Elit Dörtlü'nün son üyesi.",
         team: [
           { speciesId: 197, level: 42 }, // Umbreon
           { speciesId: 45, level: 42 },  // Vileplume
@@ -124,7 +124,7 @@ const LEAGUE_CATALOG = [
     ],
     champion: {
       id: "champion", order: 5, name: "Lance (Şampiyon)", type: "dragon",
-      description: "Ejderha ustası Lance, Johto Champion'ı! Son sınav.",
+      description: "Ejderha ustası Lance, Johto Şampiyonu! Son sınav.",
       team: [
         { speciesId: 130, level: 44 }, // Gyarados
         { speciesId: 149, level: 47 }, // Dragonite
@@ -151,7 +151,7 @@ const LEAGUE_CATALOG = [
     eliteFour: [
       {
         id: "sidney", order: 1, name: "Sidney", type: "dark",
-        description: "Karanlık ustası Sidney, Hoenn Elite Four'un ilk üyesi.",
+        description: "Karanlık ustası Sidney, Hoenn Elit Dörtlü'nün ilk üyesi.",
         team: [
           { speciesId: 262, level: 46 }, // Mightyena
           { speciesId: 332, level: 46 }, // Cacturne
@@ -162,7 +162,7 @@ const LEAGUE_CATALOG = [
       },
       {
         id: "phoebe", order: 2, name: "Phoebe", type: "ghost",
-        description: "Hayalet ustası Phoebe, Hoenn Elite Four'un ikinci üyesi.",
+        description: "Hayalet ustası Phoebe, Hoenn Elit Dörtlü'nün ikinci üyesi.",
         team: [
           { speciesId: 356, level: 48 }, // Dusclops
           { speciesId: 354, level: 49 }, // Banette
@@ -173,7 +173,7 @@ const LEAGUE_CATALOG = [
       },
       {
         id: "glacia", order: 3, name: "Glacia", type: "ice",
-        description: "Buz ustası Glacia, Hoenn Elite Four'un üçüncü üyesi.",
+        description: "Buz ustası Glacia, Hoenn Elit Dörtlü'nün üçüncü üyesi.",
         team: [
           { speciesId: 362, level: 50 }, // Glalie
           { speciesId: 364, level: 50 }, // Sealeo
@@ -184,7 +184,7 @@ const LEAGUE_CATALOG = [
       },
       {
         id: "drake", order: 4, name: "Drake", type: "dragon",
-        description: "Ejderha ustası Drake, Hoenn Elite Four'un son üyesi.",
+        description: "Ejderha ustası Drake, Hoenn Elit Dörtlü'nün son üyesi.",
         team: [
           { speciesId: 372, level: 52 }, // Shelgon
           { speciesId: 334, level: 53 }, // Altaria
@@ -196,7 +196,7 @@ const LEAGUE_CATALOG = [
     ],
     champion: {
       id: "champion", order: 5, name: "Wallace (Şampiyon)", type: "water",
-      description: "Su ustası Wallace, Hoenn Champion'ı! Son sınav.",
+      description: "Su ustası Wallace, Hoenn Şampiyonu! Son sınav.",
       team: [
         { speciesId: 370, level: 54 }, // Luvdisc
         { speciesId: 340, level: 55 }, // Whiscash

@@ -157,7 +157,7 @@
 <header>
   <h1>🗺️ Macera Haritası</h1>
   <div class="nav-row">
-    <a class="nav-back" href="adventure-hq.html">⬅️ Adventure HQ</a>
+    <a class="nav-back" href="adventure-hq.html">⬅️ Macera Karargâhı</a>
     <a class="nav-back" href="index.html">📖 Pokédex'e Dön</a>
   </div>
 </header>
@@ -244,8 +244,8 @@ function renderPath() {
     const league = loc.leagueId ? getLeagueById(loc.leagueId) : null;
     const leagueCompleted = league ? isLeagueCompleted(getAdventurePlayer(), loc.leagueId) : false;
     const tag = loc.gymId
-      ? `<span class="node-tag tag-gym">${gymDefeated ? '✅' : '🏟️'} Gym</span>`
-      : (loc.leagueId ? `<span class="node-tag tag-gym">${leagueCompleted ? '🏆' : '⚔️'} League</span>` : '');
+      ? `<span class="node-tag tag-gym">${gymDefeated ? '✅' : '🏟️'} Salon</span>`
+      : (loc.leagueId ? `<span class="node-tag tag-gym">${leagueCompleted ? '🏆' : '⚔️'} Lig</span>` : '');
     const statusTag = visited
       ? `<span class="node-tag tag-visited">✔ Keşfedildi</span>`
       : (unlocked ? '' : `<span class="node-tag tag-locked">🔒 Kilitli</span>`);
@@ -300,14 +300,14 @@ async function openDetail(locationId) {
       const badgeCount = league.requiresBadges.filter(b => ownedBadges.includes(b)).length;
       const totalBadges = league.requiresBadges.length;
       const btnHtml = status === 'locked'
-        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli — ${totalBadges} Gym Rozeti Gerekli (${badgeCount}/${totalBadges})</button>`
+        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli — ${totalBadges} Salon Rozeti Gerekli (${badgeCount}/${totalBadges})</button>`
         : status === 'completed'
           ? `<button class="gym-btn league-btn completed-league-btn" id="leagueBtn">🏆 Tamamlandı · Tekrar Dene</button>`
-          : `<button class="gym-btn league-btn challenge-league-btn" id="leagueBtn">⚔️ League'e Meydan Oku</button>`;
+          : `<button class="gym-btn league-btn challenge-league-btn" id="leagueBtn">⚔️ Lige Meydan Oku</button>`;
       const stageNames = getLeagueStages(league).map(s => s.data.name).join(' → ');
       leagueHtml = `
         <div class="league-card ${status}">
-          <div class="l-title">🏟️ Pokémon League</div>
+          <div class="l-title">🏟️ Pokémon Ligi</div>
           <div class="l-sub">${stageNames}</div>
           ${btnHtml}
         </div>`;
@@ -329,7 +329,7 @@ async function openDetail(locationId) {
         <div class="gym-card ${status}">
           <div class="g-leader">🏟️ ${gym.leader}</div>
           <div class="g-sub">${TYPE_TR[gym.type] || gym.type} tipi · ${gym.team.length} Pokémon · ${gym.description}</div>
-          ${status === 'locked' ? `<div class="g-sub">Önce önceki Gym rozetini kazanmalısın.</div>` : ''}
+          ${status === 'locked' ? `<div class="g-sub">Önce önceki Salon rozetini kazanmalısın.</div>` : ''}
           ${btnHtml}
         </div>`;
     }
@@ -337,7 +337,7 @@ async function openDetail(locationId) {
 
   el('detailBox').innerHTML = `
     <h2>${loc.name}</h2>
-    <div class="d-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}${loc.gymId ? ' · 🏟️ Gym Şehri' : ''}</div>
+    <div class="d-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}${loc.gymId ? ' · 🏟️ Salon Şehri' : ''}</div>
     ${!unlocked ? '<p style="color:#a33;font-size:13px;">🔒 Bu bölgeye ulaşmak için önceki bölgeyi keşfetmelisin.</p>' : ''}
     ${leagueHtml}
     ${gymHtml}
