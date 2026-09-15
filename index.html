@@ -31,55 +31,57 @@
 
   .poke-intro {
     position: relative;
-    width: 220px;
-    height: 270px;
+    width: 440px;
+    height: 540px;
+    max-width: 100%;
     margin: 0 auto 4px;
   }
   .poke-ball {
     position: absolute;
-    left: 50%; bottom: 6px;
-    width: 100px; height: 100px;
-    margin-left: -50px;
+    left: 50%; bottom: 12px;
+    width: 200px; height: 200px;
+    margin-left: -100px;
     transform-origin: 50% 90%;
     animation: ballShake 0.55s ease-in-out 2;
   }
   .poke-ball-top, .poke-ball-bottom {
     position: absolute;
-    left: 0; width: 100px; height: 50px;
-    border: 5px solid #2b2b2b;
+    left: 0; width: 200px; height: 100px;
+    border: 10px solid #2b2b2b;
     box-sizing: border-box;
   }
   .poke-ball-top {
-    top: 0; border-radius: 100px 100px 0 0; border-bottom: none;
+    top: 0; border-radius: 200px 200px 0 0; border-bottom: none;
     background: var(--accent);
     animation: ballOpenTop 0.5s ease-in 1.1s forwards;
   }
   .poke-ball-bottom {
-    bottom: 0; border-radius: 0 0 100px 100px; border-top: none;
+    bottom: 0; border-radius: 0 0 200px 200px; border-top: none;
     background: #fff;
     animation: ballOpenBottom 0.5s ease-in 1.1s forwards;
   }
   .poke-ball-band {
-    position: absolute; left: 0; top: 45px; width: 100px; height: 10px;
+    position: absolute; left: 0; top: 90px; width: 200px; height: 20px;
     background: #2b2b2b; z-index: 2;
     animation: ballFadeOut 0.3s ease-in 1.1s forwards;
   }
   .poke-ball-button {
-    position: absolute; left: 50%; top: 50%; width: 28px; height: 28px;
-    margin: -14px 0 0 -14px; border-radius: 50%;
-    background: #fff; border: 5px solid #2b2b2b; z-index: 3;
+    position: absolute; left: 50%; top: 50%; width: 56px; height: 56px;
+    margin: -28px 0 0 -28px; border-radius: 50%;
+    background: #fff; border: 10px solid #2b2b2b; z-index: 3;
     animation: ballFadeOut 0.3s ease-in 1.1s forwards;
   }
   .header-mascot {
     position: absolute;
-    left: 50%; bottom: 20px;
-    width: 210px;
+    left: 50%; bottom: 40px;
+    width: 420px;
+    max-width: 90vw;
     height: auto;
-    margin-left: -105px;
+    margin-left: -210px;
     opacity: 0;
-    transform: scale(0.15) translateY(10px);
-    border-radius: 18px;
-    box-shadow: 0 6px 0 rgba(0,0,0,0.12);
+    transform: scale(0.15) translateY(20px);
+    border-radius: 36px;
+    box-shadow: 0 12px 0 rgba(0,0,0,0.12);
     animation: charEmerge 0.7s cubic-bezier(.22,1.6,.4,1) 1.15s forwards;
   }
   @keyframes ballShake {
@@ -89,16 +91,16 @@
     75% { transform: rotate(10deg); }
   }
   @keyframes ballOpenTop {
-    to { transform: translate(-20px, -30px) rotate(-35deg); opacity: 0; }
+    to { transform: translate(-40px, -60px) rotate(-35deg); opacity: 0; }
   }
   @keyframes ballOpenBottom {
-    to { transform: translate(20px, 14px) rotate(20deg); opacity: 0; }
+    to { transform: translate(40px, 28px) rotate(20deg); opacity: 0; }
   }
   @keyframes ballFadeOut {
     to { opacity: 0; }
   }
   @keyframes charEmerge {
-    to { opacity: 1; transform: scale(1) translateY(-14px); }
+    to { opacity: 1; transform: scale(1) translateY(-28px); }
   }
 
   header h1 {
