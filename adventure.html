@@ -100,6 +100,20 @@
   }
   .coming-soon { font-size: 13px; color: #a68a4a; background: #fff7e0; border: 1px dashed #ffd27a; border-radius: 12px; padding: 10px; margin-bottom: 14px; }
 
+  .gym-card { border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .gym-card.locked { background: #f0f0f0; }
+  .gym-card.challenge { background: #fff3cd; border: 2px solid #ffd24a; }
+  .gym-card.defeated { background: #dff3e0; border: 2px solid #7bc47f; }
+  .gym-card .g-leader { font-weight: bold; font-size: 16px; }
+  .gym-card .g-sub { font-size: 12px; color: #777; margin-bottom: 8px; }
+  .gym-btn {
+    display: block; width: 100%; border: none; padding: 12px; border-radius: 999px;
+    font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 6px;
+  }
+  .gym-btn.challenge-btn { background: var(--accent); color: #fff; }
+  .gym-btn.locked-btn { background: #ccc; color: #666; cursor: default; }
+  .gym-btn.defeated-btn { background: #27ae60; color: #fff; }
+
   .starter-gate-overlay {
     display: none; position: fixed; inset: 0; z-index: 500; background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 100%);
     align-items: center; justify-content: center; padding: 20px;
@@ -144,6 +158,7 @@
 <script src="region-data.js"></script>
 <script src="battle-engine.js"></script>
 <script src="starter-data.js"></script>
+<script src="gym-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const CURRENT_REGION = "kanto";
@@ -161,7 +176,9 @@ function renderPath() {
     const visited = state.visitedLocations.includes(loc.id);
     const unlocked = isLocationUnlocked(loc, state);
     const statusClass = visited ? 'visited' : (unlocked ? 'unlocked' : 'locked');
-    const tag = loc.gymId ? `<span class="node-tag tag-gym">🏟️ Gym</span>` : '';
+    const gym = loc.gymId ? getGymById(loc.gymId) : null;
+    const gymDefeated = gym ? isGymDefeated(gym, getAdventurePlayer()) : false;
+    const tag = loc.gymId ? `<span class="node-tag tag-gym">${gymDefeated ? '✅' : '🏟️'} Gym</span>` : '';
     const statusTag = visited
       ? `<span class="node-tag tag-visited">✔ Keşfedildi</span>`
       : (unlocked ? '' : `<span class="node-tag tag-locked">🔒 Kilitli</span>`);
@@ -206,16 +223,47 @@ async function openDetail(locationId) {
     encounterHtml = `<div class="encounter-list">${chips.join('')}</div>`;
   }
 
+  let gymHtml = '';
+  if (loc.gymId && unlocked) {
+    const gym = getGymById(loc.gymId);
+    if (gym) {
+      const gymPlayer = getAdventurePlayer();
+      const status = gymStatus(gym, gymPlayer);
+      const btnHtml = status === 'locked'
+        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli</button>`
+        : status === 'defeated'
+          ? `<button class="gym-btn defeated-btn" id="gymBtn">✅ ${gym.badge.icon} ${gym.badge.name} · Tekrar Savaş</button>`
+          : `<button class="gym-btn challenge-btn" id="gymBtn">⚔️ ${gym.leader}'e Meydan Oku</button>`;
+      gymHtml = `
+        <div class="gym-card ${status}">
+          <div class="g-leader">🏟️ ${gym.leader}</div>
+          <div class="g-sub">${TYPE_TR[gym.type] || gym.type} tipi · ${gym.team.length} Pokémon · ${gym.description}</div>
+          ${status === 'locked' ? `<div class="g-sub">Önce önceki Gym rozetini kazanmalısın.</div>` : ''}
+          ${btnHtml}
+        </div>`;
+    }
+  }
+
   el('detailBox').innerHTML = `
     <h2>${loc.name}</h2>
     <div class="d-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}${loc.gymId ? ' · 🏟️ Gym Şehri' : ''}</div>
     ${!unlocked ? '<p style="color:#a33;font-size:13px;">🔒 Bu bölgeye ulaşmak için önceki bölgeyi keşfetmelisin.</p>' : ''}
+    ${gymHtml}
     ${unlocked && loc.encounters.length ? '<div class="coming-soon">⚔️ Vahşi Pokémon savaşı ve yakalama yakında burada olacak. Şimdilik sadece bölgeyi keşfedip haritada ilerleyebilirsin.</div>' : ''}
     ${unlocked ? encounterHtml : ''}
     <button class="explore-btn" id="exploreBtn" ${!unlocked ? 'disabled' : ''}>${visited ? '✔ Tekrar Keşfet' : '🚶 Bu Bölgeyi Keşfet'}</button>
     <button class="close-btn" id="closeDetailBtn">Kapat</button>
   `;
   el('detailOverlay').classList.add('show');
+
+  if (loc.gymId && unlocked) {
+    const gymBtnEl = el('gymBtn');
+    if (gymBtnEl) {
+      gymBtnEl.addEventListener('click', () => {
+        window.location.href = `gym-battle.html?gym=${loc.gymId}`;
+      });
+    }
+  }
 
   if (unlocked) {
     el('exploreBtn').addEventListener('click', () => {

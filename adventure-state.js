@@ -17,7 +17,7 @@
 // adventure-hq.html load this file.
 
 const ADVENTURE_DOC_ID = "adventure";
-const DEFAULT_ADVENTURE_PLAYER = { xp: 0, coins: 100, achievements: [], wildWins: 0, wildLosses: 0 };
+const DEFAULT_ADVENTURE_PLAYER = { xp: 0, coins: 100, achievements: [], wildWins: 0, wildLosses: 0, badges: [] };
 const DEFAULT_ADVENTURE_INVENTORY = {
   pokeball: 5, greatball: 0, ultraball: 0,
   potion: 1, "super-potion": 0, revive: 0,
@@ -169,6 +169,17 @@ function visitAdventureLocation(locationId) {
   };
   saveAdventureProgress(next);
   return next;
+}
+
+// Central Trainer XP grant (Phase 6) - Gym victories and any future League/
+// quest/achievement source should call this rather than touching
+// player.xp directly, so it's never confused with a Pokemon's own pxp
+// (a completely separate value on each owned instance).
+function addAdventureTrainerXP(amount, reason) {
+  const player = getAdventurePlayer();
+  player.xp += Math.max(0, Math.round(amount || 0));
+  saveAdventurePlayer(player);
+  return { xp: player.xp, reason };
 }
 
 function addAdventureCoins(amount) {

@@ -77,6 +77,29 @@ const LOCATIONS = [
   {
     id: "cerulean-city", region: "kanto", name: "Cerulean City", type: "town",
     order: 8, requires: "mt-moon", gymId: "cerulean", encounters: []
+  },
+  // Phase 6: the remaining Gym cities, chained on so every Kanto Gym has a
+  // real map node (no new routes/encounters between them yet - that's a
+  // separate, later expansion of the map itself, not this phase's scope).
+  {
+    id: "vermilion-city", region: "kanto", name: "Vermilion City", type: "town",
+    order: 9, requires: "cerulean-city", gymId: "vermilion", encounters: []
+  },
+  {
+    id: "celadon-city", region: "kanto", name: "Celadon City", type: "town",
+    order: 10, requires: "vermilion-city", gymId: "celadon", encounters: []
+  },
+  {
+    id: "fuchsia-city", region: "kanto", name: "Fuchsia City", type: "town",
+    order: 11, requires: "celadon-city", gymId: "fuchsia", encounters: []
+  },
+  {
+    id: "saffron-city", region: "kanto", name: "Saffron City", type: "town",
+    order: 12, requires: "fuchsia-city", gymId: "saffron", encounters: []
+  },
+  {
+    id: "cinnabar-island", region: "kanto", name: "Cinnabar Island", type: "town",
+    order: 13, requires: "saffron-city", gymId: "cinnabar", encounters: []
   }
 ];
 
