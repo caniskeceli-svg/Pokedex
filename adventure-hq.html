@@ -58,11 +58,15 @@
   .badge-cell.locked { opacity: 0.35; cursor: default; }
   .badge-cell .bg-icon { font-size: 26px; }
   .badge-cell .bg-name { font-size: 10px; font-weight: bold; margin-top: 2px; }
-  .region-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
-  .region-pill { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: bold; cursor: pointer; }
-  .region-pill.kanto-pill { background: #dff3e0; color: #237a34; cursor: default; }
-  .region-pill.locked-pill { background: #eee; color: #999; }
-  .region-pill.unlocked-pill { background: #e6e0ff; color: #5e3a9c; }
+  .region-row { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .region-card { background: #fff; border-radius: 14px; padding: 12px 14px; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .region-card.locked { opacity: 0.6; }
+  .region-card-title { font-weight: bold; font-size: 14px; }
+  .region-card-status { font-size: 12px; color: #888; margin-top: 2px; }
+  .region-card-btn {
+    display: block; width: 100%; margin-top: 8px; background: #8e44ad; color: #fff; border: none;
+    padding: 8px; border-radius: 999px; font-weight: bold; font-size: 12px; cursor: pointer;
+  }
 
   .quest-card { background: #fff; border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
   .quest-card.claimed { opacity: 0.55; }
@@ -276,18 +280,22 @@ function renderProgression() {
     <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto League</div></div>
   `;
 
+  const kantoCompleted = isLeagueCompleted(player, 'kanto');
   const johtoUnlocked = isRegionUnlocked(player, 'johto');
   el('regionRow').innerHTML = `
-    <span class="region-pill kanto-pill">Kanto ✔</span>
-    <span class="region-pill ${johtoUnlocked ? 'unlocked-pill' : 'locked-pill'}" id="johtoPill">Johto ${johtoUnlocked ? '🔓' : '🔒'}</span>
+    <div class="region-card">
+      <div class="region-card-title">🗺️ Kanto</div>
+      <div class="region-card-status">${kantoCompleted ? '✅ Completed' : '⏳ In Progress'}</div>
+    </div>
+    <div class="region-card ${johtoUnlocked ? '' : 'locked'}">
+      <div class="region-card-title">🗺️ Johto</div>
+      <div class="region-card-status">${johtoUnlocked ? '🔓 Unlocked — Adventure begins in New Bark Town' : '🔒 Locked — Defeat Kanto Champion to unlock'}</div>
+      ${johtoUnlocked ? `<button class="region-card-btn" id="openJohtoBtn">🗺️ Haritayı Aç</button>` : ''}
+    </div>
   `;
-  el('johtoPill').addEventListener('click', () => {
-    if (isRegionUnlocked(getAdventurePlayer(), 'johto')) {
-      alert('🚧 Johto içeriği yakında ekleniyor! Şimdilik sadece Kanto oynanabilir.');
-    } else {
-      alert('🔒 Johto\'yu açmak için önce Kanto Champion\'ı yenmelisin.');
-    }
-  });
+  if (johtoUnlocked) {
+    el('openJohtoBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=johto'; });
+  }
 
   el('badgeGrid').innerHTML = GYM_CATALOG.map(g => {
     const earned = isGymDefeated(g, player);
