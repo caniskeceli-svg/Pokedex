@@ -366,6 +366,10 @@ const LOCATIONS = [
   {
     id: "blackthorn-city", region: "johto", name: "Blackthorn City", type: "town",
     order: 33, requires: "ice-path", gymId: "johto_blackthorn", encounters: []
+  },
+  {
+    id: "johto-pokemon-league", region: "johto", name: "Pokémon League", type: "town",
+    order: 34, requires: "blackthorn-city", gymId: null, leagueId: "johto_league", encounters: []
   }
 ];
 

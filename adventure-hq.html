@@ -296,14 +296,20 @@ function renderProgression() {
   const johtoGymCount = johtoGyms.filter(g => isGymDefeated(g, player)).length;
 
   const kantoLeague = getLeagueById('kanto');
-  const leagueStatusVal = leagueStatus(kantoLeague, player);
-  const leagueLabel = leagueStatusVal === 'completed' ? '🏆 Tamamlandı' : (leagueStatusVal === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
+  const johtoLeague = getLeagueById('johto_league');
+  const leagueLabelFor = (league) => {
+    const s = leagueStatus(league, player);
+    return s === 'completed' ? '🏆 Tamamlandı' : (s === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
+  };
+  const leagueLabel = leagueLabelFor(kantoLeague);
+  const johtoLeagueLabel = johtoLeague ? leagueLabelFor(johtoLeague) : '🔒 Kilitli';
 
   el('progressSummary').innerHTML = `
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
     <div class="progress-stat"><div class="p-num">${kantoGymCount}/${kantoGyms.length}</div><div class="p-label">🏆 Kanto Gym</div></div>
     <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto League</div></div>
     <div class="progress-stat"><div class="p-num">${johtoGymCount}/${johtoGyms.length}</div><div class="p-label">🏆 Johto Gym</div></div>
+    <div class="progress-stat"><div class="p-num">${johtoLeagueLabel}</div><div class="p-label">🏟️ Johto League</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
@@ -533,36 +539,76 @@ function renderGymHofRows(gyms, player) {
   }).join('');
 }
 
-function renderHallOfFame() {
-  const player = getAdventurePlayer();
-  const league = getLeagueById('kanto');
-  const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
-  const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
+// Builds the Hall of Fame rows for one League's Elite Four - shared by Kanto
+// and Johto, same pattern as renderGymHofRows. Each member's victoryKey is
+// already region/league-agnostic (victoryKeyForEliteFour) so this needed no
+// new memory schema, only wiring a selfie link that was already defined but
+// unused before Phase 10D.
+function renderEliteFourHofRows(league, player) {
+  const lp = getLeagueProgress(player, league.leagueId);
+  return league.eliteFour.slice().sort((a, b) => a.order - b.order).map(m => {
+    const defeated = lp.eliteFourWins.includes(m.id);
+    const victoryKey = victoryKeyForEliteFour(league.leagueId, m.id);
+    const memory = getMemoryByVictoryKey(victoryKey);
+    const btn = !defeated
+      ? ''
+      : memory
+        ? `<button class="hof-btn view-btn" data-view="${memory.id}">🖼️ View</button>`
+        : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_elitefour&leagueId=${league.leagueId}&stageId=${m.id}" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
+    return `
+      <div class="hof-row ${defeated ? '' : 'locked'}">
+        <span class="hof-icon">${defeated ? '🎖️' : '🔒'}</span>
+        <div class="hof-info">
+          <div class="hof-name">${m.name}</div>
+          <div class="hof-sub">${defeated ? 'Defeated' : 'Henüz kazanılmadı'}</div>
+        </div>
+        ${btn}
+      </div>`;
+  }).join('');
+}
 
-  const champCompleted = isLeagueCompleted(player, 'kanto');
-  const champVictoryKey = victoryKeyForChampion('kanto');
+// Builds the Hall of Fame Champion row for one League - shared by Kanto and
+// Johto so a new region's champion never needs a hand-copied row.
+function renderChampionHofRow(league, player) {
+  const champCompleted = isLeagueCompleted(player, league.leagueId);
+  const champVictoryKey = victoryKeyForChampion(league.leagueId);
   const champMemory = getMemoryByVictoryKey(champVictoryKey);
   const champBtn = !champCompleted
     ? ''
     : champMemory
       ? `<button class="hof-btn view-btn" data-view="${champMemory.id}">🖼️ View</button>`
-      : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_champion&leagueId=kanto" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
-  const champRow = `
+      : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_champion&leagueId=${league.leagueId}" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
+  const regionName = REGIONS[league.regionId] ? REGIONS[league.regionId].name : league.regionId;
+  return `
     <div class="hof-row ${champCompleted ? '' : 'locked'}">
       <span class="hof-icon">${champCompleted ? '🏆' : '🔒'}</span>
       <div class="hof-info">
-        <div class="hof-name">Kanto Champion</div>
+        <div class="hof-name">${regionName} Champion</div>
         <div class="hof-sub">${champCompleted ? `${league.champion.name} defeated` : 'Henüz kazanılmadı'}</div>
       </div>
       ${champBtn}
     </div>`;
+}
+
+function renderHallOfFame() {
+  const player = getAdventurePlayer();
+  const kantoLeague = getLeagueById('kanto');
+  const johtoLeague = getLeagueById('johto_league');
+  const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
+  const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
 
   el('hofArea').innerHTML = `
     <div class="achievement-category-title">Kanto Gyms</div>
     ${kantoRows}
-    ${champRow}
+    <div class="achievement-category-title">Kanto Elite Four</div>
+    ${renderEliteFourHofRows(kantoLeague, player)}
+    ${renderChampionHofRow(kantoLeague, player)}
     <div class="achievement-category-title">Johto Gyms</div>
     ${johtoRows}
+    ${johtoLeague ? `
+    <div class="achievement-category-title">Johto Elite Four</div>
+    ${renderEliteFourHofRows(johtoLeague, player)}
+    ${renderChampionHofRow(johtoLeague, player)}` : ''}
   `;
   el('hofArea').querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => {

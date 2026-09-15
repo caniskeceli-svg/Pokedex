@@ -87,9 +87,10 @@
 <script>
 const el = (id) => document.getElementById(id);
 const params = new URLSearchParams(window.location.search);
-const victoryType = params.get('type'); // "gym" | "league_champion"
+const victoryType = params.get('type'); // "gym" | "league_champion" | "league_elitefour"
 const gymId = params.get('gymId');
 const leagueId = params.get('leagueId');
+const stageId = params.get('stageId');
 
 let victoryInfo = null;   // { victoryKey, headerTitle, title, subtitle, badgeIcon, memoryType, gymId, leagueId, leagueStageId, badgeId }
 let chosenMon = null;     // the owned Pokemon instance chosen for the photo
@@ -140,12 +141,32 @@ function buildVictoryInfo() {
       gymId: null, leagueId, leagueStageId: league.champion.id, badgeId: null
     };
   }
+  if (victoryType === 'league_elitefour') {
+    const league = getLeagueById(leagueId);
+    if (!league) return null;
+    const member = league.eliteFour.find(m => m.id === stageId);
+    if (!member) return null;
+    return {
+      victoryKey: victoryKeyForEliteFour(leagueId, stageId),
+      headerTitle: `${league.regionId.toUpperCase()} ELITE FOUR`,
+      title: `${member.name.toUpperCase()}`,
+      subtitle: `${member.name.toUpperCase()} DEFEATED!`,
+      badgeIcon: '🎖️',
+      badgeName: `${member.name.toUpperCase()}`,
+      themeColor: TYPE_COLORS[member.type] || '#8e44ad',
+      memoryType: 'league_elitefour_victory',
+      gymId: null, leagueId, leagueStageId: member.id, badgeId: null
+    };
+  }
   return null;
 }
 
 function isVictoryActuallyEarned(info) {
   const player = getAdventurePlayer();
   if (info.memoryType === 'gym_victory') return isGymDefeated(getGymById(info.gymId), player);
+  if (info.memoryType === 'league_elitefour_victory') {
+    return getLeagueProgress(player, info.leagueId).eliteFourWins.includes(info.leagueStageId);
+  }
   return isLeagueCompleted(player, info.leagueId);
 }
 

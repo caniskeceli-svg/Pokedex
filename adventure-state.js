@@ -47,15 +47,40 @@ const DEFAULT_ADVENTURE_INVENTORY = {
   potion: 1, "super-potion": 0, revive: 0,
   berry: 2, "rare-candy": 0, "evolution-stone": 0
 };
-// leagueAttempt is the "gauntlet in progress" record (Phase 7): which league,
+// leagueAttempts is the "gauntlet(s) in progress" record: which league,
 // which stage (elite four member id / "champion"), and which owned Pokemon
 // instance is fighting it through - kept here (not on `player`) since it's
-// transient run state, not a permanent unlock. A loss or give-up resets it
-// back to this exact default so a future entry restarts at stage one; it
-// never touches a Pokemon's own currentHp/fainted, so losing and retrying
-// can never be used to "free-heal" (see league-data.js endLeagueAttempt).
+// transient run state, not a permanent unlock. A loss or give-up resets a
+// league's own slot back to this exact default shape so a future entry
+// restarts at stage one; it never touches a Pokemon's own currentHp/fainted,
+// so losing and retrying can never be used to "free-heal" (see
+// league-data.js endLeagueAttempt).
+//
+// Phase 10D: this was a single `leagueAttempt` object (only one league,
+// Kanto, existed). With Johto added, it became a map keyed by leagueId
+// (`{ [leagueId]: {...} }`) so a Kanto attempt and a Johto attempt can each
+// be in progress without overwriting each other - see
+// migrateLegacyLeagueAttempt below for the one-time, non-destructive upgrade
+// of any pre-existing single-object save.
 const DEFAULT_LEAGUE_ATTEMPT = { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null };
-const DEFAULT_ADVENTURE_PROGRESS = { visitedLocations: [], currentLocationId: null, leagueAttempt: DEFAULT_LEAGUE_ATTEMPT };
+const DEFAULT_ADVENTURE_PROGRESS = { visitedLocations: [], currentLocationId: null, leagueAttempts: {} };
+
+// One-time, idempotent migration of the pre-Phase-10D single `leagueAttempt`
+// object into the new `leagueAttempts` map. Only folds it in when the map
+// doesn't already have that league's slot, so it can never clobber a
+// Johto attempt that already exists there; the legacy field is simply left
+// unused going forward (saveAdventureProgress never writes it again) rather
+// than explicitly deleted, matching this file's existing "old field just
+// stops being written" migration style (see _adventureMigrated above).
+function migrateLegacyLeagueAttempt(progressData) {
+  const data = progressData || {};
+  const attempts = Object.assign({}, data.leagueAttempts || {});
+  const legacy = data.leagueAttempt;
+  if (legacy && legacy.active && legacy.leagueId && !attempts[legacy.leagueId]) {
+    attempts[legacy.leagueId] = legacy;
+  }
+  return attempts;
+}
 
 let ADVENTURE_STATE = {
   player: DEFAULT_ADVENTURE_PLAYER,
@@ -151,7 +176,7 @@ async function migrateLegacyAdventureData() {
           }),
           inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
           mydex: wildMons,
-          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress),
+          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress, { leagueAttempts: migrateLegacyLeagueAttempt(legacyProgress) }),
           memories: []
         };
       }
@@ -192,11 +217,13 @@ function startAdventureCloudSync() {
       adventureDocRef.set(ADVENTURE_STATE);
     } else {
       const data = snap.data() || {};
+      const mergedProgress = Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {});
+      mergedProgress.leagueAttempts = migrateLegacyLeagueAttempt(data.progress);
       ADVENTURE_STATE = {
         player: Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: data.mydex || [],
-        progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {}),
+        progress: mergedProgress,
         memories: data.memories || []
       };
     }
@@ -230,7 +257,7 @@ function addAdventureItems(itemKey, qty) {
 function getAdventureProgress() { return ADVENTURE_STATE.progress; }
 function saveAdventureProgress(progress) { ADVENTURE_STATE.progress = progress; pushAdventureCloud({ progress }); }
 // Spreads the EXISTING progress object rather than replacing it wholesale,
-// so fields this function doesn't know about (like Phase 7's leagueAttempt)
+// so fields this function doesn't know about (like Phase 7/10D's leagueAttempts)
 // are never dropped by a location visit. Returns `wasNewVisit` so callers
 // can fire a one-time "explore_location" event only on a genuinely new spot.
 function visitAdventureLocation(locationId) {

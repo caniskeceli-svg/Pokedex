@@ -371,14 +371,17 @@ function onStageCleared() {
   const result = awardEliteFourVictory(leagueId, stage.stageId);
   recordAdventureEvent('league_progress');
   const rewards = result.alreadyWon ? [] : [`👑 +${result.trainerXp} Eğitmen XP`, `💰 +${result.coins} PokéCoin`];
+  const selfieUrl = `victory-selfie.html?type=league_elitefour&leagueId=${leagueId}&stageId=${stage.stageId}`;
   battleEnded = true;
   el('wrap').innerHTML = `
     <div class="card">
       <div class="result-title">✅ ${stage.data.name} Yenildi!</div>
       ${rewards.length ? `<div class="reward-row">${rewards.map(r => `<span class="reward-chip badge-chip">${r}</span>`).join('')}</div>` : '<p style="text-align:center;color:#888;font-size:13px;">Bu üyeyi daha önce yenmiştin - ödül tekrar verilmiyor.</p>'}
       <p style="text-align:center;color:#888;font-size:13px;">${player.name}: ${player.hp}/${player.maxHp} HP ile bir sonraki rakibe geçiyor.</p>
+      <button class="continue-btn" id="selfieBtn" style="background:#8e44ad;">📸 Victory Selfie</button>
       <button class="continue-btn" id="nextStageBtn">Sonraki Rakip ➜</button>
     </div>`;
+  el('selfieBtn').addEventListener('click', () => { window.location.href = selfieUrl; });
   el('nextStageBtn').addEventListener('click', async () => {
     stageIdx++;
     battleEnded = false;
@@ -394,22 +397,24 @@ function endBattle(outcome) {
   if (outcome === 'win') {
     const result = awardChampionVictory(leagueId);
     recordAdventureEvent('league_progress');
+    const regionName = REGIONS[league.regionId] ? REGIONS[league.regionId].name : league.regionId;
     if (result.alreadyCompleted) {
       showResult({
-        title: '🏆 Kanto Champion\'ı tekrar yendin!',
+        title: `🏆 ${regionName} Champion'ı tekrar yendin!`,
         rewards: [],
-        note: 'Kanto zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.',
+        note: `${regionName} zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.`,
         continueLabel: 'Haritaya Dön'
       });
     } else {
+      const unlockRegionName = league.unlocksRegion && REGIONS[league.unlocksRegion] ? REGIONS[league.unlocksRegion].name : league.unlocksRegion;
       showResult({
-        title: '🏆 KANTO CHAMPION 🏆',
+        title: `🏆 ${regionName.toUpperCase()} CHAMPION 🏆`,
         rewards: [
           `👑 +${result.trainerXp} Eğitmen XP`,
           `💰 +${result.coins} PokéCoin`,
-          `🌎 Johto Unlocked!`
+          ...(unlockRegionName ? [`🌎 ${unlockRegionName} Unlocked!`] : [])
         ],
-        note: 'Kanto League\'i tamamladın! Johto\'nun içeriği yakında geliyor.',
+        note: `${regionName} League'i tamamladın!${unlockRegionName ? ` ${unlockRegionName}\'nun içeriği yakında geliyor.` : ''}`,
         continueLabel: 'Haritaya Dön',
         selfieUrl: `victory-selfie.html?type=league_champion&leagueId=${leagueId}`
       });
@@ -447,6 +452,10 @@ function init() {
     return;
   }
   const player0 = getAdventurePlayer();
+  if (!isRegionUnlocked(player0, league.regionId)) {
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 ${REGIONS[league.regionId] ? REGIONS[league.regionId].name : league.regionId} henüz kilitli.</p></div>`;
+    return;
+  }
   if (!isLeagueUnlocked(league, player0)) {
     el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Pokémon League'e girmek için önce 8 Gym rozetini kazanmalısın.</p></div>`;
     return;
