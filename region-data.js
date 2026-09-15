@@ -100,6 +100,14 @@ const LOCATIONS = [
   {
     id: "cinnabar-island", region: "kanto", name: "Cinnabar Island", type: "town",
     order: 13, requires: "saffron-city", gymId: "cinnabar", encounters: []
+  },
+  // Phase 7: the Pokemon League itself, reachable once Viridian City (the
+  // last Gym stop) is visited. Whether its Challenge is actually available
+  // depends on holding all 8 badges - that's leagueStatus()/league-data.js,
+  // completely separate from this map-reachability check.
+  {
+    id: "pokemon-league", region: "kanto", name: "Pokémon League", type: "town",
+    order: 14, requires: "viridian-city", gymId: null, leagueId: "kanto", encounters: []
   }
 ];
 

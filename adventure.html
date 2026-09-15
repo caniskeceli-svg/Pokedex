@@ -114,6 +114,15 @@
   .gym-btn.locked-btn { background: #ccc; color: #666; cursor: default; }
   .gym-btn.defeated-btn { background: #27ae60; color: #fff; }
 
+  .league-card { border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .league-card.locked { background: #f0f0f0; }
+  .league-card.challenge { background: #e6e0ff; border: 2px solid #8e44ad; }
+  .league-card.completed { background: #fff3cd; border: 2px solid #ffd24a; }
+  .league-card .l-title { font-weight: bold; font-size: 17px; }
+  .league-card .l-sub { font-size: 12px; color: #777; margin-bottom: 8px; }
+  .league-btn.challenge-league-btn { background: #8e44ad; color: #fff; }
+  .league-btn.completed-league-btn { background: #ffb703; color: #6b3500; }
+
   .starter-gate-overlay {
     display: none; position: fixed; inset: 0; z-index: 500; background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 100%);
     align-items: center; justify-content: center; padding: 20px;
@@ -159,6 +168,7 @@
 <script src="battle-engine.js"></script>
 <script src="starter-data.js"></script>
 <script src="gym-data.js"></script>
+<script src="league-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const CURRENT_REGION = "kanto";
@@ -178,7 +188,11 @@ function renderPath() {
     const statusClass = visited ? 'visited' : (unlocked ? 'unlocked' : 'locked');
     const gym = loc.gymId ? getGymById(loc.gymId) : null;
     const gymDefeated = gym ? isGymDefeated(gym, getAdventurePlayer()) : false;
-    const tag = loc.gymId ? `<span class="node-tag tag-gym">${gymDefeated ? '✅' : '🏟️'} Gym</span>` : '';
+    const league = loc.leagueId ? getLeagueById(loc.leagueId) : null;
+    const leagueCompleted = league ? isLeagueCompleted(getAdventurePlayer(), loc.leagueId) : false;
+    const tag = loc.gymId
+      ? `<span class="node-tag tag-gym">${gymDefeated ? '✅' : '🏟️'} Gym</span>`
+      : (loc.leagueId ? `<span class="node-tag tag-gym">${leagueCompleted ? '🏆' : '⚔️'} League</span>` : '');
     const statusTag = visited
       ? `<span class="node-tag tag-visited">✔ Keşfedildi</span>`
       : (unlocked ? '' : `<span class="node-tag tag-locked">🔒 Kilitli</span>`);
@@ -223,6 +237,27 @@ async function openDetail(locationId) {
     encounterHtml = `<div class="encounter-list">${chips.join('')}</div>`;
   }
 
+  let leagueHtml = '';
+  if (loc.leagueId && unlocked) {
+    const league = getLeagueById(loc.leagueId);
+    if (league) {
+      const leaguePlayer = getAdventurePlayer();
+      const status = leagueStatus(league, leaguePlayer);
+      const badgeCount = (leaguePlayer.badges || []).length;
+      const btnHtml = status === 'locked'
+        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli — 8 Gym Rozeti Gerekli (${badgeCount}/8)</button>`
+        : status === 'completed'
+          ? `<button class="gym-btn league-btn completed-league-btn" id="leagueBtn">🏆 Tamamlandı · Tekrar Dene</button>`
+          : `<button class="gym-btn league-btn challenge-league-btn" id="leagueBtn">⚔️ League'e Meydan Oku</button>`;
+      leagueHtml = `
+        <div class="league-card ${status}">
+          <div class="l-title">🏟️ Pokémon League</div>
+          <div class="l-sub">Elite Four (Lorelei → Bruno → Agatha → Lance) + Champion</div>
+          ${btnHtml}
+        </div>`;
+    }
+  }
+
   let gymHtml = '';
   if (loc.gymId && unlocked) {
     const gym = getGymById(loc.gymId);
@@ -248,6 +283,7 @@ async function openDetail(locationId) {
     <h2>${loc.name}</h2>
     <div class="d-type">${loc.type === 'town' ? 'Şehir' : 'Rota'}${loc.gymId ? ' · 🏟️ Gym Şehri' : ''}</div>
     ${!unlocked ? '<p style="color:#a33;font-size:13px;">🔒 Bu bölgeye ulaşmak için önceki bölgeyi keşfetmelisin.</p>' : ''}
+    ${leagueHtml}
     ${gymHtml}
     ${unlocked && loc.encounters.length ? '<div class="coming-soon">⚔️ Vahşi Pokémon savaşı ve yakalama yakında burada olacak. Şimdilik sadece bölgeyi keşfedip haritada ilerleyebilirsin.</div>' : ''}
     ${unlocked ? encounterHtml : ''}
@@ -261,6 +297,14 @@ async function openDetail(locationId) {
     if (gymBtnEl) {
       gymBtnEl.addEventListener('click', () => {
         window.location.href = `gym-battle.html?gym=${loc.gymId}`;
+      });
+    }
+  }
+  if (loc.leagueId && unlocked) {
+    const leagueBtnEl = el('leagueBtn');
+    if (leagueBtnEl) {
+      leagueBtnEl.addEventListener('click', () => {
+        window.location.href = `league-battle.html?league=${loc.leagueId}`;
       });
     }
   }

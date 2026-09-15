@@ -17,13 +17,29 @@
 // adventure-hq.html load this file.
 
 const ADVENTURE_DOC_ID = "adventure";
-const DEFAULT_ADVENTURE_PLAYER = { xp: 0, coins: 100, achievements: [], wildWins: 0, wildLosses: 0, badges: [] };
+const DEFAULT_ADVENTURE_PLAYER = {
+  xp: 0, coins: 100, achievements: [], wildWins: 0, wildLosses: 0, badges: [],
+  // Phase 7: per-league progress (eliteFourWins is only ever used to gate a
+  // one-time reward - it never lets a run skip a stage; see league-data.js),
+  // plus the two region-progression fields future regions read from.
+  leagueProgress: {},
+  completedRegions: [],
+  unlockedRegions: ["kanto"]
+};
 const DEFAULT_ADVENTURE_INVENTORY = {
   pokeball: 5, greatball: 0, ultraball: 0,
   potion: 1, "super-potion": 0, revive: 0,
   berry: 2, "rare-candy": 0, "evolution-stone": 0
 };
-const DEFAULT_ADVENTURE_PROGRESS = { visitedLocations: [], currentLocationId: null };
+// leagueAttempt is the "gauntlet in progress" record (Phase 7): which league,
+// which stage (elite four member id / "champion"), and which owned Pokemon
+// instance is fighting it through - kept here (not on `player`) since it's
+// transient run state, not a permanent unlock. A loss or give-up resets it
+// back to this exact default so a future entry restarts at stage one; it
+// never touches a Pokemon's own currentHp/fainted, so losing and retrying
+// can never be used to "free-heal" (see league-data.js endLeagueAttempt).
+const DEFAULT_LEAGUE_ATTEMPT = { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null };
+const DEFAULT_ADVENTURE_PROGRESS = { visitedLocations: [], currentLocationId: null, leagueAttempt: DEFAULT_LEAGUE_ATTEMPT };
 
 let ADVENTURE_STATE = {
   player: DEFAULT_ADVENTURE_PLAYER,
