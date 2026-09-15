@@ -18,6 +18,7 @@ const SHELL_FILES = [
   "adventure-state.js",
   "region-data.js",
   "battle-engine.js",
+  "move-data.js",
   "item-data.js",
   "starter-data.js",
   "evolution-data.js",

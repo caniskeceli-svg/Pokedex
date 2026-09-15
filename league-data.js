@@ -63,6 +63,78 @@ const LEAGUE_CATALOG = [
       rewards: { trainerXp: 1500, coins: 2500 }
     },
     unlocksRegion: "johto"
+  },
+  {
+    // Phase 10D: Johto League. Unlock requires the region itself (granted by
+    // awardChampionVictory("kanto") above) AND all 8 Johto badges - both are
+    // just requiresBadges/isRegionUnlocked doing what they already do for
+    // Kanto, so no new gating logic was needed, only this catalog entry.
+    // unlocksRegion is intentionally omitted: Johto's Champion victory must
+    // only mark the region completed, never invent/unlock a region beyond it.
+    leagueId: "johto_league", regionId: "johto",
+    requiresBadges: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
+    eliteFour: [
+      {
+        id: "will", order: 1, name: "Will", type: "psychic",
+        description: "Psişik ustası Will, Johto Elite Four'un ilk üyesi.",
+        team: [
+          { speciesId: 178, level: 40 }, // Xatu
+          { speciesId: 124, level: 41 }, // Jynx
+          { speciesId: 103, level: 41 }, // Exeggutor
+          { speciesId: 80, level: 41 },  // Slowbro
+          { speciesId: 178, level: 42 }  // Xatu
+        ],
+        rewards: { trainerXp: 550, coins: 800 }
+      },
+      {
+        id: "koga", order: 2, name: "Koga", type: "poison",
+        description: "Zehir ninjası Koga, gölgelerden vurur.",
+        team: [
+          { speciesId: 168, level: 40 }, // Ariados
+          { speciesId: 205, level: 43 }, // Forretress
+          { speciesId: 89, level: 42 },  // Muk
+          { speciesId: 169, level: 44 }  // Crobat
+        ],
+        rewards: { trainerXp: 550, coins: 800 }
+      },
+      {
+        id: "bruno", order: 3, name: "Bruno", type: "fighting",
+        description: "Dövüş ustası Bruno, Johto'da tekrar karşında.",
+        team: [
+          { speciesId: 237, level: 42 }, // Hitmontop
+          { speciesId: 106, level: 42 }, // Hitmonlee
+          { speciesId: 107, level: 42 }, // Hitmonchan
+          { speciesId: 95, level: 43 },  // Onix
+          { speciesId: 68, level: 46 }   // Machamp
+        ],
+        rewards: { trainerXp: 550, coins: 800 }
+      },
+      {
+        id: "karen", order: 4, name: "Karen", type: "dark",
+        description: "Karanlık ustası Karen, Johto Elite Four'un son üyesi.",
+        team: [
+          { speciesId: 197, level: 42 }, // Umbreon
+          { speciesId: 45, level: 42 },  // Vileplume
+          { speciesId: 94, level: 45 },  // Gengar
+          { speciesId: 198, level: 44 }, // Murkrow
+          { speciesId: 229, level: 47 }  // Houndoom
+        ],
+        rewards: { trainerXp: 550, coins: 800 }
+      }
+    ],
+    champion: {
+      id: "champion", order: 5, name: "Lance (Şampiyon)", type: "dragon",
+      description: "Ejderha ustası Lance, Johto Champion'ı! Son sınav.",
+      team: [
+        { speciesId: 130, level: 44 }, // Gyarados
+        { speciesId: 149, level: 47 }, // Dragonite
+        { speciesId: 149, level: 47 }, // Dragonite
+        { speciesId: 142, level: 46 }, // Aerodactyl
+        { speciesId: 6, level: 46 },   // Charizard
+        { speciesId: 149, level: 50 }  // Dragonite
+      ],
+      rewards: { trainerXp: 1600, coins: 2700 }
+    }
   }
 ];
 
@@ -112,8 +184,14 @@ function isRegionUnlocked(player, regionId) {
 // Lives in Adventure `progress`, not `player`, since it's transient run
 // state rather than a permanent unlock - see DEFAULT_LEAGUE_ATTEMPT in
 // adventure-state.js for why a reset here can never touch Pokemon HP.
+// Phase 10D: `progress.leagueAttempts` is a map keyed by leagueId (was a
+// single `progress.leagueAttempt` object through Phase 9, when only one
+// league existed) - two leagues can now each have their own in-progress
+// gauntlet without overwriting each other. Migration of any pre-existing
+// single-object attempt into this map happens once, in adventure-state.js's
+// onSnapshot handler, before this file ever sees the data.
 function getActiveLeagueAttempt(leagueId) {
-  const attempt = getAdventureProgress().leagueAttempt;
+  const attempt = (getAdventureProgress().leagueAttempts || {})[leagueId];
   if (attempt && attempt.active && attempt.leagueId === leagueId) return attempt;
   return null;
 }
@@ -127,7 +205,8 @@ function beginLeagueAttempt(leagueId, instanceId) {
   const stages = getLeagueStages(league);
   const attempt = { leagueId, active: true, stage: stages[0].stageId, instanceId, startedAt: Date.now() };
   const progress = getAdventureProgress();
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempt: attempt }));
+  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: attempt });
+  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
   return attempt;
 }
 
@@ -138,7 +217,7 @@ function beginLeagueAttempt(leagueId, instanceId) {
 // skipping a stage.
 function advanceLeagueAttemptFrom(leagueId, stageId) {
   const progress = getAdventureProgress();
-  const attempt = progress.leagueAttempt;
+  const attempt = (progress.leagueAttempts || {})[leagueId];
   if (!attempt || !attempt.active || attempt.leagueId !== leagueId) return null;
   if (attempt.stage !== stageId) return attempt;
   const league = getLeagueById(leagueId);
@@ -147,20 +226,25 @@ function advanceLeagueAttemptFrom(leagueId, stageId) {
   const nextIdx = idx + 1;
   if (nextIdx >= stages.length) return attempt;
   const next = Object.assign({}, attempt, { stage: stages[nextIdx].stageId });
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempt: next }));
+  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
+  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
   return next;
 }
 
 // Clears the active attempt back to the default (inactive) shape - used on a
 // loss, a give-up, or a Champion victory. Never touches player.xp/coins/
 // badges or any Pokemon's currentHp/fainted, so losing and re-entering the
-// League can never be used to "free-heal" between attempts.
+// League can never be used to "free-heal" between attempts. Only ever
+// touches this league's own slot in the map - another league's in-progress
+// attempt is untouched.
 function endLeagueAttempt(leagueId) {
   const progress = getAdventureProgress();
-  if (!progress.leagueAttempt || progress.leagueAttempt.leagueId !== leagueId) return;
-  saveAdventureProgress(Object.assign({}, progress, {
-    leagueAttempt: { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null }
-  }));
+  const attempt = (progress.leagueAttempts || {})[leagueId];
+  if (!attempt || attempt.leagueId !== leagueId) return;
+  const attempts = Object.assign({}, progress.leagueAttempts, {
+    [leagueId]: { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null }
+  });
+  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
 }
 
 let leagueLockFlags = {};

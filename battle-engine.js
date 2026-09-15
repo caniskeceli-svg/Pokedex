@@ -50,26 +50,126 @@ function scaledStat(baseStat, level) {
   return Math.max(1, Math.round((baseStat || 50) * (level / 50 + 1)));
 }
 
+// Phase 11: base stats already carry every PokeAPI stat key (statMap in
+// fetchPokemonSpeciesData/fetchWildSpecies loops over ALL of them), so
+// spAttack/spDefense/speed need no new fetch - they were sitting unused in
+// `baseStats["special-attack"]` etc. all along. maxHp/attack/defense keep
+// their exact prior meaning and values - only new fields were added, so
+// every existing caller (computeMonMaxHp, evolution HP-carry math, the old
+// physical-only damage call shape) keeps working unmodified.
 function computeBattleStats(baseStats, level) {
   const hp = scaledStat(baseStats.hp, level) + Math.round(level * 1.5);
   return {
     maxHp: hp,
     attack: scaledStat(baseStats.attack, level),
-    defense: scaledStat(baseStats.defense, level)
+    defense: scaledStat(baseStats.defense, level),
+    spAttack: scaledStat(baseStats["special-attack"], level),
+    spDefense: scaledStat(baseStats["special-defense"], level),
+    speed: scaledStat(baseStats.speed, level)
   };
+}
+
+// ---- Phase 11: RNG-injectable combat rules ----
+// Every random roll in combat goes through one of these, each taking an
+// optional `rng` (a zero-arg function returning [0,1), defaulting to
+// Math.random) - tests inject a fake to get fully deterministic hits/
+// misses/crits/turn order without touching the rules themselves.
+function rollCrit(rng) {
+  return (rng || Math.random)() < 0.1;
+}
+function rollDamageVariance(rng) {
+  return 0.85 + (rng || Math.random)() * 0.15;
+}
+function rollAccuracy(move, rng) {
+  const acc = move.accuracy == null ? 100 : move.accuracy;
+  return (rng || Math.random)() < (acc / 100);
+}
+// Faster Pokemon acts first; equal speed ties broken by `rng` (defaults to
+// a coin flip) rather than always favoring one side.
+function decideTurnOrder(speedA, speedB, rng) {
+  if (speedA > speedB) return "a";
+  if (speedB > speedA) return "b";
+  return (rng || Math.random)() < 0.5 ? "a" : "b";
 }
 
 // Returns { damage, effectiveness, isCrit, isStab }. `effectiveness` is the
 // raw type multiplier (0, 0.25, 0.5, 1, 2, 4) so the UI can show "Etkili!" etc.
-function calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defenderStats }) {
+// Phase 11: branches on move.category - physical uses attack/defense exactly
+// as before (so an old-shaped move with no category still resolves as
+// physical, unchanged), special uses spAttack/spDefense, status/zero-power
+// moves always deal 0 without rolling a crit (nothing to crit on).
+function calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng }) {
   const effectiveness = typeMultiplier(move.type, defenderTypes);
-  if (effectiveness === 0) return { damage: 0, effectiveness, isCrit: false, isStab: false };
+  if (effectiveness === 0 || move.category === "status" || !move.power) {
+    return { damage: 0, effectiveness, isCrit: false, isStab: false };
+  }
+  const isSpecial = move.category === "special";
+  const atk = isSpecial ? (attackerStats.spAttack ?? attackerStats.attack) : attackerStats.attack;
+  const def = isSpecial ? (defenderStats.spDefense ?? defenderStats.defense) : defenderStats.defense;
   const isStab = (attackerTypes || []).includes(move.type);
-  const isCrit = Math.random() < 0.1;
-  const randomFactor = 0.85 + Math.random() * 0.15;
-  const base = ((2 * 20 / 5 + 2) * move.power * (attackerStats.attack / Math.max(1, defenderStats.defense))) / 50 + 2;
+  const isCrit = rollCrit(rng);
+  const randomFactor = rollDamageVariance(rng);
+  const base = ((2 * 20 / 5 + 2) * move.power * (atk / Math.max(1, def))) / 50 + 2;
   const damage = Math.max(1, Math.round(base * effectiveness * (isStab ? 1.5 : 1) * (isCrit ? 1.5 : 1) * randomFactor));
   return { damage, effectiveness, isCrit, isStab };
+}
+
+// Accuracy + damage in one call - the single place a move's outcome is ever
+// decided, so every battle page (wild/gym/league) resolves misses/crits/
+// effectiveness identically. Returns { hit:false } (no damage rolled at
+// all) on a miss - PP is still the caller's responsibility to decrement,
+// since a miss still costs the move's PP.
+function resolveMoveUse({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng }) {
+  if (!rollAccuracy(move, rng)) {
+    return { hit: false, damage: 0, effectiveness: 1, isCrit: false, isStab: false };
+  }
+  return Object.assign({ hit: true }, calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng }));
+}
+
+// Minimal enemy AI (Phase 11 spec #16, deliberately not smart): prefers a
+// super-effective move if one is available and has PP; otherwise picks
+// uniformly among whatever still has PP (falling back to the full moveset
+// if every move is out of PP, so an enemy can never be permanently stuck).
+function chooseEnemyMove(enemyMoves, defenderTypes, rng) {
+  const usable = enemyMoves.filter(m => m.pp > 0);
+  const pool = usable.length ? usable : enemyMoves;
+  const superEffective = pool.filter(m => m.power > 0 && typeMultiplier(m.type, defenderTypes) > 1);
+  const choices = superEffective.length ? superEffective : pool;
+  const idx = Math.floor((rng || Math.random)() * choices.length);
+  return choices[idx];
+}
+
+// Resolves one full combat turn (the player's chosen move + the enemy's
+// AI-chosen move) in speed order, stopping early if either side faints
+// mid-turn - this is the ONE place turn order/PP-consumption/accuracy/
+// damage are decided for wild/gym/league battles alike, so no battle page
+// re-implements any of these rules itself. Mutates `player`/`enemy`'s `hp`
+// and the used move's `pp` in place (the move objects living in their own
+// `.moves` arrays) and returns a log-friendly step list for the page to
+// render in whatever style it already uses.
+function resolveBattleTurn({ player, playerMoveIndex, enemy, rng }) {
+  const playerMove = player.moves[playerMoveIndex];
+  const enemyMove = chooseEnemyMove(enemy.moves, player.types, rng);
+  const order = decideTurnOrder(player.battleStats.speed, enemy.battleStats.speed, rng);
+  const actors = order === "a"
+    ? [{ side: "player", mon: player, move: playerMove, target: enemy },
+       { side: "enemy", mon: enemy, move: enemyMove, target: player }]
+    : [{ side: "enemy", mon: enemy, move: enemyMove, target: player },
+       { side: "player", mon: player, move: playerMove, target: enemy }];
+
+  const steps = [];
+  for (const step of actors) {
+    if (step.mon.hp <= 0) continue; // fainted earlier this same turn - skip its action
+    if (step.move.pp > 0) step.move.pp -= 1;
+    const result = resolveMoveUse({
+      move: step.move, attackerTypes: step.mon.types, attackerStats: step.mon.battleStats,
+      defenderTypes: step.target.types, defenderStats: step.target.battleStats, rng
+    });
+    if (result.hit) step.target.hp = Math.max(0, step.target.hp - result.damage);
+    steps.push(Object.assign({ side: step.side, move: step.move, targetFaintedByThis: result.hit && step.target.hp <= 0 }, result));
+    if (step.target.hp <= 0) break; // the battle-ending faint stops the turn here
+  }
+  return steps;
 }
 
 // ---- Catch mechanics ----

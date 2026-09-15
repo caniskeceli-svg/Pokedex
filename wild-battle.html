@@ -91,6 +91,7 @@
 <script src="adventure-state.js"></script>
 <script src="region-data.js"></script>
 <script src="battle-engine.js"></script>
+<script src="move-data.js"></script>
 <script src="item-data.js"></script>
 <script src="quest-data.js"></script>
 <script src="adventure-achievement-data.js"></script>
@@ -171,24 +172,33 @@ function renderPartyPicker() {
 }
 
 function startBattle(playerMon) {
-  const pStats = computeBattleStats(playerMon.stats || {}, playerMon.level || 1);
+  // Phase 11: migrate this instance to have a `moves` field the first time
+  // it ever enters battle (idempotent - a no-op if it already has moves),
+  // and persist that immediately so PP starts accruing from here on.
+  const ensuredMon = ensureInstanceMoves(playerMon);
+  if (ensuredMon !== playerMon) {
+    const mydex0 = getAdventureDex();
+    const idx0 = mydex0.findIndex(p => p.instanceId === playerMon.instanceId);
+    if (idx0 !== -1) { mydex0[idx0] = ensuredMon; saveAdventureDex(mydex0); }
+  }
+  const pStats = computeBattleStats(ensuredMon.stats || {}, ensuredMon.level || 1);
   player = {
-    instanceId: playerMon.instanceId,
-    id: playerMon.id,
-    name: playerMon.nickname || playerMon.name,
-    types: playerMon.types,
-    level: playerMon.level || 1,
+    instanceId: ensuredMon.instanceId,
+    id: ensuredMon.id,
+    name: ensuredMon.nickname || ensuredMon.name,
+    types: ensuredMon.types,
+    level: ensuredMon.level || 1,
     maxHp: pStats.maxHp,
-    hp: computeMonCurrentHp(playerMon), // HP now persists across battles (Phase 4)
+    hp: computeMonCurrentHp(ensuredMon), // HP now persists across battles (Phase 4)
     battleStats: pStats,
-    moves: buildMoveset(playerMon.types)
+    moves: hydrateBattleMoves(ensuredMon) // PP persists across battles too (Phase 11)
   };
   const wStats = computeBattleStats(wild.baseStats, wildLevel);
   wild.level = wildLevel;
   wild.maxHp = wStats.maxHp;
   wild.hp = wStats.maxHp;
   wild.battleStats = wStats;
-  wild.moves = buildMoveset(wild.types);
+  wild.moves = freshBattleMoves(wild.id, wildLevel, wild.types);
   wild.sprite = spriteFor(wild.id, wildIsShiny);
 
   logLines = [];
@@ -224,7 +234,7 @@ function renderBattle() {
       <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
 
       <div class="move-grid" id="moveGrid">
-        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}">${m.name}</button>`).join('')}
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} <span style="font-weight:normal;font-size:11px;">(${m.pp}/${m.maxPp} PP)</span></button>`).join('')}
       </div>
 
       <div class="ball-row" id="itemRow">
@@ -262,8 +272,27 @@ function persistPlayerHp() {
   const mydex = getAdventureDex();
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx === -1) return;
-  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0 });
+  // PP persists exactly like HP (Phase 11) - both are written together on
+  // every turn so a mid-battle refresh/close never loses either.
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves) });
   saveAdventureDex(mydex);
+}
+
+// One enemy counter-move outside the normal move-vs-move turn (used after
+// an item/ball use, which already costs the player's own turn) - still
+// goes through the same AI pick + accuracy/damage resolution as a real
+// turn, just without a speed comparison (using an item is instant).
+function enemyCounterAttack() {
+  const move = chooseEnemyMove(wild.moves, player.types);
+  if (move.pp > 0) move.pp -= 1;
+  const r = resolveMoveUse({ move, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  if (r.hit) {
+    player.hp = Math.max(0, player.hp - r.damage);
+    log(`Vahşi ${wild.name}, ${move.name} kullandı! ${r.damage} hasar.`);
+  } else {
+    log(`Vahşi ${wild.name}, ${move.name} kullandı! Isabet etmedi.`);
+  }
+  persistPlayerHp();
 }
 
 function useHealItemInBattle(itemKey) {
@@ -278,11 +307,7 @@ function useHealItemInBattle(itemKey) {
   }
 
   // Using an item still costs your turn - the wild Pokemon gets to attack.
-  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
-  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
-  player.hp = Math.max(0, player.hp - r2.damage);
-  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
-  persistPlayerHp();
+  enemyCounterAttack();
 
   if (player.hp <= 0) {
     endBattle('loss');
@@ -291,24 +316,25 @@ function useHealItemInBattle(itemKey) {
   renderBattle();
 }
 
+function formatMoveLogLine(step, actorName) {
+  if (!step.hit) return `${actorName}, ${step.move.name} kullandı! Isabet etmedi.`;
+  const effText = step.effectiveness > 1 ? ' (Etkili! 💥)' : (step.effectiveness < 1 && step.effectiveness > 0) ? ' (Etkisiz...)' : step.effectiveness === 0 ? ' (Etkisiz!)' : '';
+  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}`;
+}
+
 function useMove(moveIndex) {
   if (battleEnded) return;
   const move = player.moves[moveIndex];
-  const r = calcDamage({ move, attackerTypes: player.types, attackerStats: player.battleStats, defenderTypes: wild.types, defenderStats: wild.battleStats });
-  wild.hp = Math.max(0, wild.hp - r.damage);
-  log(`${player.name}, ${move.name} kullandı! ${r.damage} hasar${r.effectiveness > 1 ? ' (Etkili! 💥)' : r.effectiveness < 1 && r.effectiveness > 0 ? ' (Etkisiz...)' : r.effectiveness === 0 ? ' (Etkisiz!)' : ''}${r.isCrit ? ' Kritik vuruş!' : ''}`);
+  if (move.pp <= 0) return;
+  const steps = resolveBattleTurn({ player, playerMoveIndex: moveIndex, enemy: wild });
+  steps.forEach(s => log(formatMoveLogLine(s, s.side === 'player' ? player.name : `Vahşi ${wild.name}`)));
 
   if (wild.hp <= 0) {
     endBattle('win');
     return;
   }
 
-  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
-  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
-  player.hp = Math.max(0, player.hp - r2.damage);
-  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
   persistPlayerHp();
-
   if (player.hp <= 0) {
     endBattle('loss');
     return;
@@ -333,11 +359,7 @@ function throwBall(ballType) {
   }
 
   log(`${ITEM_CATALOG[ballType].name} attın... ama ${wild.name} kaçtı!`);
-  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
-  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
-  player.hp = Math.max(0, player.hp - r2.damage);
-  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
-  persistPlayerHp();
+  enemyCounterAttack();
   catchLocked = false;
 
   if (player.hp <= 0) {
@@ -360,9 +382,12 @@ function awardBattleXp(pokemonXp, trainerXp) {
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx !== -1) {
     const mon = mydex[idx];
+    const oldLevel = mon.level || 1;
     const newPxp = (mon.pxp || 0) + pokemonXp;
     const { level } = pokemonLevelInfo(newPxp);
-    mydex[idx] = Object.assign({}, mon, { pxp: newPxp, level });
+    const learnResult = checkLevelUpLearn(mon, oldLevel, level);
+    const leveled = Object.assign({}, mon, { pxp: newPxp, level });
+    mydex[idx] = applyLevelUpLearn(leveled, learnResult);
     saveAdventureDex(mydex);
   }
   const p = getAdventurePlayer();
@@ -411,7 +436,7 @@ function endBattle(outcome, ballType) {
     const coins = 20;
     awardBattleXp(pokemonXp, trainerXp);
 
-    const newMon = {
+    const newMon = ensureInstanceMoves({
       instanceId: makeInstanceId(wild.id),
       id: wild.id,
       name: wild.name,
@@ -428,7 +453,7 @@ function endBattle(outcome, ballType) {
       caughtAt: Date.now(),
       favorite: false,
       fainted: false
-    };
+    });
     const mydex = getAdventureDex();
     mydex.push(newMon);
     saveAdventureDex(mydex);

@@ -295,16 +295,19 @@ async function openDetail(locationId) {
     if (league) {
       const leaguePlayer = getAdventurePlayer();
       const status = leagueStatus(league, leaguePlayer);
-      const badgeCount = (leaguePlayer.badges || []).length;
+      const ownedBadges = leaguePlayer.badges || [];
+      const badgeCount = league.requiresBadges.filter(b => ownedBadges.includes(b)).length;
+      const totalBadges = league.requiresBadges.length;
       const btnHtml = status === 'locked'
-        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli — 8 Gym Rozeti Gerekli (${badgeCount}/8)</button>`
+        ? `<button class="gym-btn locked-btn" disabled>🔒 Kilitli — ${totalBadges} Gym Rozeti Gerekli (${badgeCount}/${totalBadges})</button>`
         : status === 'completed'
           ? `<button class="gym-btn league-btn completed-league-btn" id="leagueBtn">🏆 Tamamlandı · Tekrar Dene</button>`
           : `<button class="gym-btn league-btn challenge-league-btn" id="leagueBtn">⚔️ League'e Meydan Oku</button>`;
+      const stageNames = getLeagueStages(league).map(s => s.data.name).join(' → ');
       leagueHtml = `
         <div class="league-card ${status}">
           <div class="l-title">🏟️ Pokémon League</div>
-          <div class="l-sub">Elite Four (Lorelei → Bruno → Agatha → Lance) + Champion</div>
+          <div class="l-sub">${stageNames}</div>
           ${btnHtml}
         </div>`;
     }
