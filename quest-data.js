@@ -43,16 +43,22 @@ function pickDailyQuestIds() {
 
 // Firestore's own clock, not the device's - a player rolling their local
 // time forward or backward can't mint a new day's quests early (or
-// repeatedly) just by changing their clock. Round-trips one tiny field
-// through a real write+read so "today" is always judged by Firestore's
-// server time, not `Date.now()`.
-async function getServerDateKey() {
+// repeatedly) just by changing their clock, and (Phase 9) can't backdate or
+// fast-forward a Hall of Fame memory's date either. Round-trips one tiny
+// field through a real write+read so "now" is always judged by Firestore's
+// server time, not `Date.now()`. Returns milliseconds since epoch.
+async function getServerTimestampMs() {
   const ref = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID);
   await ref.set({ _serverTimePing: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
   const snap = await ref.get();
   const ts = snap.data()._serverTimePing;
   const date = ts && typeof ts.toDate === "function" ? ts.toDate() : new Date();
-  return date.toISOString().slice(0, 10); // "YYYY-MM-DD", UTC
+  return date.getTime();
+}
+
+async function getServerDateKey() {
+  const ms = await getServerTimestampMs();
+  return new Date(ms).toISOString().slice(0, 10); // "YYYY-MM-DD", UTC
 }
 
 let ensureDailyQuestsLock = false;

@@ -52,7 +52,13 @@ let ADVENTURE_STATE = {
   player: DEFAULT_ADVENTURE_PLAYER,
   inventory: DEFAULT_ADVENTURE_INVENTORY,
   mydex: [],
-  progress: DEFAULT_ADVENTURE_PROGRESS
+  progress: DEFAULT_ADVENTURE_PROGRESS,
+  // Phase 9: Hall of Fame memories - a top-level field like `mydex`, since
+  // it's a growing list of records rather than a player stat. Owned here
+  // (raw Firestore-backed accessors only); hall-of-fame-data.js builds the
+  // actual victory-memory domain logic on top, same layering as
+  // gym-data.js/league-data.js sit on top of getAdventurePlayer/etc.
+  memories: []
 };
 let adventureDocRef = null;
 let adventureReady = false;
@@ -111,7 +117,8 @@ async function migrateLegacyAdventureData() {
           }),
           inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
           mydex: wildMons,
-          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress)
+          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress),
+          memories: []
         };
       }
 
@@ -145,7 +152,8 @@ function startAdventureCloudSync() {
         player: DEFAULT_ADVENTURE_PLAYER,
         inventory: DEFAULT_ADVENTURE_INVENTORY,
         mydex: [],
-        progress: DEFAULT_ADVENTURE_PROGRESS
+        progress: DEFAULT_ADVENTURE_PROGRESS,
+        memories: []
       };
       adventureDocRef.set(ADVENTURE_STATE);
     } else {
@@ -154,7 +162,8 @@ function startAdventureCloudSync() {
         player: Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: data.mydex || [],
-        progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {})
+        progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {}),
+        memories: data.memories || []
       };
     }
     adventureReady = true;
@@ -168,6 +177,9 @@ function startAdventureCloudSync() {
 
 function getAdventureDex() { return ADVENTURE_STATE.mydex; }
 function saveAdventureDex(list) { ADVENTURE_STATE.mydex = list; pushAdventureCloud({ mydex: list }); }
+
+function getAdventureMemories() { return ADVENTURE_STATE.memories; }
+function saveAdventureMemories(list) { ADVENTURE_STATE.memories = list; pushAdventureCloud({ memories: list }); }
 
 function getAdventurePlayer() { return ADVENTURE_STATE.player; }
 function saveAdventurePlayer(p) { ADVENTURE_STATE.player = p; pushAdventureCloud({ player: p }); }

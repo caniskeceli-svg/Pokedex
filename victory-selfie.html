@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffd24a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Victory Selfie</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 260px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header { text-align: center; padding: 16px 16px 6px; }
+  header h1 {
+    margin: 0; font-size: clamp(20px, 5.5vw, 28px); color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+  .card { background: #fff; border-radius: 20px; padding: 16px; margin-top: 14px; box-shadow: 0 6px 0 rgba(0,0,0,0.08); text-align: center; }
+
+  .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; text-align: left; }
+  .pick-item:hover { background: #ffe6cc; }
+  .pick-item img { width: 44px; height: 44px; }
+  .pick-item .p-name { font-weight: bold; text-transform: capitalize; }
+  .pick-item .p-sub { font-size: 12px; color: #888; }
+
+  video, canvas { width: 100%; border-radius: 16px; background: #000; display: block; }
+  canvas.preview { box-shadow: 0 10px 24px rgba(0,0,0,0.2); }
+
+  .btn-row { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .btn { border: none; padding: 14px; border-radius: 999px; font-size: 16px; font-weight: bold; cursor: pointer; }
+  .btn:disabled { background: #ccc !important; color: #888 !important; cursor: default; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-save { background: #27ae60; color: #fff; }
+  .btn-secondary { background: #eee; color: #555; }
+  .btn-skip { background: none; color: #888; text-decoration: underline; }
+
+  .status-msg { font-size: 13px; color: #888; margin-top: 8px; }
+  .error-msg { font-size: 14px; color: #a33; margin-top: 8px; }
+  .locked-msg { text-align: center; color: #a33; font-size: 14px; }
+
+  .memory-viewer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+    align-items: flex-end; justify-content: center; z-index: 300;
+  }
+  .memory-viewer-overlay.show { display: flex; }
+  .memory-viewer-box {
+    background: #fff; border-radius: 24px 24px 0 0; padding: 20px; width: 100%; max-width: 480px;
+    max-height: 88vh; overflow-y: auto; text-align: center;
+  }
+  .memory-viewer-box img { width: 100%; border-radius: 14px; }
+  .memory-viewer-title { font-weight: bold; font-size: 17px; margin-top: 10px; }
+  .memory-viewer-sub { font-size: 13px; color: #888; }
+  .memory-viewer-date { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .memory-viewer-close {
+    display: block; width: 100%; margin-top: 14px; background: #eee; color: #555; border: none;
+    padding: 12px; border-radius: 999px; font-weight: bold; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header><h1>📸 Victory Selfie</h1></header>
+
+<div class="wrap" id="wrap"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
+<script src="gym-data.js"></script>
+<script src="league-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="hall-of-fame-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const params = new URLSearchParams(window.location.search);
+const victoryType = params.get('type'); // "gym" | "league_champion"
+const gymId = params.get('gymId');
+const leagueId = params.get('leagueId');
+
+let victoryInfo = null;   // { victoryKey, headerTitle, title, subtitle, badgeIcon, memoryType, gymId, leagueId, leagueStageId, badgeId }
+let chosenMon = null;     // the owned Pokemon instance chosen for the photo
+let mediaStream = null;
+let composedCanvas = null;
+let composedServerMs = null;
+let saveLocked = false;
+
+function stopCamera() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(t => t.stop());
+    mediaStream = null;
+  }
+}
+// Belt-and-suspenders: also stop the camera if the player navigates away
+// mid-flow (back button, closing the tab) instead of clicking Skip.
+window.addEventListener('pagehide', stopCamera);
+window.addEventListener('beforeunload', stopCamera);
+
+function buildVictoryInfo() {
+  if (victoryType === 'gym') {
+    const gym = getGymById(gymId);
+    if (!gym) return null;
+    return {
+      victoryKey: victoryKeyForGym(gymId),
+      headerTitle: `${gym.regionId.toUpperCase()} VICTORY`,
+      title: `${gym.leader.toUpperCase()} GYM`,
+      subtitle: `${gym.leader.toUpperCase()} DEFEATED!`,
+      badgeIcon: gym.badge.icon,
+      badgeName: gym.badge.name,
+      themeColor: TYPE_COLORS[gym.type] || '#e3350d',
+      memoryType: 'gym_victory',
+      gymId, leagueId: null, leagueStageId: null, badgeId: gym.badge.id
+    };
+  }
+  if (victoryType === 'league_champion') {
+    const league = getLeagueById(leagueId);
+    if (!league) return null;
+    return {
+      victoryKey: victoryKeyForChampion(leagueId),
+      headerTitle: `${league.regionId.toUpperCase()} CHAMPION`,
+      title: 'CHAMPION!',
+      subtitle: `${league.champion.name.toUpperCase()} DEFEATED!`,
+      badgeIcon: '🏆',
+      badgeName: `${league.regionId.toUpperCase()} CHAMPION`,
+      themeColor: '#ffd24a',
+      memoryType: 'league_victory',
+      gymId: null, leagueId, leagueStageId: league.champion.id, badgeId: null
+    };
+  }
+  return null;
+}
+
+function isVictoryActuallyEarned(info) {
+  const player = getAdventurePlayer();
+  if (info.memoryType === 'gym_victory') return isGymDefeated(getGymById(info.gymId), player);
+  return isLeagueCompleted(player, info.leagueId);
+}
+
+function renderAlreadyHasMemory(memory) {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>✅ Bu zafer için zaten bir anın var!</h2>
+      <p class="status-msg">Her zafer için yalnızca bir Hall of Fame anısı oluşturulabilir.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="viewBtn">🖼️ Anıyı Görüntüle</button>
+        <button class="btn btn-secondary" id="backBtn">Adventure HQ'ya Dön</button>
+      </div>
+    </div>`;
+  el('viewBtn').addEventListener('click', () => showMemoryViewer(memory));
+  el('backBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
+}
+
+function renderPicker() {
+  const mydex = getAdventureDex().filter(p => p.id < 900000000);
+  const wrap = el('wrap');
+  wrap.innerHTML = `
+    <div class="card">
+      <h2>🏆 ${victoryInfo.subtitle}</h2>
+      <p class="status-msg">Anında hangi Pokémon'un yer alsın?</p>
+      <div id="pickList" style="text-align:left;"></div>
+      <div class="btn-row">
+        <button class="btn btn-skip" id="skipBtn">Skip</button>
+      </div>
+    </div>`;
+  const pickList = el('pickList');
+  if (!mydex.length) {
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok.</p>';
+  } else {
+    pickList.innerHTML = mydex.map(p => `
+      <div class="pick-item" data-instance="${p.instanceId || ''}">
+        <img src="${p.img}" alt="${p.name}">
+        <div>
+          <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
+          <div class="p-sub">Lv.${p.level || 1}</div>
+        </div>
+      </div>`).join('');
+    pickList.querySelectorAll('.pick-item').forEach(itemEl => {
+      itemEl.addEventListener('click', () => {
+        chosenMon = mydex.find(p => p.instanceId === itemEl.dataset.instance);
+        startCamera();
+      });
+    });
+  }
+  el('skipBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
+}
+
+async function startCamera() {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>VICTORY!</h2>
+      <p class="status-msg">Kamera açılıyor...</p>
+    </div>`;
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+  } catch (e) {
+    renderCameraError(e);
+    return;
+  }
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>VICTORY!</h2>
+      <video id="cameraVideo" autoplay playsinline muted></video>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="captureBtn">📸 CAPTURE</button>
+        <button class="btn btn-skip" id="skipBtn">Skip</button>
+      </div>
+    </div>`;
+  const video = el('cameraVideo');
+  video.srcObject = mediaStream;
+  el('captureBtn').addEventListener('click', capturePhoto);
+  el('skipBtn').addEventListener('click', () => { stopCamera(); window.location.href = 'adventure-hq.html'; });
+}
+
+function renderCameraError(e) {
+  const reason = (e && e.name === 'NotAllowedError')
+    ? 'Kamera izni reddedildi.'
+    : (e && e.name === 'NotFoundError')
+      ? 'Cihazında kullanılabilir bir kamera bulunamadı.'
+      : 'Kamera açılamadı.';
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>VICTORY!</h2>
+      <p class="error-msg">📵 ${reason}</p>
+      <p class="status-msg">Selfie çekmeden devam edebilirsin - rozetin/ödüllerin zaten kazanıldı.</p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="skipBtn">Adventure HQ'ya Dön</button>
+      </div>
+    </div>`;
+  el('skipBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+async function capturePhoto() {
+  const video = el('cameraVideo');
+  if (!video || !video.videoWidth) return;
+
+  // Server-derived date, exactly like Phase 8's daily quest day key - a
+  // manipulated device clock can't change what this memory's date says.
+  let serverMs;
+  try {
+    serverMs = await getServerTimestampMs();
+  } catch (e) {
+    serverMs = Date.now();
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 720;
+  canvas.height = 1080;
+  canvas.className = 'preview';
+  const ctx = canvas.getContext('2d');
+
+  // ---- Background ----
+  const color = victoryInfo.themeColor;
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, color);
+  grad.addColorStop(1, '#fff7e6');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 34px "Trebuchet MS", sans-serif';
+  ctx.fillText(victoryInfo.headerTitle, canvas.width / 2, 60);
+
+  ctx.font = 'bold 26px "Trebuchet MS", sans-serif';
+  ctx.fillText(victoryInfo.title, canvas.width / 2, 100);
+
+  // ---- Selfie frame (the live camera capture) ----
+  const selfieSize = 520;
+  const sx = (canvas.width - selfieSize) / 2;
+  const sy = 130;
+  ctx.save();
+  roundRect(ctx, sx, sy, selfieSize, selfieSize, 24);
+  ctx.clip();
+  // Cover-fit the video frame into the square slot.
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const scale = Math.max(selfieSize / vw, selfieSize / vh);
+  const dw = vw * scale, dh = vh * scale;
+  ctx.drawImage(video, sx + (selfieSize - dw) / 2, sy + (selfieSize - dh) / 2, dw, dh);
+  ctx.restore();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 6;
+  roundRect(ctx, sx, sy, selfieSize, selfieSize, 24);
+  ctx.stroke();
+
+  // ---- Badge + defeated text ----
+  ctx.font = '64px "Trebuchet MS", sans-serif';
+  ctx.fillText(victoryInfo.badgeIcon, canvas.width / 2, sy + selfieSize + 80);
+  ctx.font = 'bold 26px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#a82008';
+  ctx.fillText(victoryInfo.subtitle, canvas.width / 2, sy + selfieSize + 120);
+
+  // ---- Pokemon image ----
+  const pokeY = sy + selfieSize + 140;
+  try {
+    const pokeImg = await loadImage(chosenMon.img);
+    ctx.drawImage(pokeImg, canvas.width / 2 - 80, pokeY, 160, 160);
+  } catch (e) {}
+
+  ctx.font = 'bold 24px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#2b2b2b';
+  ctx.fillText(`${(chosenMon.nickname || chosenMon.name)} · Lv.${chosenMon.level || 1}`, canvas.width / 2, pokeY + 190);
+
+  // ---- Date ----
+  ctx.font = '18px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.fillText(formatMemoryDate(serverMs), canvas.width / 2, pokeY + 222);
+
+  // ---- Footer ----
+  ctx.font = 'bold 16px "Trebuchet MS", sans-serif';
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillText('ADVENTURE HALL OF FAME', canvas.width / 2, canvas.height - 24);
+
+  stopCamera();
+  composedCanvas = canvas;
+  composedServerMs = serverMs;
+  renderPreview();
+}
+
+function renderPreview() {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>YOUR VICTORY!</h2>
+    </div>`;
+  el('wrap').appendChild(composedCanvas);
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+  btnRow.innerHTML = `
+    <button class="btn btn-save" id="saveBtn">💾 SAVE MEMORY</button>
+    <button class="btn btn-secondary" id="retakeBtn">🔁 RETAKE</button>
+    <button class="btn btn-skip" id="skipBtn">Skip</button>
+  `;
+  el('wrap').appendChild(btnRow);
+  el('saveBtn').addEventListener('click', doSaveMemory);
+  el('retakeBtn').addEventListener('click', startCamera);
+  el('skipBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
+}
+
+async function doSaveMemory() {
+  if (saveLocked) return;
+  saveLocked = true;
+  const saveBtn = el('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving memory...';
+
+  const memoryData = {
+    type: victoryInfo.memoryType,
+    gymId: victoryInfo.gymId,
+    leagueId: victoryInfo.leagueId,
+    leagueStageId: victoryInfo.leagueStageId,
+    badgeId: victoryInfo.badgeId,
+    pokemonInstanceId: chosenMon.instanceId,
+    pokemonSpeciesId: chosenMon.id,
+    pokemonName: chosenMon.nickname || chosenMon.name,
+    pokemonLevel: chosenMon.level || 1,
+    title: victoryInfo.title,
+    subtitle: victoryInfo.subtitle,
+    createdAt: composedServerMs
+  };
+
+  composedCanvas.toBlob(async (blob) => {
+    if (!blob) {
+      saveLocked = false;
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 SAVE MEMORY';
+      renderSaveError('Fotoğraf hazırlanamadı.');
+      return;
+    }
+    const result = await saveVictoryMemory({ victoryKey: victoryInfo.victoryKey, memoryData, imageBlob: blob });
+    saveLocked = false;
+    if (!result.ok) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 SAVE MEMORY';
+      renderSaveError(result.reason === 'upload-failed' ? 'Yükleme başarısız oldu. Tekrar dene.' : 'Kaydedilemedi. Tekrar dene.');
+      return;
+    }
+    renderSaved(result.memory);
+  }, 'image/jpeg', 0.88);
+}
+
+function renderSaveError(message) {
+  let box = document.getElementById('saveErrorMsg');
+  if (!box) {
+    box = document.createElement('p');
+    box.id = 'saveErrorMsg';
+    box.className = 'error-msg';
+    el('wrap').querySelector('.card').appendChild(box);
+  }
+  box.textContent = '⚠️ ' + message;
+}
+
+function renderSaved(memory) {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <h2>✅ Memory Saved!</h2>
+      <p class="status-msg">Bu anı artık Adventure HQ'daki Hall of Fame'de.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="viewBtn">🖼️ Anıyı Görüntüle</button>
+        <button class="btn btn-secondary" id="backBtn">Adventure HQ'ya Dön</button>
+      </div>
+    </div>`;
+  el('viewBtn').addEventListener('click', () => showMemoryViewer(memory));
+  el('backBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
+}
+
+function init() {
+  victoryInfo = buildVictoryInfo();
+  if (!victoryInfo) {
+    el('wrap').innerHTML = '<div class="card"><p>Geçersiz zafer bilgisi. <a href="adventure-hq.html">HQ\'ya dön</a>.</p></div>';
+    return;
+  }
+  if (!isVictoryActuallyEarned(victoryInfo)) {
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu zaferi henüz kazanmadın.</p></div>`;
+    return;
+  }
+  const existing = getMemoryByVictoryKey(victoryInfo.victoryKey);
+  if (existing) {
+    renderAlreadyHasMemory(existing);
+    return;
+  }
+  renderPicker();
+}
+
+waitForAdventureCloud().then(init);
+</script>
+
+</body>
+</html>
