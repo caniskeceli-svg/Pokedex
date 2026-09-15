@@ -40,6 +40,18 @@
     box-shadow: 0 6px 0 rgba(0,0,0,0.12);
   }
 
+  .region-tabs { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+  .region-tab {
+    border: none; padding: 10px 16px; border-radius: 999px; font-weight: bold; font-size: 13px; cursor: pointer;
+    background: #eee; color: #888;
+  }
+  .region-tab.active { background: var(--accent); color: #fff; }
+  .region-tab.locked { background: #f5f5f5; color: #bbb; }
+  .region-locked-card {
+    background: #fff; border-radius: 16px; padding: 24px 16px; margin-top: 24px; text-align: center;
+    color: #a68a4a; box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+  }
+
   .path {
     position: relative; margin-top: 24px; padding-left: 34px;
   }
@@ -150,6 +162,7 @@
 </header>
 
 <div class="wrap">
+  <div class="region-tabs" id="regionTabs"></div>
   <div class="region-banner" id="regionBanner">KANTO</div>
   <div class="path" id="pathList"></div>
 </div>
@@ -174,16 +187,52 @@
 <script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
-const CURRENT_REGION = "kanto";
+let CURRENT_REGION = "kanto";
 
 function typeEmojiFor(type) {
   return type === "town" ? "🏠" : "🌿";
 }
 
+// Only regions that actually have map data get a tab - hoenn/sinnoh/etc.
+// in REGIONS have no LOCATIONS yet, so they'd just be empty, confusing
+// tabs. Whether a region CAN be selected is isRegionUnlocked
+// (league-data.js, gated on Kanto Champion for Johto) - completely
+// separate from a location's own `requires` chain within that region.
+function renderRegionTabs() {
+  const player = getAdventurePlayer();
+  const regionIds = Object.keys(REGIONS).filter(id => getLocationsForRegion(id).length > 0);
+  el('regionTabs').innerHTML = regionIds.map(id => {
+    const unlocked = isRegionUnlocked(player, id);
+    const active = id === CURRENT_REGION;
+    return `<button class="region-tab ${active ? 'active' : ''} ${unlocked ? '' : 'locked'}" data-region="${id}">
+      ${unlocked ? '🗺️' : '🔒'} ${REGIONS[id].name}
+    </button>`;
+  }).join('');
+  el('regionTabs').querySelectorAll('.region-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const regionId = btn.dataset.region;
+      if (!isRegionUnlocked(getAdventurePlayer(), regionId)) {
+        alert(`🔒 ${REGIONS[regionId].name} henüz kilitli.`);
+        return;
+      }
+      if (regionId === CURRENT_REGION) return;
+      CURRENT_REGION = regionId;
+      renderPath();
+    });
+  });
+}
+
 function renderPath() {
+  renderRegionTabs();
+  el('regionBanner').textContent = `📍 ${REGIONS[CURRENT_REGION].name.toUpperCase()}`;
+
+  if (!isRegionUnlocked(getAdventurePlayer(), CURRENT_REGION)) {
+    el('pathList').innerHTML = `<div class="region-locked-card">🔒 ${REGIONS[CURRENT_REGION].name} henüz kilitli.</div>`;
+    return;
+  }
+
   const state = getAdventureProgress();
   const locations = getLocationsForRegion(CURRENT_REGION);
-  el('regionBanner').textContent = `📍 ${REGIONS[CURRENT_REGION].name.toUpperCase()}`;
 
   el('pathList').innerHTML = locations.map(loc => {
     const visited = state.visitedLocations.includes(loc.id);
@@ -349,6 +398,13 @@ el('detailOverlay').addEventListener('click', (e) => {
 });
 
 function init() {
+  // Optional deep-link (e.g. Adventure HQ's "Open Map" for an unlocked
+  // Johto) - ignored entirely if the region is invalid or still locked, so
+  // this can never be used to bypass isRegionUnlocked.
+  const requestedRegion = new URLSearchParams(window.location.search).get('region');
+  if (requestedRegion && REGIONS[requestedRegion] && isRegionUnlocked(getAdventurePlayer(), requestedRegion)) {
+    CURRENT_REGION = requestedRegion;
+  }
   const shown = renderStarterGate(el('starterOverlay'), () => renderPath());
   if (!shown) renderPath();
 }
