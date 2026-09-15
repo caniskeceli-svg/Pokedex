@@ -106,7 +106,7 @@
 <header>
   <h1>🗺️ Macera Haritası</h1>
   <div class="nav-row">
-    <a class="nav-back" href="mypokemon.html">⬅️ Trainer HQ</a>
+    <a class="nav-back" href="adventure-hq.html">⬅️ Adventure HQ</a>
   </div>
 </header>
 
@@ -122,6 +122,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
 <script src="region-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
@@ -132,7 +133,7 @@ function typeEmojiFor(type) {
 }
 
 function renderPath() {
-  const state = getAdventureState();
+  const state = getAdventureProgress();
   const locations = getLocationsForRegion(CURRENT_REGION);
   el('regionBanner').textContent = `📍 ${REGIONS[CURRENT_REGION].name.toUpperCase()}`;
 
@@ -160,7 +161,7 @@ function renderPath() {
 }
 
 async function openDetail(locationId) {
-  const state = getAdventureState();
+  const state = getAdventureProgress();
   const loc = getLocationById(locationId);
   if (!loc) return;
   const unlocked = isLocationUnlocked(loc, state);
@@ -199,7 +200,7 @@ async function openDetail(locationId) {
   if (unlocked) {
     el('exploreBtn').addEventListener('click', () => {
       if (loc.encounters.length) {
-        const mydex = getMyDexShared();
+        const mydex = getAdventureDex();
         const encounter = generateWildEncounter(loc, mydex);
         if (encounter) {
           window.location.href = `wild-battle.html?location=${loc.id}&species=${encounter.speciesId}&level=${encounter.level}&shiny=${encounter.shiny ? 1 : 0}`;
@@ -207,16 +208,14 @@ async function openDetail(locationId) {
         }
         // Every possible encounter here is already owned (normal + shiny) - a
         // small consolation reward instead of an empty "nothing happened".
-        const p = getPlayer();
-        p.coins = (p.coins || 0) + 15;
-        savePlayer(p);
-        visitLocation(locationId);
+        addAdventureCoins(15);
+        visitAdventureLocation(locationId);
         closeDetail();
         renderPath();
         alert(`Bu bölgedeki tüm Pokémon türleri zaten sende! 💰 +15 PokéCoin kazandın.`);
         return;
       }
-      visitLocation(locationId);
+      visitAdventureLocation(locationId);
       closeDetail();
       renderPath();
     });
@@ -232,8 +231,8 @@ el('detailOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'detailOverlay') closeDetail();
 });
 
-waitForCloud().then(renderPath);
-onCloudChange(renderPath);
+waitForAdventureCloud().then(renderPath);
+onAdventureCloudChange(renderPath);
 </script>
 
 </body>

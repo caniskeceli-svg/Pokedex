@@ -100,17 +100,8 @@ function safeParseLS(key, fallback) {
   } catch { return fallback; }
 }
 
-const DEFAULT_PLAYER = { xp: 0, coins: 0, discoveredIds: [], discoveredTypes: [], achievements: [], wildWins: 0, wildLosses: 0 };
-const DEFAULT_INVENTORY = {
-  pokeball: 0, greatball: 0, ultraball: 0,
-  potion: 0, "super-potion": 0, revive: 0,
-  berry: 0, "rare-candy": 0, "evolution-stone": 0
-};
-
-// Adventure/map progression (Phase 2). Kept generic here (no reference to
-// any specific location id) so pokedex-data.js stays independent of
-// region-data.js, which only adventure.html loads.
-const DEFAULT_ADVENTURE = { visitedLocations: [], currentLocationId: null };
+const DEFAULT_PLAYER = { xp: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
+const DEFAULT_INVENTORY = { pokeball: 0, berry: 0, "evolution-stone": 0 };
 
 // ---- Adventure RPG foundations (Phase 1) ----
 // Each owned Pokémon is becoming an "instance" distinct from its species:
@@ -166,7 +157,7 @@ function getOtherProfile(id) {
 let CURRENT_PROFILE = null;
 let cloudDocRef = null;
 
-let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [], adventure: DEFAULT_ADVENTURE };
+let CLOUD_STATE = { mydex: [], player: DEFAULT_PLAYER, inventory: DEFAULT_INVENTORY, teams: [] };
 let cloudReady = false;
 let cloudReadyResolvers = [];
 let cloudChangeCallbacks = [];
@@ -247,8 +238,7 @@ async function startCloudSync(profileId) {
         mydex: seed.mydex || [],
         player: Object.assign({}, DEFAULT_PLAYER, seed.player || {}),
         inventory: Object.assign({}, DEFAULT_INVENTORY, seed.inventory || {}),
-        teams: seed.teams || [],
-        adventure: Object.assign({}, DEFAULT_ADVENTURE, seed.adventure || {})
+        teams: seed.teams || []
       };
       cloudDocRef.set(CLOUD_STATE);
     } else {
@@ -257,8 +247,7 @@ async function startCloudSync(profileId) {
         mydex: data.mydex || [],
         player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
-        teams: data.teams || [],
-        adventure: Object.assign({}, DEFAULT_ADVENTURE, data.adventure || {})
+        teams: data.teams || []
       };
     }
     const { migrated, changed } = migrateMyDexToInstances(CLOUD_STATE.mydex);
@@ -290,24 +279,6 @@ function savePlayer(p) { CLOUD_STATE.player = p; pushCloud({ player: p }); }
 
 function getInventory() { return CLOUD_STATE.inventory; }
 function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory: inv }); }
-
-// ---- Adventure/map progression (Phase 2 - visited locations only; wild
-// encounters/battle/catch are separate follow-up phases) ----
-function getAdventureState() { return CLOUD_STATE.adventure; }
-function saveAdventureState(state) { CLOUD_STATE.adventure = state; pushCloud({ adventure: state }); }
-
-// Marks a location visited (idempotent - calling it again for an already
-// visited location is a no-op) and makes it the current location.
-function visitLocation(locationId) {
-  const state = getAdventureState();
-  const alreadyVisited = state.visitedLocations.includes(locationId);
-  const next = {
-    visitedLocations: alreadyVisited ? state.visitedLocations : [...state.visitedLocations, locationId],
-    currentLocationId: locationId
-  };
-  saveAdventureState(next);
-  return next;
-}
 
 function getTeams() { return CLOUD_STATE.teams; }
 function saveTeams(teams) { CLOUD_STATE.teams = teams; pushCloud({ teams: teams }); }
@@ -657,13 +628,7 @@ function levelInfo(xp) {
 // ---- Inventory / bag ----
 const ITEM_INFO = {
   pokeball: { name: "Poké Ball", emoji: "⚪" },
-  greatball: { name: "Great Ball", emoji: "🔵" },
-  ultraball: { name: "Ultra Ball", emoji: "🟡" },
-  potion: { name: "Potion", emoji: "🧪" },
-  "super-potion": { name: "Super Potion", emoji: "💊" },
-  revive: { name: "Revive", emoji: "✨" },
   berry: { name: "Berry", emoji: "🍒" },
-  "rare-candy": { name: "Rare Candy", emoji: "🍬" },
   "evolution-stone": { name: "Evrim Taşı", emoji: "💎" }
 };
 function addItems(itemKey, qty) {

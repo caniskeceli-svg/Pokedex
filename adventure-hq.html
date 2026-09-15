@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e3350d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Adventure Trainer HQ</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #cfe8d8 0%, #fff7e6 220px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 50px;
+  }
+  header { text-align: center; padding: 20px 16px 6px; }
+  header h1 {
+    margin: 0; font-size: clamp(22px, 6vw, 32px); color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .nav-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .nav-row a { color: #fff; padding: 10px 16px; border-radius: 999px; font-weight: bold; text-decoration: none; font-size: 14px; }
+  .nav-back { background: #3b6cdb; }
+  .nav-mart { background: #e3350d; }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  .trainer-card {
+    background: #2c3e50; color: #fff; border-radius: 22px; padding: 18px 20px; margin-top: 18px;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+  }
+  .trainer-card .t-title { font-size: 15px; letter-spacing: 1px; color: #ffd24a; font-weight: bold; }
+  .trainer-card .t-level { font-size: 26px; font-weight: bold; margin: 2px 0 10px; }
+  .xp-track { background: #445566; border-radius: 999px; height: 20px; overflow: hidden; position: relative; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, #ffd24a, #ffb703); }
+  .xp-text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold; color: #2c3e50;
+  }
+  .coin-badge { display: inline-block; margin-top: 12px; background: #ffd24a; color: #6b3500; font-weight: bold; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+
+  .section-title { text-align: center; font-size: 20px; color: var(--accent-dark); margin: 26px 0 12px; }
+
+  .bag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .bag-card { background: #fff; border-radius: 16px; padding: 14px 8px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .bag-card .b-emoji { font-size: 30px; }
+  .bag-card .b-name { font-size: 12px; font-weight: bold; margin: 4px 0 2px; }
+  .bag-card .b-count { font-size: 22px; font-weight: bold; color: var(--accent-dark); }
+  .pokemon-center-btn {
+    display: block; width: 100%; margin-top: 10px; background: #16a085; color: #fff; border: none;
+    padding: 12px; border-radius: 999px; font-weight: bold; font-size: 14px; cursor: pointer;
+  }
+
+  .mydex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .mydex-item { background: #fff; border-radius: 16px; padding: 10px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .mydex-item img { width: 64px; height: 64px; }
+  .mydex-item .m-name { display: block; font-size: 13px; text-transform: capitalize; font-weight: bold; margin-top: 2px; }
+  .mydex-item .m-nick { display: block; font-size: 11px; color: #8e44ad; font-style: italic; }
+  .mydex-item .m-types { display: flex; gap: 3px; justify-content: center; margin: 4px 0; flex-wrap: wrap; }
+  .mydex-item .m-type-dot { font-size: 11px; padding: 2px 6px; border-radius: 999px; color: #fff; }
+  .m-hp-track { background: #eee; border-radius: 999px; height: 6px; overflow: hidden; margin: 4px 0 2px; }
+  .m-hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); }
+  .m-hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
+  .m-hp-text { font-size: 10px; color: #888; }
+  .m-fainted-tag { font-size: 11px; color: #c0392b; font-weight: bold; }
+  .m-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; justify-content: center; }
+  .m-action-btn {
+    font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 999px; border: none; cursor: pointer;
+    background: #27ae60; color: #fff;
+  }
+  .m-action-btn:disabled { background: #ddd; color: #999; cursor: default; }
+
+  .empty-box { text-align: center; color: #a6925a; font-size: 15px; background: #fff; border-radius: 18px; padding: 24px 20px; margin-top: 16px; }
+  .empty-box .big-emoji { font-size: 44px; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗺️ Adventure Trainer HQ</h1>
+  <div class="nav-row">
+    <a class="nav-back" href="adventure.html">⬅️ Harita</a>
+    <a class="nav-mart" href="pokemart.html">🛒 PokéMart</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="trainer-card">
+    <div class="t-title">ADVENTURE TRAINER</div>
+    <div class="t-level" id="trainerLevel">Seviye 1</div>
+    <div class="xp-track">
+      <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      <div class="xp-text" id="xpText">0 / 1000 XP</div>
+    </div>
+    <div><span class="coin-badge" id="coinBadge">💰 0</span></div>
+  </div>
+
+  <div class="section-title">🎒 Adventure Çantası</div>
+  <div class="bag-grid" id="bagGrid"></div>
+  <button class="pokemon-center-btn" id="pokemonCenterBtn">🏥 Pokémon Center - Tüm Pokémon'ları Ücretsiz İyileştir</button>
+
+  <div class="section-title">📦 Adventure Pokémon'larım</div>
+  <div id="collectionArea"></div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
+<script src="battle-engine.js"></script>
+<script src="item-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+
+function renderTrainerCard() {
+  const player = getAdventurePlayer();
+  const { level, xpIntoLevel, xpForNextLevel } = levelInfo(player.xp);
+  el('trainerLevel').textContent = `Seviye ${level}`;
+  el('xpFill').style.width = Math.round((xpIntoLevel / xpForNextLevel) * 100) + '%';
+  el('xpText').textContent = `${xpIntoLevel} / ${xpForNextLevel} XP`;
+  el('coinBadge').textContent = `💰 ${player.coins || 0}`;
+}
+
+function renderBag() {
+  const inv = getAdventureInventory();
+  el('bagGrid').innerHTML = Object.keys(ITEM_CATALOG).map(key => {
+    const info = ITEM_CATALOG[key];
+    return `
+      <div class="bag-card">
+        <div class="b-emoji">${info.emoji}</div>
+        <div class="b-name">${info.name}</div>
+        <div class="b-count">${inv[key] || 0}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderCollection() {
+  const mydex = getAdventureDex();
+  const inv = getAdventureInventory();
+  const area = el('collectionArea');
+
+  if (!mydex.length) {
+    area.innerHTML = `
+      <div class="empty-box">
+        <span class="big-emoji">🗺️</span>
+        Henüz hiç Adventure Pokémon'un yok!<br>
+        Haritadan bir bölgeyi keşfet, vahşi bir Pokémon'la savaş ve yakala.
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = `<div class="mydex-grid">${mydex.map(p => {
+    const maxHp = computeMonMaxHp(p);
+    const curHp = computeMonCurrentHp(p);
+    const fainted = p.fainted === true;
+    const hpPct = Math.max(0, Math.round(curHp / maxHp * 100));
+    const actions = [];
+    if (fainted) {
+      actions.push(`<button class="m-action-btn" data-action="revive" data-instance="${p.instanceId}" ${(inv.revive || 0) <= 0 ? 'disabled' : ''}>✨ Revive (${inv.revive || 0})</button>`);
+    } else if (curHp < maxHp) {
+      actions.push(`<button class="m-action-btn" data-action="potion" data-instance="${p.instanceId}" ${(inv.potion || 0) <= 0 ? 'disabled' : ''}>🧪 Potion (${inv.potion || 0})</button>`);
+      actions.push(`<button class="m-action-btn" data-action="super-potion" data-instance="${p.instanceId}" ${(inv['super-potion'] || 0) <= 0 ? 'disabled' : ''}>💊 S.Potion (${inv['super-potion'] || 0})</button>`);
+    }
+    if ((p.level || 1) < 100) {
+      actions.push(`<button class="m-action-btn" data-action="rare-candy" data-instance="${p.instanceId}" ${(inv['rare-candy'] || 0) <= 0 ? 'disabled' : ''}>🍬 Rare Candy (${inv['rare-candy'] || 0})</button>`);
+    }
+    return `
+      <div class="mydex-item">
+        <img src="${p.img}" alt="${p.name}">
+        <span class="m-name">${p.name}${p.shiny ? ' ✨' : ''}</span>
+        ${p.nickname ? `<span class="m-nick">"${p.nickname}"</span>` : ''}
+        <div class="m-types">${(p.types || []).map(t =>
+          `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`
+        ).join('')}</div>
+        <div class="m-hp-track"><div class="m-hp-fill ${hpPct < 25 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
+        <div class="m-hp-text">${fainted ? '' : `${curHp}/${maxHp} HP · `}Lv.${p.level || 1}</div>
+        ${fainted ? '<div class="m-fainted-tag">😵 Baygın</div>' : ''}
+        ${actions.length ? `<div class="m-actions">${actions.join('')}</div>` : ''}
+      </div>`;
+  }).join('')}</div>`;
+
+  area.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      const action = btn.dataset.action;
+      const instanceId = btn.dataset.instance;
+      let result;
+      if (action === 'revive') result = applyRevive(instanceId);
+      else if (action === 'potion' || action === 'super-potion') result = applyHealItem(instanceId, action);
+      else if (action === 'rare-candy') result = applyRareCandy(instanceId);
+      if (result && !result.ok) {
+        const messages = { 'no-item': 'Bu item elinde kalmadı.', 'max-level': 'Bu Pokémon zaten Lv.100!', 'full-hp': 'HP zaten dolu.', 'fainted': 'Baygın Pokémon önce Revive ister.', 'not-fainted': 'Bu Pokémon zaten baygın değil.' };
+        alert(messages[result.reason] || 'Yapılamadı.');
+      }
+      renderAll();
+    });
+  });
+}
+
+function renderAll() {
+  renderTrainerCard();
+  renderBag();
+  renderCollection();
+}
+
+let centerLocked = false;
+el('pokemonCenterBtn').addEventListener('click', () => {
+  if (centerLocked) return;
+  centerLocked = true;
+  const count = healAllAtPokemonCenter();
+  alert(`🏥 ${count} Pokémon'un HP'si tamamen yenilendi!`);
+  renderAll();
+  centerLocked = false;
+});
+
+waitForAdventureCloud().then(renderAll);
+onAdventureCloudChange(renderAll);
+</script>
+
+</body>
+</html>

@@ -63,6 +63,11 @@
     font-size: 13px; font-weight: bold; cursor: pointer;
   }
   .ball-btn:disabled { background: #ccc; cursor: default; }
+  .item-btn {
+    flex: 1; min-width: 90px; background: #27ae60; color: #fff; border: none; padding: 10px; border-radius: 12px;
+    font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+  .item-btn:disabled { background: #ccc; cursor: default; }
   .run-btn { display: block; width: 100%; margin-top: 10px; background: none; border: 2px solid #ccc; color: #888; padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer; }
 
   .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
@@ -83,8 +88,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
 <script src="region-data.js"></script>
 <script src="battle-engine.js"></script>
+<script src="item-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const params = new URLSearchParams(window.location.search);
@@ -125,7 +132,7 @@ async function fetchWildSpecies() {
 }
 
 function renderPartyPicker() {
-  const mydex = getMyDexShared().filter(p => p.id < 900000000); // fusions can't be sent into wild battles (Phase 3 scope)
+  const mydex = getAdventureDex().filter(p => p.id < 900000000); // fusions can't be sent into wild battles (Phase 3 scope)
   const wrap = el('wrap');
   wrap.innerHTML = `
     <div class="card">
@@ -134,7 +141,7 @@ function renderPartyPicker() {
     </div>`;
   const pickList = el('pickList');
   if (!mydex.length) {
-    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Pokémon\'un yok. Önce Pokédex\'ten birini ekle!</p>';
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok, bu yüzden savaşamazsın. <a href="adventure.html">Haritaya dön</a>.</p>';
     return;
   }
   pickList.innerHTML = mydex.map(p => {
@@ -169,7 +176,7 @@ function startBattle(playerMon) {
     types: playerMon.types,
     level: playerMon.level || 1,
     maxHp: pStats.maxHp,
-    hp: pStats.maxHp,
+    hp: computeMonCurrentHp(playerMon), // HP now persists across battles (Phase 4)
     battleStats: pStats,
     moves: buildMoveset(playerMon.types)
   };
@@ -192,7 +199,7 @@ function hpBarClass(hp, maxHp) {
 
 function renderBattle() {
   const wrap = el('wrap');
-  const inv = getInventory();
+  const inv = getAdventureInventory();
   wrap.innerHTML = `
     <div class="card">
       <div class="vs-row">
@@ -217,10 +224,17 @@ function renderBattle() {
         ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}">${m.name}</button>`).join('')}
       </div>
 
+      <div class="ball-row" id="itemRow">
+        ${['potion', 'super-potion', 'berry'].map(key => `
+          <button class="item-btn" data-heal="${key}" ${(inv[key] || 0) <= 0 || player.hp >= player.maxHp ? 'disabled' : ''}>
+            ${ITEM_CATALOG[key].emoji} ${ITEM_CATALOG[key].name} (${inv[key] || 0})
+          </button>`).join('')}
+      </div>
+
       <div class="ball-row" id="ballRow">
         ${['pokeball', 'greatball', 'ultraball'].map(key => `
           <button class="ball-btn" data-ball="${key}" ${(inv[key] || 0) <= 0 ? 'disabled' : ''}>
-            ${ITEM_INFO[key].emoji} ${ITEM_INFO[key].name} (${inv[key] || 0})
+            ${ITEM_CATALOG[key].emoji} ${ITEM_CATALOG[key].name} (${inv[key] || 0})
           </button>`).join('')}
       </div>
       <button class="run-btn" id="runBtn">🏃 Kaç</button>
@@ -229,10 +243,45 @@ function renderBattle() {
   el('moveGrid').querySelectorAll('.move-btn').forEach(btn => {
     btn.addEventListener('click', () => useMove(Number(btn.dataset.move)));
   });
+  el('itemRow').querySelectorAll('.item-btn').forEach(btn => {
+    btn.addEventListener('click', () => useHealItemInBattle(btn.dataset.heal));
+  });
   el('ballRow').querySelectorAll('.ball-btn').forEach(btn => {
     btn.addEventListener('click', () => throwBall(btn.dataset.ball));
   });
   el('runBtn').addEventListener('click', runAway);
+}
+
+// Persists the player's current in-battle HP onto their mydex instance right
+// away, so closing the app mid-battle (or a later battle) sees the real HP -
+// this is what closes the Phase 3 "HP doesn't persist" debt.
+function persistPlayerHp() {
+  const mydex = getAdventureDex();
+  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
+  if (idx === -1) return;
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0 });
+  saveAdventureDex(mydex);
+}
+
+function useHealItemInBattle(itemKey) {
+  if (battleEnded) return;
+  const result = applyHealItem(player.instanceId, itemKey);
+  if (!result.ok) return;
+  player.hp = result.newHp;
+  log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
+
+  // Using an item still costs your turn - the wild Pokemon gets to attack.
+  const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
+  const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  player.hp = Math.max(0, player.hp - r2.damage);
+  log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
+  persistPlayerHp();
+
+  if (player.hp <= 0) {
+    endBattle('loss');
+    return;
+  }
+  renderBattle();
 }
 
 function useMove(moveIndex) {
@@ -251,6 +300,7 @@ function useMove(moveIndex) {
   const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
   player.hp = Math.max(0, player.hp - r2.damage);
   log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
+  persistPlayerHp();
 
   if (player.hp <= 0) {
     endBattle('loss');
@@ -261,11 +311,11 @@ function useMove(moveIndex) {
 
 function throwBall(ballType) {
   if (battleEnded || catchLocked) return;
-  const inv = getInventory();
+  const inv = getAdventureInventory();
   if ((inv[ballType] || 0) <= 0) return;
   catchLocked = true;
 
-  addItems(ballType, -1);
+  addAdventureItems(ballType, -1);
   const hpFraction = wild.hp / wild.maxHp;
   const rarityFactor = rarityFactorForPower(wild.power);
   const success = attemptCatch({ hpFraction, ballType, rarityFactor });
@@ -275,11 +325,12 @@ function throwBall(ballType) {
     return;
   }
 
-  log(`${ITEM_INFO[ballType].name} attın... ama ${wild.name} kaçtı!`);
+  log(`${ITEM_CATALOG[ballType].name} attın... ama ${wild.name} kaçtı!`);
   const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
   const r2 = calcDamage({ move: wMove, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
   player.hp = Math.max(0, player.hp - r2.damage);
   log(`Vahşi ${wild.name}, ${wMove.name} kullandı! ${r2.damage} hasar.`);
+  persistPlayerHp();
   catchLocked = false;
 
   if (player.hp <= 0) {
@@ -292,58 +343,52 @@ function throwBall(ballType) {
 function runAway() {
   if (battleEnded) return;
   battleEnded = true;
-  visitLocation(locationId);
+  visitAdventureLocation(locationId);
   showResult({ title: '🏃 Kaçtın!', rewards: [], continueLabel: 'Haritaya Dön' });
 }
 
 // Applies XP to the party Pokemon that fought and to the trainer, saves both.
 function awardBattleXp(pokemonXp, trainerXp) {
-  const mydex = getMyDexShared();
+  const mydex = getAdventureDex();
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx !== -1) {
     const mon = mydex[idx];
     const newPxp = (mon.pxp || 0) + pokemonXp;
     const { level } = pokemonLevelInfo(newPxp);
     mydex[idx] = Object.assign({}, mon, { pxp: newPxp, level });
-    saveMyDexShared(mydex);
+    saveAdventureDex(mydex);
   }
-  const p = getPlayer();
+  const p = getAdventurePlayer();
   p.xp += trainerXp;
-  savePlayer(p);
-}
-
-function markPlayerMonFainted() {
-  const mydex = getMyDexShared();
-  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
-  if (idx !== -1) {
-    mydex[idx] = Object.assign({}, mydex[idx], { fainted: true });
-    saveMyDexShared(mydex);
-  }
+  saveAdventurePlayer(p);
 }
 
 function endBattle(outcome, ballType) {
   battleEnded = true;
-  visitLocation(locationId);
+  visitAdventureLocation(locationId);
+  // Win/loss/catch all leave player.hp at its final value for this fight;
+  // persistPlayerHp() was already called after the last HP-changing action
+  // (or player.hp never changed if the fight ended on the attacker's own
+  // move/ball this turn), so no extra write is needed here.
 
   if (outcome === 'win') {
     const trainerXp = 15;
     const pokemonXp = 20;
     const coins = 10;
     awardBattleXp(pokemonXp, trainerXp);
-    const p = getPlayer();
-    p.coins = (p.coins || 0) + coins;
+    addAdventureCoins(coins);
+    const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
-    savePlayer(p);
+    saveAdventurePlayer(p);
     showResult({
       title: `🏆 ${wild.name} savaşı kazandın!`,
       rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${coins} PokéCoin`],
       continueLabel: 'Haritaya Dön'
     });
   } else if (outcome === 'loss') {
-    markPlayerMonFainted();
-    const p = getPlayer();
+    const p = getAdventurePlayer();
     p.wildLosses = (p.wildLosses || 0) + 1;
-    savePlayer(p);
+    saveAdventurePlayer(p);
     showResult({
       title: `😵 ${player.name} baygın düştü...`,
       rewards: [],
@@ -374,15 +419,15 @@ function endBattle(outcome, ballType) {
       favorite: false,
       fainted: false
     };
-    const mydex = getMyDexShared();
+    const mydex = getAdventureDex();
     mydex.push(newMon);
-    saveMyDexShared(mydex);
+    saveAdventureDex(mydex);
 
-    const gained = processCatch({ id: wild.id, name: wild.name, types: wild.types.map(t => ({ type: { name: t } })) }, null);
-    const p = getPlayer();
-    p.coins = (p.coins || 0) + coins;
+    const gained = processAdventureCatch();
+    addAdventureCoins(coins);
+    const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
-    savePlayer(p);
+    saveAdventurePlayer(p);
 
     showResult({
       title: `🎉 ${wild.name}${wildIsShiny ? ' ✨' : ''} yakalandı!`,
@@ -423,7 +468,7 @@ async function init() {
   }
 }
 
-waitForCloud().then(init);
+waitForAdventureCloud().then(init);
 </script>
 
 </body>
