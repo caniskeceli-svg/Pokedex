@@ -5,18 +5,27 @@
 // visited locations...) onto whichever classic profile document happened to
 // be active on the device. That meant switching Ayaz<->Baba silently
 // switched "which Adventure save" you were in, and Direct Add / wild catches
-// lived in the same mydex array. This file gives Adventure its own single
-// Firestore document (profiles/adventure) that never changes based on which
-// classic profile is selected, and a one-time, idempotent migration that
-// recovers whatever Adventure progress already exists inside the ayaz/baba
-// documents before this fix, then strips it back out of those documents.
+// lived in the same mydex array. This file gives Adventure its own
+// Firestore document that never changes what it holds based on which
+// classic profile is selected... except which DOCUMENT that is: since each
+// player (Ayaz/Baba) wants their own independent Adventure playthrough
+// (their own starter pick, their own badges), the doc id is
+// "adventure_<profile>" - one per classic profile, decided by the exact
+// same device-remembered profile choice (waitForCloud/CURRENT_PROFILE) the
+// classic pages already use. A one-time, idempotent migration recovers
+// whatever Adventure progress already existed inside the ayaz/baba
+// documents from BEFORE the 4.5 fix, then strips it back out of them; the
+// single shared "adventure" doc that existed briefly between Phase 4.5 and
+// this per-profile split held no real progress (nobody had played yet) and
+// is deleted outright rather than migrated - see
+// cleanupLegacySharedAdventureDoc.
 //
 // Every classic page is completely unaffected: pokedex-data.js's own
 // CLOUD_STATE/getMyDexShared/getPlayer/getInventory and Direct Add are
 // untouched. Only adventure.html, wild-battle.html, pokemart.html and
 // adventure-hq.html load this file.
 
-const ADVENTURE_DOC_ID = "adventure";
+let ADVENTURE_DOC_ID = null;
 const DEFAULT_ADVENTURE_PLAYER = {
   xp: 0, coins: 100, achievements: [], wildWins: 0, wildLosses: 0, badges: [],
   // Phase 7: per-league progress (eliteFourWins is only ever used to gate a
@@ -52,7 +61,13 @@ let ADVENTURE_STATE = {
   player: DEFAULT_ADVENTURE_PLAYER,
   inventory: DEFAULT_ADVENTURE_INVENTORY,
   mydex: [],
-  progress: DEFAULT_ADVENTURE_PROGRESS
+  progress: DEFAULT_ADVENTURE_PROGRESS,
+  // Phase 9: Hall of Fame memories - a top-level field like `mydex`, since
+  // it's a growing list of records rather than a player stat. Owned here
+  // (raw Firestore-backed accessors only); hall-of-fame-data.js builds the
+  // actual victory-memory domain logic on top, same layering as
+  // gym-data.js/league-data.js sit on top of getAdventurePlayer/etc.
+  memories: []
 };
 let adventureDocRef = null;
 let adventureReady = false;
@@ -64,13 +79,38 @@ function onAdventureCloudChange(cb) { adventureChangeCallbacks.push(cb); }
 function waitForAdventureCloud() {
   if (!adventureBootstrapped) {
     adventureBootstrapped = true;
-    startAdventureCloudSync();
+    // Reuses the classic pages' own profile picker/localStorage
+    // (waitForCloud -> CURRENT_PROFILE) so "which Adventure save" is
+    // decided by "which classic profile is active on this device" - the
+    // exact same choice already used for Ayaz's vs Baba's own Pokedex. On a
+    // device that hasn't picked a profile yet, this shows that same "Sen
+    // kimsin?" picker before Adventure can know which save to load.
+    waitForCloud().then(() => {
+      ADVENTURE_DOC_ID = "adventure_" + CURRENT_PROFILE;
+      cleanupLegacySharedAdventureDoc();
+      startAdventureCloudSync();
+    });
   }
   if (adventureReady) return Promise.resolve();
   return new Promise(resolve => adventureReadyResolvers.push(resolve));
 }
 function pushAdventureCloud(partial) {
   adventureDocRef.set(partial, { merge: true }).catch(err => console.error("Adventure Firestore yazma hatası:", err));
+}
+
+// One-time best-effort delete of the single shared "adventure" doc that
+// existed briefly before this per-profile split - it never held real
+// progress (created but unplayed), so it's discarded outright rather than
+// migrated into either profile's new adventure_<profile> doc. Guarded by a
+// localStorage flag so this is attempted only once per device; deleting an
+// already-gone doc is a harmless no-op in Firestore, so a failed attempt
+// (offline, etc.) safely just retries next session.
+function cleanupLegacySharedAdventureDoc() {
+  const FLAG = "adventure_legacy_cleanup_done_v1";
+  try { if (localStorage.getItem(FLAG)) return; } catch (e) { return; }
+  cloudDb.collection("profiles").doc("adventure").delete()
+    .then(() => { try { localStorage.setItem(FLAG, "1"); } catch (e) {} })
+    .catch(() => {});
 }
 
 // One-time recovery of pre-fix Adventure data that's mixed into the ayaz/baba
@@ -111,7 +151,8 @@ async function migrateLegacyAdventureData() {
           }),
           inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
           mydex: wildMons,
-          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress)
+          progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, legacyProgress),
+          memories: []
         };
       }
 
@@ -145,7 +186,8 @@ function startAdventureCloudSync() {
         player: DEFAULT_ADVENTURE_PLAYER,
         inventory: DEFAULT_ADVENTURE_INVENTORY,
         mydex: [],
-        progress: DEFAULT_ADVENTURE_PROGRESS
+        progress: DEFAULT_ADVENTURE_PROGRESS,
+        memories: []
       };
       adventureDocRef.set(ADVENTURE_STATE);
     } else {
@@ -154,7 +196,8 @@ function startAdventureCloudSync() {
         player: Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: data.mydex || [],
-        progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {})
+        progress: Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {}),
+        memories: data.memories || []
       };
     }
     adventureReady = true;
@@ -168,6 +211,9 @@ function startAdventureCloudSync() {
 
 function getAdventureDex() { return ADVENTURE_STATE.mydex; }
 function saveAdventureDex(list) { ADVENTURE_STATE.mydex = list; pushAdventureCloud({ mydex: list }); }
+
+function getAdventureMemories() { return ADVENTURE_STATE.memories; }
+function saveAdventureMemories(list) { ADVENTURE_STATE.memories = list; pushAdventureCloud({ memories: list }); }
 
 function getAdventurePlayer() { return ADVENTURE_STATE.player; }
 function saveAdventurePlayer(p) { ADVENTURE_STATE.player = p; pushAdventureCloud({ player: p }); }

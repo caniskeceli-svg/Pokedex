@@ -344,7 +344,8 @@ function endBattle(outcome) {
           `👑 +${result.trainerXp} Eğitmen XP`,
           `💰 +${result.coins} PokéCoin`
         ],
-        continueLabel: 'Haritaya Dön'
+        continueLabel: 'Haritaya Dön',
+        selfieUrl: `victory-selfie.html?type=gym&gymId=${gymId}`
       });
     }
   } else {
@@ -357,14 +358,19 @@ function endBattle(outcome) {
   }
 }
 
-function showResult({ title, rewards, continueLabel, note }) {
+function showResult({ title, rewards, continueLabel, note, selfieUrl }) {
   el('wrap').innerHTML = `
     <div class="card">
       <div class="result-title">${title}</div>
       ${rewards.length ? `<div class="reward-row">${rewards.map(r => `<span class="reward-chip badge-chip">${r}</span>`).join('')}</div>` : ''}
       ${note ? `<p style="text-align:center;color:#888;font-size:13px;">${note}</p>` : ''}
+      ${selfieUrl ? `<button class="continue-btn" id="selfieBtn" style="background:#8e44ad;">📸 Victory Selfie</button>` : ''}
       <button class="continue-btn" id="continueBtn">${continueLabel}</button>
     </div>`;
+  // Rewards/badge/progression are already fully applied above, before this
+  // screen ever renders - navigating away via either button (or the Selfie
+  // flow's own Skip) can never affect them (Phase 9 requirement).
+  if (selfieUrl) el('selfieBtn').addEventListener('click', () => { window.location.href = selfieUrl; });
   el('continueBtn').addEventListener('click', () => { window.location.href = 'adventure.html'; });
 }
 
