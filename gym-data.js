@@ -201,6 +201,110 @@ const GYM_CATALOG = [
       { speciesId: 230, level: 40 }  // Kingdra
     ],
     rewards: { trainerXp: 1200, coins: 2500 }
+  },
+
+  // ---- Hoenn (Phase 14) ----
+  // Same catalog/functions, same independence pattern as Johto: Hoenn's own
+  // 1-8 badge chain via requiresBadge, gated as a REGION by
+  // isRegionUnlocked (checked in gym-battle.html's init()) - not by
+  // anything Kanto/Johto-specific. Petalburg is intentionally gym #5 even
+  // though its city is reachable early in region-data.js's location
+  // chain - requiresBadge:"heat" is what actually gates the challenge, the
+  // location being visited is a separate, unrelated concept (see
+  // region-data.js's own note on this).
+  {
+    gymId: "hoenn_rustboro", regionId: "hoenn", locationId: "rustboro-city", order: 1,
+    leader: "Roxanne", type: "rock", requiresBadge: null,
+    badge: { id: "stone", name: "Stone Badge", icon: "🪨" },
+    description: "Kaya tipi ustası Roxanne ile Hoenn'in ilk savaşı!",
+    team: [
+      { speciesId: 74, level: 12 },  // Geodude
+      { speciesId: 299, level: 15 }  // Nosepass
+    ],
+    rewards: { trainerXp: 300, coins: 600 }
+  },
+  {
+    gymId: "hoenn_dewford", regionId: "hoenn", locationId: "dewford-town", order: 2,
+    leader: "Brawly", type: "fighting", requiresBadge: "stone",
+    badge: { id: "knuckle", name: "Knuckle Badge", icon: "👊" },
+    description: "Dövüş tipi ustası Brawly ile savaş!",
+    team: [
+      { speciesId: 66, level: 17 },  // Machop
+      { speciesId: 296, level: 19 }  // Makuhita
+    ],
+    rewards: { trainerXp: 380, coins: 750 }
+  },
+  {
+    gymId: "hoenn_mauville", regionId: "hoenn", locationId: "mauville-city", order: 3,
+    leader: "Wattson", type: "electric", requiresBadge: "knuckle",
+    badge: { id: "dynamo", name: "Dynamo Badge", icon: "⚡" },
+    description: "Elektrik tipi ustası Wattson ile savaş!",
+    team: [
+      { speciesId: 100, level: 20 }, // Voltorb
+      { speciesId: 82, level: 22 },  // Magneton
+      { speciesId: 310, level: 24 }  // Manectric
+    ],
+    rewards: { trainerXp: 480, coins: 950 }
+  },
+  {
+    gymId: "hoenn_lavaridge", regionId: "hoenn", locationId: "lavaridge-town", order: 4,
+    leader: "Flannery", type: "fire", requiresBadge: "dynamo",
+    badge: { id: "heat", name: "Heat Badge", icon: "🌋" },
+    description: "Ateş tipi ustası Flannery ile savaş!",
+    team: [
+      { speciesId: 322, level: 24 }, // Numel
+      { speciesId: 218, level: 24 }, // Slugma
+      { speciesId: 324, level: 27 }  // Torkoal
+    ],
+    rewards: { trainerXp: 580, coins: 1150 }
+  },
+  {
+    gymId: "hoenn_petalburg", regionId: "hoenn", locationId: "petalburg-city", order: 5,
+    leader: "Norman", type: "normal", requiresBadge: "heat",
+    badge: { id: "balance", name: "Balance Badge", icon: "⚖️" },
+    description: "Eğitmen babası Norman ile Hoenn'in orta sınavı!",
+    team: [
+      { speciesId: 287, level: 27 }, // Slakoth
+      { speciesId: 264, level: 29 }, // Linoone
+      { speciesId: 288, level: 31 }  // Vigoroth
+    ],
+    rewards: { trainerXp: 680, coins: 1350 }
+  },
+  {
+    gymId: "hoenn_fortree", regionId: "hoenn", locationId: "fortree-city", order: 6,
+    leader: "Winona", type: "flying", requiresBadge: "balance",
+    badge: { id: "feather", name: "Feather Badge", icon: "🪶" },
+    description: "Uçan tip ustası Winona ile savaş!",
+    team: [
+      { speciesId: 333, level: 29 }, // Swablu
+      { speciesId: 357, level: 30 }, // Tropius
+      { speciesId: 334, level: 32 }  // Altaria
+    ],
+    rewards: { trainerXp: 780, coins: 1550 }
+  },
+  {
+    gymId: "hoenn_mossdeep", regionId: "hoenn", locationId: "mossdeep-city", order: 7,
+    leader: "Tate & Liza", type: "psychic", requiresBadge: "feather",
+    badge: { id: "mind", name: "Mind Badge", icon: "🔮" },
+    description: "İkiz Ruh ustaları Tate & Liza ile savaş!",
+    team: [
+      { speciesId: 338, level: 41 }, // Solrock
+      { speciesId: 337, level: 41 }  // Lunatone
+    ],
+    rewards: { trainerXp: 950, coins: 1900 }
+  },
+  {
+    gymId: "hoenn_sootopolis", regionId: "hoenn", locationId: "sootopolis-city", order: 8,
+    leader: "Juan", type: "water", requiresBadge: "mind",
+    badge: { id: "rain", name: "Rain Badge", icon: "🌧️" },
+    description: "Su tipi ustası Juan ile Hoenn'in son Gym savaşı!",
+    team: [
+      { speciesId: 370, level: 43 }, // Luvdisc
+      { speciesId: 340, level: 44 }, // Whiscash
+      { speciesId: 364, level: 44 }, // Sealeo
+      { speciesId: 230, level: 46 }  // Kingdra
+    ],
+    rewards: { trainerXp: 1300, coins: 2700 }
   }
 ];
 

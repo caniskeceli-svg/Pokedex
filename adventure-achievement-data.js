@@ -51,7 +51,20 @@ const ACHIEVEMENT_CATALOG = [
   { id: "league_elite_four_johto", category: "League", name: "Johto Elite Four Fatihi", description: "Johto Elite Four'un tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsJohto, targetValue: 4, reward: { coins: 500, trainerXp: 400 } },
   { id: "league_champion_johto", category: "League", name: "Johto Champion", description: "Johto Champion'ı yen", icon: "🏆", metric: ctx => (ctx.johtoCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1000, trainerXp: 800 } },
   { id: "gym_16_badges", category: "Gym", name: "Efsanevi Eğitmen", description: "Kanto ve Johto'nun 16 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 16, reward: { coins: 1200, trainerXp: 1000 } },
-  { id: "champion_both_regions", category: "League", name: "İki Bölgenin Şampiyonu", description: "Hem Kanto hem Johto Champion'ını yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1500, trainerXp: 1200 } }
+  { id: "champion_both_regions", category: "League", name: "İki Bölgenin Şampiyonu", description: "Hem Kanto hem Johto Champion'ını yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1500, trainerXp: 1200 } },
+
+  // Phase 14: Hoenn parity, same additive rule as Phase 13's Johto
+  // entries - nothing above this line changed (id/metric/targetValue), so
+  // gym_16_badges/champion_both_regions/gym_8_badges/every Kanto+Johto
+  // achievement stay exactly as already earned. gym_24_badges and
+  // champion_all_regions are new, higher tiers alongside (not replacing)
+  // gym_16_badges/champion_both_regions - the same tiering convention this
+  // catalog already uses for collector_5/25/50/100 etc.
+  { id: "explorer_hoenn_complete", category: "Explorer", name: "Hoenn Kaşifi", description: "Hoenn'deki tüm bölgeleri keşfet", icon: "🧭", metric: ctx => ctx.visitedHoennCount, targetValue: ctx => ctx.totalHoennLocations, reward: { coins: 500, trainerXp: 400 } },
+  { id: "league_elite_four_hoenn", category: "League", name: "Hoenn Elite Four Fatihi", description: "Hoenn Elite Four'un tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsHoenn, targetValue: 4, reward: { coins: 600, trainerXp: 500 } },
+  { id: "league_champion_hoenn", category: "League", name: "Hoenn Champion", description: "Hoenn Champion'ı yen", icon: "🏆", metric: ctx => (ctx.hoennCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1200, trainerXp: 1000 } },
+  { id: "gym_24_badges", category: "Gym", name: "Üç Bölgenin Ustası", description: "Kanto, Johto ve Hoenn'in 24 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 24, reward: { coins: 1800, trainerXp: 1500 } },
+  { id: "champion_all_regions", category: "League", name: "Üç Bölgenin Şampiyonu", description: "Kanto, Johto ve Hoenn Champion'larının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted ? 1 : 0), targetValue: 1, reward: { coins: 2500, trainerXp: 2000 } }
 ];
 
 function getAdventureAchievementCategories() {
@@ -75,6 +88,8 @@ function buildAdventureAchievementContext(player, dex, progress) {
   // leagueId, same convention already used in league-data.js/hall-of-fame
   // rendering) - not a new pattern, just applied once more.
   const johtoLeague = player.leagueProgress && player.leagueProgress.johto_league;
+  // Phase 14: same literal convention once more for Hoenn.
+  const hoennLeague = player.leagueProgress && player.leagueProgress.hoenn_league;
   const visitedLocations = progress.visitedLocations || [];
   return {
     dexCount: dex.filter(p => p.id < 900000000).length,
@@ -95,7 +110,15 @@ function buildAdventureAchievementContext(player, dex, progress) {
       ? getLocationsForRegion("johto").filter(l => visitedLocations.includes(l.id)).length
       : 0,
     eliteFourWinsJohto: (johtoLeague && johtoLeague.eliteFourWins.length) || 0,
-    johtoCompleted: !!(johtoLeague && johtoLeague.completed)
+    johtoCompleted: !!(johtoLeague && johtoLeague.completed),
+    // Phase 14: Hoenn-equivalent fields, additive only - every field above
+    // this line is unchanged from Phase 13.
+    totalHoennLocations: typeof getLocationsForRegion === "function" ? getLocationsForRegion("hoenn").length : 0,
+    visitedHoennCount: typeof getLocationsForRegion === "function"
+      ? getLocationsForRegion("hoenn").filter(l => visitedLocations.includes(l.id)).length
+      : 0,
+    eliteFourWinsHoenn: (hoennLeague && hoennLeague.eliteFourWins.length) || 0,
+    hoennCompleted: !!(hoennLeague && hoennLeague.completed)
   };
 }
 

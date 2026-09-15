@@ -202,6 +202,25 @@ async function migrateLegacyAdventureData() {
   return recovered;
 }
 
+// Phase 14: a player who already beat Johto's Champion BEFORE this phase
+// existed has leagueProgress.johto_league.completed permanently true, and
+// awardChampionVictory() only ever pushes `unlocksRegion` into
+// unlockedRegions inside its one-time "not already completed" branch - so
+// simply adding unlocksRegion:"hoenn" to the Johto catalog entry would
+// never reach an already-completed player. This is the one-time,
+// idempotent backfill for that gap: same shape/call-site pattern as
+// migrateLegacyLeagueAttempt above. A no-op once "hoenn" is already present
+// or Johto isn't completed yet; never touches completedRegions or anything
+// else.
+function backfillHoennUnlock(player) {
+  const johtoLeague = player.leagueProgress && player.leagueProgress.johto_league;
+  if (!johtoLeague || !johtoLeague.completed) return player;
+  if ((player.unlockedRegions || []).includes("hoenn")) return player;
+  return Object.assign({}, player, {
+    unlockedRegions: (player.unlockedRegions || ["kanto"]).concat(["hoenn"])
+  });
+}
+
 function startAdventureCloudSync() {
   adventureDocRef = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID);
   adventureDocRef.onSnapshot(async (snap) => {
@@ -220,7 +239,7 @@ function startAdventureCloudSync() {
       const mergedProgress = Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {});
       mergedProgress.leagueAttempts = migrateLegacyLeagueAttempt(data.progress);
       ADVENTURE_STATE = {
-        player: Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}),
+        player: backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {})),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: data.mydex || [],
         progress: mergedProgress,
