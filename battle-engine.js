@@ -92,6 +92,18 @@ function decideTurnOrder(speedA, speedB, rng) {
   return (rng || Math.random)() < 0.5 ? "a" : "b";
 }
 
+// ---- Phase 12: status effects (burn/poison/paralysis only) ----
+// Classic 25% "fully paralyzed" chance - rolled once per paralyzed
+// Pokemon's turn, before it would otherwise act.
+function rollParalysisPrevented(rng) {
+  return (rng || Math.random)() < 0.25;
+}
+// Classic 1/8 max HP residual damage (rounded down, minimum 1) for both
+// burn and poison - identical formula for both, matching the real games.
+function residualStatusDamage(maxHp) {
+  return Math.max(1, Math.floor(maxHp / 8));
+}
+
 // Returns { damage, effectiveness, isCrit, isStab }. `effectiveness` is the
 // raw type multiplier (0, 0.25, 0.5, 1, 2, 4) so the UI can show "Etkili!" etc.
 // Phase 11: branches on move.category - physical uses attack/defense exactly
@@ -114,16 +126,26 @@ function calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defende
   return { damage, effectiveness, isCrit, isStab };
 }
 
-// Accuracy + damage in one call - the single place a move's outcome is ever
-// decided, so every battle page (wild/gym/league) resolves misses/crits/
-// effectiveness identically. Returns { hit:false } (no damage rolled at
-// all) on a miss - PP is still the caller's responsibility to decrement,
-// since a miss still costs the move's PP.
-function resolveMoveUse({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng }) {
+// Accuracy + damage + status-application in one call - the single place a
+// move's outcome is ever decided, so every battle page (wild/gym/league)
+// resolves misses/crits/effectiveness/status identically. Returns
+// { hit:false } (no damage rolled, no status attempted) on a miss - PP is
+// still the caller's responsibility to decrement, since a miss still costs
+// the move's PP. `defenderStatus` is the target's CURRENT status (or null)
+// - a move's effect only has a chance to apply when the target has none
+// (Phase 12 rule: single status slot, no stacking, not even the same
+// condition re-applied). A move with no `effect` field behaves byte-
+// identical to Phase 11 (appliedStatus is always null).
+function resolveMoveUse({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, defenderStatus, rng }) {
   if (!rollAccuracy(move, rng)) {
-    return { hit: false, damage: 0, effectiveness: 1, isCrit: false, isStab: false };
+    return { hit: false, damage: 0, effectiveness: 1, isCrit: false, isStab: false, appliedStatus: null };
   }
-  return Object.assign({ hit: true }, calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng }));
+  const dmgResult = calcDamage({ move, attackerTypes, attackerStats, defenderTypes, defenderStats, rng });
+  let appliedStatus = null;
+  if (move.effect && move.effect.type && !defenderStatus) {
+    if ((rng || Math.random)() < (move.effect.chance / 100)) appliedStatus = move.effect.type;
+  }
+  return Object.assign({ hit: true, appliedStatus }, dmgResult);
 }
 
 // Minimal enemy AI (Phase 11 spec #16, deliberately not smart): prefers a
@@ -142,11 +164,20 @@ function chooseEnemyMove(enemyMoves, defenderTypes, rng) {
 // Resolves one full combat turn (the player's chosen move + the enemy's
 // AI-chosen move) in speed order, stopping early if either side faints
 // mid-turn - this is the ONE place turn order/PP-consumption/accuracy/
-// damage are decided for wild/gym/league battles alike, so no battle page
-// re-implements any of these rules itself. Mutates `player`/`enemy`'s `hp`
-// and the used move's `pp` in place (the move objects living in their own
-// `.moves` arrays) and returns a log-friendly step list for the page to
-// render in whatever style it already uses.
+// damage/status are decided for wild/gym/league battles alike, so no
+// battle page re-implements any of these rules itself. Mutates `player`/
+// `enemy`'s `hp`/`status` and the used move's `pp` in place (the move
+// objects living in their own `.moves` arrays) and returns a log-friendly
+// step list for the page to render in whatever style it already uses.
+//
+// Phase 12: a paralyzed Pokemon rolls a 25% chance to be fully prevented
+// from acting - if so, its move is never actually used (no PP cost, exactly
+// like the real games), logged as its own step kind so pages can show
+// "fully paralyzed!" instead of a move name. After both actions for the
+// turn resolve (or the loop already ended on a faint), one end-of-turn
+// residual pass applies burn/poison chip damage in a fixed player-then-
+// enemy order; if the first tick faints its target, the battle is over at
+// that point and the second Pokemon's residual tick is never applied.
 function resolveBattleTurn({ player, playerMoveIndex, enemy, rng }) {
   const playerMove = player.moves[playerMoveIndex];
   const enemyMove = chooseEnemyMove(enemy.moves, player.types, rng);
@@ -160,15 +191,40 @@ function resolveBattleTurn({ player, playerMoveIndex, enemy, rng }) {
   const steps = [];
   for (const step of actors) {
     if (step.mon.hp <= 0) continue; // fainted earlier this same turn - skip its action
+
+    if (step.mon.status === "paralysis" && rollParalysisPrevented(rng)) {
+      steps.push({ side: step.side, move: step.move, prevented: true, reason: "paralysis", hit: false, damage: 0, effectiveness: 1, isCrit: false, isStab: false, appliedStatus: null, targetFaintedByThis: false });
+      continue;
+    }
+
     if (step.move.pp > 0) step.move.pp -= 1;
     const result = resolveMoveUse({
       move: step.move, attackerTypes: step.mon.types, attackerStats: step.mon.battleStats,
-      defenderTypes: step.target.types, defenderStats: step.target.battleStats, rng
+      defenderTypes: step.target.types, defenderStats: step.target.battleStats,
+      defenderStatus: step.target.status, rng
     });
     if (result.hit) step.target.hp = Math.max(0, step.target.hp - result.damage);
+    if (result.appliedStatus) step.target.status = result.appliedStatus;
     steps.push(Object.assign({ side: step.side, move: step.move, targetFaintedByThis: result.hit && step.target.hp <= 0 }, result));
     if (step.target.hp <= 0) break; // the battle-ending faint stops the turn here
   }
+
+  // Residual burn/poison damage only runs if the turn's actions didn't
+  // already end the battle - a move-caused faint already stopped the loop
+  // above, so both sides being alive here is the correct gate.
+  if (player.hp > 0 && enemy.hp > 0) {
+    const residualOrder = [{ side: "player", mon: player }, { side: "enemy", mon: enemy }];
+    for (const entry of residualOrder) {
+      if (entry.mon.hp <= 0) continue;
+      if (entry.mon.status !== "burn" && entry.mon.status !== "poison") continue;
+      const dmg = residualStatusDamage(entry.mon.maxHp);
+      entry.mon.hp = Math.max(0, entry.mon.hp - dmg);
+      const faintedByThis = entry.mon.hp <= 0;
+      steps.push({ side: entry.side, kind: "status-damage", status: entry.mon.status, damage: dmg, targetFaintedByThis: faintedByThis });
+      if (faintedByThis) break; // battle is over here - the other side's residual tick never happens
+    }
+  }
+
   return steps;
 }
 

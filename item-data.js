@@ -124,9 +124,10 @@ function applyRareCandy(instanceId) {
 // Center. Phase 11: also restores every move's PP to full (restoreAllPP is
 // itself migration-safe via ensureInstanceMoves, so this works identically
 // on a Pokemon that has never been through a move-based battle yet).
+// Phase 12: also clears any burn/poison/paralysis status.
 function healAllAtPokemonCenter() {
   const mydex = getAdventureDex();
-  const healed = mydex.map(p => Object.assign({}, restoreAllPP(p), { fainted: false, currentHp: computeMonMaxHp(p) }));
+  const healed = mydex.map(p => Object.assign({}, restoreAllPP(p), { fainted: false, currentHp: computeMonMaxHp(p), status: null }));
   saveAdventureDex(healed);
   return healed.length;
 }

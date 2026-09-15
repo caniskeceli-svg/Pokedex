@@ -46,6 +46,7 @@
   .hp-track { background: #eee; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 4px; }
   .hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); transition: width 0.3s ease; }
   .hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
+  .status-badge { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; border: 1px solid #ffd24a; border-radius: 999px; padding: 2px 8px; }
   .vs-text { font-weight: bold; font-size: 20px; color: var(--accent); }
 
   .log-box { background: #fff9ec; border: 2px dashed #ffd27a; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin-top: 12px; min-height: 40px; }
@@ -191,7 +192,8 @@ function startBattle(playerMon) {
     maxHp: pStats.maxHp,
     hp: computeMonCurrentHp(ensuredMon), // HP now persists across battles (Phase 4)
     battleStats: pStats,
-    moves: hydrateBattleMoves(ensuredMon) // PP persists across battles too (Phase 11)
+    moves: hydrateBattleMoves(ensuredMon), // PP persists across battles too (Phase 11)
+    status: ensuredMon.status || null // burn/poison/paralysis persists across battles too (Phase 12)
   };
   const wStats = computeBattleStats(wild.baseStats, wildLevel);
   wild.level = wildLevel;
@@ -199,6 +201,7 @@ function startBattle(playerMon) {
   wild.hp = wStats.maxHp;
   wild.battleStats = wStats;
   wild.moves = freshBattleMoves(wild.id, wildLevel, wild.types);
+  wild.status = null; // a wild Pokemon's own status is never persisted, only ever lasts this one battle
   wild.sprite = spriteFor(wild.id, wildIsShiny);
 
   logLines = [];
@@ -208,6 +211,14 @@ function startBattle(playerMon) {
 
 function hpBarClass(hp, maxHp) {
   return (hp / maxHp) < 0.25 ? 'hp-fill low' : 'hp-fill';
+}
+
+// Phase 12: tiny display map for the 3 in-scope statuses - each battle page
+// keeps its own copy (same "no shared renderer" split as Phase 11), the
+// actual status VALUES always come from battle-engine.js.
+const STATUS_LABEL = { burn: '🔥 Yanık', poison: '☠️ Zehir', paralysis: '⚡ Felç' };
+function statusBadge(status) {
+  return status && STATUS_LABEL[status] ? `<div class="status-badge">${STATUS_LABEL[status]}</div>` : '';
 }
 
 function renderBattle() {
@@ -221,6 +232,7 @@ function renderBattle() {
           <div class="mon-name">${wildIsShiny ? '<span class="shiny">✨</span> ' : ''}${wild.name}</div>
           <div class="mon-lv">Lv.${wild.level}</div>
           <div class="hp-track"><div class="${hpBarClass(wild.hp, wild.maxHp)}" style="width:${Math.max(0, wild.hp / wild.maxHp * 100)}%"></div></div>
+          ${statusBadge(wild.status)}
         </div>
         <div class="vs-text">VS</div>
         <div class="mon-box">
@@ -228,6 +240,7 @@ function renderBattle() {
           <div class="mon-name">${player.name}</div>
           <div class="mon-lv">Lv.${player.level}</div>
           <div class="hp-track"><div class="${hpBarClass(player.hp, player.maxHp)}" style="width:${Math.max(0, player.hp / player.maxHp * 100)}%"></div></div>
+          ${statusBadge(player.status)}
         </div>
       </div>
 
@@ -272,23 +285,29 @@ function persistPlayerHp() {
   const mydex = getAdventureDex();
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx === -1) return;
-  // PP persists exactly like HP (Phase 11) - both are written together on
-  // every turn so a mid-battle refresh/close never loses either.
-  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves) });
+  // PP and status persist exactly like HP (Phase 11/12) - all written
+  // together on every turn so a mid-battle refresh/close never loses any.
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves), status: player.status || null });
   saveAdventureDex(mydex);
 }
 
 // One enemy counter-move outside the normal move-vs-move turn (used after
 // an item/ball use, which already costs the player's own turn) - still
-// goes through the same AI pick + accuracy/damage resolution as a real
-// turn, just without a speed comparison (using an item is instant).
+// goes through the same AI pick + accuracy/damage/status resolution as a
+// real turn (including the wild Pokemon's own paralysis check), just
+// without a speed comparison (using an item is instant).
 function enemyCounterAttack() {
+  if (wild.status === 'paralysis' && rollParalysisPrevented()) {
+    log(`Vahşi ${wild.name} felç oldu! Hareket edemedi.`);
+    return;
+  }
   const move = chooseEnemyMove(wild.moves, player.types);
   if (move.pp > 0) move.pp -= 1;
-  const r = resolveMoveUse({ move, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  const r = resolveMoveUse({ move, attackerTypes: wild.types, attackerStats: wild.battleStats, defenderTypes: player.types, defenderStats: player.battleStats, defenderStatus: player.status });
   if (r.hit) {
     player.hp = Math.max(0, player.hp - r.damage);
-    log(`Vahşi ${wild.name}, ${move.name} kullandı! ${r.damage} hasar.`);
+    if (r.appliedStatus) player.status = r.appliedStatus;
+    log(`Vahşi ${wild.name}, ${move.name} kullandı! ${r.damage} hasar.${r.appliedStatus ? ` ${player.name} ${STATUS_LABEL[r.appliedStatus]} oldu!` : ''}`);
   } else {
     log(`Vahşi ${wild.name}, ${move.name} kullandı! Isabet etmedi.`);
   }
@@ -317,9 +336,14 @@ function useHealItemInBattle(itemKey) {
 }
 
 function formatMoveLogLine(step, actorName) {
+  if (step.kind === 'status-damage') {
+    return `${actorName}, ${STATUS_LABEL[step.status]} nedeniyle ${step.damage} hasar aldı!${step.targetFaintedByThis ? ' Bayıldı!' : ''}`;
+  }
+  if (step.prevented) return `${actorName} felç oldu! Hareket edemedi.`;
   if (!step.hit) return `${actorName}, ${step.move.name} kullandı! Isabet etmedi.`;
   const effText = step.effectiveness > 1 ? ' (Etkili! 💥)' : (step.effectiveness < 1 && step.effectiveness > 0) ? ' (Etkisiz...)' : step.effectiveness === 0 ? ' (Etkisiz!)' : '';
-  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}`;
+  const statusText = step.appliedStatus ? ` ${STATUS_LABEL[step.appliedStatus]} oldu!` : '';
+  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}${statusText}`;
 }
 
 function useMove(moveIndex) {
