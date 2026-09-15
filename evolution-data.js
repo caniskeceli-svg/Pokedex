@@ -31,7 +31,35 @@ const EVOLUTION_CATALOG = [
   { fromId: 35, toId: 36, method: "stone" },            // Clefairy -> Clefable (Evolution Stone)
   { fromId: 41, toId: 42, method: "level", level: 22 }, // Zubat -> Golbat
   { fromId: 46, toId: 47, method: "level", level: 24 }, // Paras -> Parasect
-  { fromId: 74, toId: 75, method: "level", level: 25 }  // Geodude -> Graveler
+  { fromId: 74, toId: 75, method: "level", level: 25 }, // Geodude -> Graveler
+
+  // Phase 10B: Johto wild-encounter species. Same rules as Kanto above -
+  // trade-only evolutions (Kadabra->Alakazam, Haunter->Gengar) are left out
+  // since this catalog has no trade mechanic, matching how Kanto already
+  // omits them; "stone" here is the same generic Evolution Stone item as
+  // Kanto's Pikachu/Nidoran/Clefairy lines, not a specific real stone type.
+  { fromId: 161, toId: 162, method: "level", level: 15 }, // Sentret -> Furret
+  { fromId: 163, toId: 164, method: "level", level: 20 }, // Hoothoot -> Noctowl
+  { fromId: 165, toId: 166, method: "level", level: 18 }, // Ledyba -> Ledian
+  { fromId: 167, toId: 168, method: "level", level: 22 }, // Spinarak -> Ariados
+  { fromId: 179, toId: 180, method: "level", level: 15 }, // Mareep -> Flaaffy
+  { fromId: 187, toId: 188, method: "level", level: 18 }, // Hoppip -> Skiploom
+  { fromId: 220, toId: 221, method: "level", level: 33 }, // Swinub -> Piloswine
+  { fromId: 43, toId: 44, method: "level", level: 21 },   // Oddish -> Gloom
+  { fromId: 44, toId: 45, method: "stone" },              // Gloom -> Vileplume (Evolution Stone)
+  { fromId: 48, toId: 49, method: "level", level: 31 },   // Venonat -> Venomoth
+  { fromId: 52, toId: 53, method: "level", level: 28 },   // Meowth -> Persian
+  { fromId: 56, toId: 57, method: "level", level: 28 },   // Mankey -> Primeape
+  { fromId: 58, toId: 59, method: "stone" },              // Growlithe -> Arcanine (Evolution Stone)
+  { fromId: 63, toId: 64, method: "level", level: 16 },   // Abra -> Kadabra
+  { fromId: 79, toId: 80, method: "level", level: 37 },   // Slowpoke -> Slowbro
+  { fromId: 81, toId: 82, method: "level", level: 30 },   // Magnemite -> Magneton
+  { fromId: 88, toId: 89, method: "level", level: 38 },   // Grimer -> Muk
+  { fromId: 92, toId: 93, method: "level", level: 25 },   // Gastly -> Haunter
+  { fromId: 96, toId: 97, method: "level", level: 26 },   // Drowzee -> Hypno
+  { fromId: 129, toId: 130, method: "level", level: 20 }, // Magikarp -> Gyarados
+  { fromId: 183, toId: 184, method: "level", level: 18 }, // Marill -> Azumarill
+  { fromId: 191, toId: 192, method: "stone" }             // Sunkern -> Sunflora (Evolution Stone)
 ];
 
 function getEvolutionFor(speciesId) {
