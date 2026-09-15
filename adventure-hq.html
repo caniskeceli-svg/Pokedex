@@ -71,6 +71,14 @@
   .m-hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
   .m-hp-text { font-size: 10px; color: #888; }
   .m-fainted-tag { font-size: 11px; color: #c0392b; font-weight: bold; }
+  .m-friendship { font-size: 11px; color: #d6336c; font-weight: bold; margin-top: 2px; }
+  .evo-ready-tag { font-size: 11px; color: #8e44ad; font-weight: bold; margin-top: 6px; }
+  .evo-btn {
+    display: block; width: 100%; margin-top: 4px; background: #8e44ad; color: #fff; border: none;
+    padding: 6px; border-radius: 999px; font-weight: bold; font-size: 12px; cursor: pointer;
+  }
+  .evo-btn:disabled { background: #ccc; cursor: default; }
+  .evo-blocked { font-size: 10px; color: #999; margin-top: 6px; }
   .m-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; justify-content: center; }
   .m-action-btn {
     font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 999px; border: none; cursor: pointer;
@@ -80,6 +88,22 @@
 
   .empty-box { text-align: center; color: #a6925a; font-size: 15px; background: #fff; border-radius: 18px; padding: 24px 20px; margin-top: 16px; }
   .empty-box .big-emoji { font-size: 44px; display: block; margin-bottom: 10px; }
+
+  .starter-gate-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500; background: linear-gradient(180deg, #cfe8d8 0%, #fff7e6 100%);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .starter-gate-box { max-width: 420px; width: 100%; text-align: center; }
+  .starter-gate-title { font-size: 24px; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+  .starter-gate-sub { font-size: 14px; color: #7a6a3a; margin-bottom: 20px; }
+  .starter-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .starter-card {
+    background: #fff; border-radius: 18px; padding: 14px; width: 110px; cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.1); transition: transform 0.1s ease;
+  }
+  .starter-card:active { transform: scale(0.95); }
+  .starter-card img { width: 80px; height: 80px; }
+  .starter-name { font-weight: bold; font-size: 14px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -91,6 +115,8 @@
     <a class="nav-mart" href="pokemart.html">🛒 PokéMart</a>
   </div>
 </header>
+
+<div class="starter-gate-overlay" id="starterOverlay"></div>
 
 <div class="wrap">
 
@@ -119,6 +145,8 @@
 <script src="adventure-state.js"></script>
 <script src="battle-engine.js"></script>
 <script src="item-data.js"></script>
+<script src="starter-data.js"></script>
+<script src="evolution-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 
@@ -174,6 +202,16 @@ function renderCollection() {
     if ((p.level || 1) < 100) {
       actions.push(`<button class="m-action-btn" data-action="rare-candy" data-instance="${p.instanceId}" ${(inv['rare-candy'] || 0) <= 0 ? 'disabled' : ''}>🍬 Rare Candy (${inv['rare-candy'] || 0})</button>`);
     }
+    const friendship = typeof p.friendship === 'number' ? p.friendship : 0;
+    const evoStatus = checkEvolutionStatus(p);
+    let evoHtml = '';
+    if (evoStatus && !fainted) {
+      if (evoStatus.ready) {
+        evoHtml = `<div class="evo-ready-tag">✨ Evolution Ready</div><button class="evo-btn" data-evolve="${p.instanceId}">EVOLVE</button>`;
+      } else {
+        evoHtml = `<div class="evo-blocked">🔒 ${evoStatus.blockedReason}</div>`;
+      }
+    }
     return `
       <div class="mydex-item">
         <img src="${p.img}" alt="${p.name}">
@@ -184,8 +222,10 @@ function renderCollection() {
         ).join('')}</div>
         <div class="m-hp-track"><div class="m-hp-fill ${hpPct < 25 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
         <div class="m-hp-text">${fainted ? '' : `${curHp}/${maxHp} HP · `}Lv.${p.level || 1}</div>
+        <div class="m-friendship">❤️ ${friendship}/100</div>
         ${fainted ? '<div class="m-fainted-tag">😵 Baygın</div>' : ''}
         ${actions.length ? `<div class="m-actions">${actions.join('')}</div>` : ''}
+        ${evoHtml}
       </div>`;
   }).join('')}</div>`;
 
@@ -201,6 +241,20 @@ function renderCollection() {
       if (result && !result.ok) {
         const messages = { 'no-item': 'Bu item elinde kalmadı.', 'max-level': 'Bu Pokémon zaten Lv.100!', 'full-hp': 'HP zaten dolu.', 'fainted': 'Baygın Pokémon önce Revive ister.', 'not-fainted': 'Bu Pokémon zaten baygın değil.' };
         alert(messages[result.reason] || 'Yapılamadı.');
+      }
+      renderAll();
+    });
+  });
+
+  area.querySelectorAll('[data-evolve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = 'Evrimleşiyor...';
+      const result = await performEvolution(btn.dataset.evolve);
+      if (!result.ok) {
+        const messages = { 'no-stone': 'Evrim Taşı yok!', 'level-too-low': 'Seviye yetersiz.', 'in-progress': 'Zaten işleniyor...', 'no-evolution': 'Bu Pokémon evrimleşemez.' };
+        alert(messages[result.reason] || 'Evrim başarısız oldu.');
       }
       renderAll();
     });
@@ -223,8 +277,12 @@ el('pokemonCenterBtn').addEventListener('click', () => {
   centerLocked = false;
 });
 
-waitForAdventureCloud().then(renderAll);
-onAdventureCloudChange(renderAll);
+function init() {
+  const shown = renderStarterGate(el('starterOverlay'), () => renderAll());
+  if (!shown) renderAll();
+}
+waitForAdventureCloud().then(init);
+onAdventureCloudChange(() => { if (!needsStarter()) renderAll(); });
 </script>
 
 </body>

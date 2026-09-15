@@ -16,6 +16,8 @@ const SHELL_FILES = [
   "region-data.js",
   "battle-engine.js",
   "item-data.js",
+  "starter-data.js",
+  "evolution-data.js",
   "manifest.json",
   "icon-192.png",
   "icon-512.png",

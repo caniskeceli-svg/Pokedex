@@ -199,3 +199,39 @@ function processAdventureCatch() {
     items: [{ key: "pokeball", qty: 1 }, { key: "berry", qty: 2 }]
   };
 }
+
+// Shared PokeAPI lookup (id/name/types/stats/power/artwork) used anywhere
+// Adventure needs a species' data: starter selection and evolution both
+// call this instead of duplicating the fetch/shape logic.
+async function fetchPokemonSpeciesData(speciesId) {
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${speciesId}`);
+  const data = await res.json();
+  const statMap = {};
+  data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
+  return {
+    id: data.id,
+    name: data.name,
+    types: data.types.map(t => t.type.name),
+    stats: statMap,
+    power: data.stats.reduce((s, st) => s + st.base_stat, 0),
+    img: data.sprites?.other?.["official-artwork"]?.front_default || data.sprites?.front_default
+      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`
+  };
+}
+
+// Central, idempotent-safe friendship adjuster (Phase 5C). Every Adventure
+// system that grants/removes friendship (battle wins, catches, berries, and
+// future Gym/League victories) should call this rather than touching the
+// field directly, so the 0-100 clamp only needs enforcing in one place.
+function increaseFriendship(instanceId, amount, reason) {
+  const mydex = getAdventureDex();
+  const idx = mydex.findIndex(p => p.instanceId === instanceId);
+  if (idx === -1) return { ok: false, reason: "not-found" };
+  const mon = mydex[idx];
+  const current = typeof mon.friendship === "number" ? mon.friendship : 0;
+  const next = Math.max(0, Math.min(100, current + amount));
+  if (next === current) return { ok: true, friendship: current, changed: false };
+  mydex[idx] = Object.assign({}, mon, { friendship: next });
+  saveAdventureDex(mydex);
+  return { ok: true, friendship: next, changed: true, reason };
+}

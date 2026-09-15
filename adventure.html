@@ -99,6 +99,22 @@
     display: block; margin: 10px auto 0; background: none; border: none; color: #888; font-size: 14px; cursor: pointer;
   }
   .coming-soon { font-size: 13px; color: #a68a4a; background: #fff7e0; border: 1px dashed #ffd27a; border-radius: 12px; padding: 10px; margin-bottom: 14px; }
+
+  .starter-gate-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500; background: linear-gradient(180deg, #ffe27a 0%, #fff7e6 100%);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .starter-gate-box { max-width: 420px; width: 100%; text-align: center; }
+  .starter-gate-title { font-size: 24px; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+  .starter-gate-sub { font-size: 14px; color: #7a6a3a; margin-bottom: 20px; }
+  .starter-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .starter-card {
+    background: #fff; border-radius: 18px; padding: 14px; width: 110px; cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.1); transition: transform 0.1s ease;
+  }
+  .starter-card:active { transform: scale(0.95); }
+  .starter-card img { width: 80px; height: 80px; }
+  .starter-name { font-weight: bold; font-size: 14px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -115,6 +131,8 @@
   <div class="path" id="pathList"></div>
 </div>
 
+<div class="starter-gate-overlay" id="starterOverlay"></div>
+
 <div class="detail-overlay" id="detailOverlay">
   <div class="detail-box" id="detailBox"></div>
 </div>
@@ -124,6 +142,8 @@
 <script src="pokedex-data.js"></script>
 <script src="adventure-state.js"></script>
 <script src="region-data.js"></script>
+<script src="battle-engine.js"></script>
+<script src="starter-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const CURRENT_REGION = "kanto";
@@ -231,8 +251,12 @@ el('detailOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'detailOverlay') closeDetail();
 });
 
-waitForAdventureCloud().then(renderPath);
-onAdventureCloudChange(renderPath);
+function init() {
+  const shown = renderStarterGate(el('starterOverlay'), () => renderPath());
+  if (!shown) renderPath();
+}
+waitForAdventureCloud().then(init);
+onAdventureCloudChange(() => { if (!needsStarter()) renderPath(); });
 </script>
 
 </body>

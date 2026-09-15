@@ -269,6 +269,7 @@ function useHealItemInBattle(itemKey) {
   if (!result.ok) return;
   player.hp = result.newHp;
   log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
+  if (itemKey === 'berry') increaseFriendship(player.instanceId, 3, 'berry');
 
   // Using an item still costs your turn - the wild Pokemon gets to attack.
   const wMove = wild.moves[Math.floor(Math.random() * wild.moves.length)];
@@ -377,6 +378,7 @@ function endBattle(outcome, ballType) {
     const coins = 10;
     awardBattleXp(pokemonXp, trainerXp);
     addAdventureCoins(coins);
+    increaseFriendship(player.instanceId, 2, 'battle-win');
     const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
     saveAdventurePlayer(p);
