@@ -10,7 +10,16 @@ const QUEST_CATALOG = [
   { id: "win_wild_battle", name: "Savaşçı", description: "3 Wild Battle kazan", category: "Battler", target: "win_wild_battle", targetValue: 3, reward: { coins: 150, trainerXp: 100 }, icon: "⚔️" },
   { id: "catch_pokemon", name: "Koleksiyoncu", description: "1 Pokémon yakala", category: "Collector", target: "catch_pokemon", targetValue: 1, reward: { coins: 150, trainerXp: 0 }, icon: "🎯" },
   { id: "use_berry", name: "Bakıcı", description: "1 Berry kullan", category: "Care", target: "use_berry", targetValue: 1, reward: { coins: 50, trainerXp: 0 }, icon: "🍓" },
-  { id: "challenge_gym", name: "Meydan Okuyucu", description: "1 Gym battle yap", category: "Gym", target: "challenge_gym", targetValue: 1, reward: { coins: 200, trainerXp: 100 }, icon: "🏟️" }
+  { id: "challenge_gym", name: "Meydan Okuyucu", description: "1 Gym battle yap", category: "Gym", target: "challenge_gym", targetValue: 1, reward: { coins: 200, trainerXp: 100 }, icon: "🏟️" },
+
+  // Phase 13: quest-pool variety, reusing event types that already fire
+  // (win_gym/league_progress/increase_friendship/evolve_pokemon) but were
+  // never consumed by any quest before now - the engine itself (this file's
+  // own functions below) needed zero changes for this.
+  { id: "win_gym", name: "Rozet Avcısı", description: "1 Gym Lideri'ni yen", category: "Gym", target: "win_gym", targetValue: 1, reward: { coins: 250, trainerXp: 150 }, icon: "🏅" },
+  { id: "league_progress", name: "Lig Yolcusu", description: "League'de 1 rakip yen (Elite Four veya Champion)", category: "League", target: "league_progress", targetValue: 1, reward: { coins: 300, trainerXp: 200 }, icon: "🏆" },
+  { id: "increase_friendship", name: "Dost Canlısı", description: "Pokémon'larınla 5 kez dostluk kazan", category: "Friendship", target: "increase_friendship", targetValue: 5, reward: { coins: 80, trainerXp: 50 }, icon: "❤️" },
+  { id: "evolve_pokemon", name: "Değişim Ustası", description: "1 Pokémon'unu evrimleştir", category: "Evolution", target: "evolve_pokemon", targetValue: 1, reward: { coins: 200, trainerXp: 150 }, icon: "🌟" }
 ];
 
 function getQuestCatalogEntry(questId) {

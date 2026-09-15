@@ -224,6 +224,9 @@
   <div class="badge-grid" id="badgeGridJohto"></div>
   <div class="region-row" id="regionRow"></div>
 
+  <div class="section-title">📊 Pokédex Completion</div>
+  <div class="progress-summary" id="dexCompletionArea"></div>
+
   <div class="section-title">🎯 Daily Quests</div>
   <div id="questArea"></div>
 
@@ -344,6 +347,26 @@ function renderProgression() {
   // "locked" rather than disappearing, just one level up (region instead
   // of badge prerequisite).
   renderBadgeGrid('badgeGridJohto', johtoGyms, player);
+}
+
+// Phase 13: derived entirely from the existing Adventure dex + region
+// encounter data on every render - nothing here is persisted, so it can
+// never drift from the actual dex/encounter tables. Shiny catches are
+// counted separately (shinyCaught) and never inflate the normal species
+// completion fractions.
+function renderDexCompletion() {
+  const dex = getAdventureDex();
+  const kanto = getDexCompletionForRegion('kanto', dex);
+  const johto = getDexCompletionForRegion('johto', dex);
+  const overallCaught = kanto.caught + johto.caught;
+  const overallTotal = kanto.total + johto.total;
+  const shinyCaught = dex.filter(p => p.shiny).length;
+  el('dexCompletionArea').innerHTML = `
+    <div class="progress-stat"><div class="p-num">${kanto.caught}/${kanto.total}</div><div class="p-label">🗺️ Kanto Pokédex</div></div>
+    <div class="progress-stat"><div class="p-num">${johto.caught}/${johto.total}</div><div class="p-label">🗺️ Johto Pokédex</div></div>
+    <div class="progress-stat"><div class="p-num">${overallCaught}/${overallTotal}</div><div class="p-label">📊 Genel Tamamlanma</div></div>
+    <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Shiny Koleksiyonu</div></div>
+  `;
 }
 
 function renderQuests() {
@@ -692,6 +715,7 @@ function renderMemories() {
 function renderAll() {
   renderTrainerCard();
   renderProgression();
+  renderDexCompletion();
   renderQuests();
   renderAchievements();
   renderBag();

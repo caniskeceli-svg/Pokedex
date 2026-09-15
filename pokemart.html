@@ -107,13 +107,22 @@ function showToast(text, isError) {
 function render() {
   const player = getAdventurePlayer();
   const inv = getAdventureInventory();
+  const trainerLevel = levelInfo(player.xp).level;
   el('coinBar').textContent = `💰 ${player.coins || 0} PokéCoin`;
 
   el('catalog').innerHTML = CATEGORY_ORDER.map(cat => {
     const items = Object.values(ITEM_CATALOG).filter(i => i.category === cat);
     return `
       <div class="category-title">${CATEGORY_LABELS[cat]}</div>
-      ${items.map(item => `
+      ${items.map(item => {
+        // Phase 13: Trainer Level gate (currently only Ultra Ball) - shows
+        // the requirement instead of a price/buy button until met.
+        const levelLocked = item.minTrainerLevel && trainerLevel < item.minTrainerLevel;
+        const buyControls = levelLocked
+          ? `<div class="buy-price">🔒 Seviye ${item.minTrainerLevel} gerekli</div>`
+          : `<button class="buy-btn" data-buy="${item.id}" ${(player.coins || 0) < item.price ? 'disabled' : ''}>Satın Al</button>
+             <div class="buy-price">💰 ${item.price}</div>`;
+        return `
         <div class="item-card">
           <div class="item-emoji">${item.emoji}</div>
           <div class="item-info">
@@ -122,10 +131,10 @@ function render() {
             <div class="item-owned">Elinde: ${inv[item.id] || 0}</div>
           </div>
           <div class="item-buy">
-            <button class="buy-btn" data-buy="${item.id}" ${(player.coins || 0) < item.price ? 'disabled' : ''}>Satın Al</button>
-            <div class="buy-price">💰 ${item.price}</div>
+            ${buyControls}
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     `;
   }).join('');
 
@@ -143,6 +152,8 @@ function handleBuy(itemId) {
     showToast(`✅ ${ITEM_CATALOG[itemId].name} satın alındı!`);
   } else if (result.reason === 'insufficient-coins') {
     showToast('💸 Yetersiz PokéCoin!', true);
+  } else if (result.reason === 'level-too-low') {
+    showToast('🔒 Bu item için Trainer Level yetersiz.', true);
   } else {
     showToast('Satın alınamadı.', true);
   }
