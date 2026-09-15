@@ -173,15 +173,33 @@ const LOCATIONS = [
   },
   {
     id: "route-32", region: "johto", name: "Route 32", type: "route",
-    order: 8, requires: "violet-city", gymId: null, encounters: []
+    order: 8, requires: "violet-city", gymId: null,
+    encounters: [
+      { speciesId: 41, minLevel: 5, maxLevel: 7, weight: 30 },  // Zubat
+      { speciesId: 69, minLevel: 5, maxLevel: 7, weight: 25 },  // Bellsprout
+      { speciesId: 19, minLevel: 5, maxLevel: 7, weight: 25 },  // Rattata
+      { speciesId: 95, minLevel: 6, maxLevel: 8, weight: 5 }    // Onix (rare)
+    ]
   },
   {
     id: "union-cave", region: "johto", name: "Union Cave", type: "route",
-    order: 9, requires: "route-32", gymId: null, encounters: []
+    order: 9, requires: "route-32", gymId: null,
+    encounters: [
+      { speciesId: 41, minLevel: 6, maxLevel: 8, weight: 35 },  // Zubat
+      { speciesId: 74, minLevel: 6, maxLevel: 8, weight: 25 },  // Geodude
+      { speciesId: 95, minLevel: 8, maxLevel: 10, weight: 10 }, // Onix
+      { speciesId: 79, minLevel: 6, maxLevel: 8, weight: 15 }   // Slowpoke
+    ]
   },
   {
     id: "route-33", region: "johto", name: "Route 33", type: "route",
-    order: 10, requires: "union-cave", gymId: null, encounters: []
+    order: 10, requires: "union-cave", gymId: null,
+    encounters: [
+      { speciesId: 19, minLevel: 6, maxLevel: 8, weight: 25 },  // Rattata
+      { speciesId: 21, minLevel: 6, maxLevel: 8, weight: 25 },  // Spearow
+      { speciesId: 56, minLevel: 6, maxLevel: 8, weight: 25 },  // Mankey
+      { speciesId: 69, minLevel: 6, maxLevel: 8, weight: 25 }   // Bellsprout
+    ]
   },
   {
     id: "azalea-town", region: "johto", name: "Azalea Town", type: "town",
@@ -189,11 +207,23 @@ const LOCATIONS = [
   },
   {
     id: "slowpoke-well", region: "johto", name: "Slowpoke Well", type: "route",
-    order: 12, requires: "azalea-town", gymId: null, encounters: []
+    order: 12, requires: "azalea-town", gymId: null,
+    encounters: [
+      { speciesId: 79, minLevel: 7, maxLevel: 9, weight: 60 }, // Slowpoke
+      { speciesId: 41, minLevel: 7, maxLevel: 9, weight: 40 }  // Zubat
+    ]
   },
   {
     id: "ilex-forest", region: "johto", name: "Ilex Forest", type: "route",
-    order: 13, requires: "azalea-town", gymId: null, encounters: []
+    order: 13, requires: "azalea-town", gymId: null,
+    encounters: [
+      { speciesId: 10, minLevel: 7, maxLevel: 9, weight: 25 },  // Caterpie
+      { speciesId: 13, minLevel: 7, maxLevel: 9, weight: 25 },  // Weedle
+      { speciesId: 11, minLevel: 8, maxLevel: 10, weight: 10 }, // Metapod
+      { speciesId: 14, minLevel: 8, maxLevel: 10, weight: 10 }, // Kakuna
+      { speciesId: 41, minLevel: 7, maxLevel: 9, weight: 15 },  // Zubat
+      { speciesId: 43, minLevel: 8, maxLevel: 10, weight: 15 } // Oddish
+    ]
   },
   {
     id: "goldenrod-city", region: "johto", name: "Goldenrod City", type: "town",
@@ -201,23 +231,52 @@ const LOCATIONS = [
   },
   {
     id: "route-34", region: "johto", name: "Route 34", type: "route",
-    order: 15, requires: "goldenrod-city", gymId: null, encounters: []
+    order: 15, requires: "goldenrod-city", gymId: null,
+    encounters: [
+      { speciesId: 63, minLevel: 10, maxLevel: 13, weight: 25 },  // Abra
+      { speciesId: 96, minLevel: 10, maxLevel: 13, weight: 25 },  // Drowzee
+      { speciesId: 81, minLevel: 10, maxLevel: 13, weight: 25 },  // Magnemite
+      { speciesId: 165, minLevel: 10, maxLevel: 13, weight: 25 }  // Ledyba
+    ]
   },
   {
     id: "route-35", region: "johto", name: "Route 35", type: "route",
-    order: 16, requires: "route-34", gymId: null, encounters: []
+    order: 16, requires: "route-34", gymId: null,
+    encounters: [
+      { speciesId: 165, minLevel: 11, maxLevel: 14, weight: 25 }, // Ledyba
+      { speciesId: 167, minLevel: 11, maxLevel: 14, weight: 25 }, // Spinarak
+      { speciesId: 187, minLevel: 11, maxLevel: 14, weight: 25 }, // Hoppip
+      { speciesId: 16, minLevel: 11, maxLevel: 14, weight: 25 }   // Pidgey
+    ]
   },
   {
     id: "national-park", region: "johto", name: "National Park", type: "route",
-    order: 17, requires: "route-35", gymId: null, encounters: []
+    order: 17, requires: "route-35", gymId: null,
+    encounters: [
+      { speciesId: 48, minLevel: 12, maxLevel: 15, weight: 30 },  // Venonat
+      { speciesId: 165, minLevel: 12, maxLevel: 15, weight: 25 }, // Ledyba
+      { speciesId: 167, minLevel: 12, maxLevel: 15, weight: 25 }, // Spinarak
+      { speciesId: 191, minLevel: 12, maxLevel: 15, weight: 20 }  // Sunkern
+    ]
   },
   {
     id: "route-36", region: "johto", name: "Route 36", type: "route",
-    order: 18, requires: "national-park", gymId: null, encounters: []
+    order: 18, requires: "national-park", gymId: null,
+    encounters: [
+      { speciesId: 179, minLevel: 13, maxLevel: 16, weight: 30 }, // Mareep
+      { speciesId: 21, minLevel: 13, maxLevel: 16, weight: 30 },  // Spearow
+      { speciesId: 19, minLevel: 13, maxLevel: 16, weight: 20 },  // Rattata
+      { speciesId: 163, minLevel: 13, maxLevel: 16, weight: 20 }  // Hoothoot
+    ]
   },
   {
     id: "route-37", region: "johto", name: "Route 37", type: "route",
-    order: 19, requires: "route-36", gymId: null, encounters: []
+    order: 19, requires: "route-36", gymId: null,
+    encounters: [
+      { speciesId: 179, minLevel: 14, maxLevel: 17, weight: 35 }, // Mareep
+      { speciesId: 92, minLevel: 14, maxLevel: 17, weight: 30 },  // Gastly
+      { speciesId: 16, minLevel: 14, maxLevel: 17, weight: 35 }   // Pidgey
+    ]
   },
   {
     id: "ecruteak-city", region: "johto", name: "Ecruteak City", type: "town",
@@ -225,11 +284,21 @@ const LOCATIONS = [
   },
   {
     id: "route-38", region: "johto", name: "Route 38", type: "route",
-    order: 21, requires: "ecruteak-city", gymId: null, encounters: []
+    order: 21, requires: "ecruteak-city", gymId: null,
+    encounters: [
+      { speciesId: 52, minLevel: 16, maxLevel: 19, weight: 35 }, // Meowth
+      { speciesId: 81, minLevel: 16, maxLevel: 19, weight: 30 }, // Magnemite
+      { speciesId: 88, minLevel: 16, maxLevel: 19, weight: 35 }  // Grimer
+    ]
   },
   {
     id: "route-39", region: "johto", name: "Route 39", type: "route",
-    order: 22, requires: "route-38", gymId: null, encounters: []
+    order: 22, requires: "route-38", gymId: null,
+    encounters: [
+      { speciesId: 19, minLevel: 17, maxLevel: 20, weight: 35 },  // Rattata
+      { speciesId: 69, minLevel: 17, maxLevel: 20, weight: 30 },  // Bellsprout
+      { speciesId: 241, minLevel: 20, maxLevel: 22, weight: 10 }  // Miltank (rare)
+    ]
   },
   {
     id: "olivine-city", region: "johto", name: "Olivine City", type: "town",
@@ -253,23 +322,46 @@ const LOCATIONS = [
   },
   {
     id: "route-42", region: "johto", name: "Route 42", type: "route",
-    order: 28, requires: "mahogany-town", gymId: null, encounters: []
+    order: 28, requires: "mahogany-town", gymId: null,
+    encounters: [
+      { speciesId: 114, minLevel: 20, maxLevel: 24, weight: 60 }, // Tangela
+      { speciesId: 183, minLevel: 20, maxLevel: 24, weight: 40 }  // Marill
+    ]
   },
   {
     id: "lake-of-rage", region: "johto", name: "Lake of Rage", type: "route",
-    order: 29, requires: "route-42", gymId: null, encounters: []
+    order: 29, requires: "route-42", gymId: null,
+    encounters: [
+      { speciesId: 129, minLevel: 15, maxLevel: 20, weight: 90 }, // Magikarp
+      { speciesId: 130, minLevel: 25, maxLevel: 30, weight: 10 }  // Gyarados (rare - "Red Gyarados" flavor)
+    ]
   },
   {
     id: "route-43", region: "johto", name: "Route 43", type: "route",
-    order: 30, requires: "lake-of-rage", gymId: null, encounters: []
+    order: 30, requires: "lake-of-rage", gymId: null,
+    encounters: [
+      { speciesId: 58, minLevel: 22, maxLevel: 26, weight: 35 }, // Growlithe
+      { speciesId: 19, minLevel: 22, maxLevel: 26, weight: 30 }, // Rattata
+      { speciesId: 21, minLevel: 22, maxLevel: 26, weight: 35 }  // Spearow
+    ]
   },
   {
     id: "route-44", region: "johto", name: "Route 44", type: "route",
-    order: 31, requires: "route-43", gymId: null, encounters: []
+    order: 31, requires: "route-43", gymId: null,
+    encounters: [
+      { speciesId: 183, minLevel: 23, maxLevel: 27, weight: 35 }, // Marill
+      { speciesId: 79, minLevel: 23, maxLevel: 27, weight: 30 },  // Slowpoke
+      { speciesId: 202, minLevel: 25, maxLevel: 27, weight: 10 }  // Wobbuffet (rare)
+    ]
   },
   {
     id: "ice-path", region: "johto", name: "Ice Path", type: "route",
-    order: 32, requires: "route-44", gymId: null, encounters: []
+    order: 32, requires: "route-44", gymId: null,
+    encounters: [
+      { speciesId: 220, minLevel: 24, maxLevel: 28, weight: 45 }, // Swinub
+      { speciesId: 41, minLevel: 24, maxLevel: 28, weight: 35 },  // Zubat
+      { speciesId: 124, minLevel: 26, maxLevel: 28, weight: 5 }   // Jynx (rare)
+    ]
   },
   {
     id: "blackthorn-city", region: "johto", name: "Blackthorn City", type: "town",
