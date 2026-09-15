@@ -59,7 +59,60 @@ const EVOLUTION_CATALOG = [
   { fromId: 96, toId: 97, method: "level", level: 26 },   // Drowzee -> Hypno
   { fromId: 129, toId: 130, method: "level", level: 20 }, // Magikarp -> Gyarados
   { fromId: 183, toId: 184, method: "level", level: 18 }, // Marill -> Azumarill
-  { fromId: 191, toId: 192, method: "stone" }             // Sunkern -> Sunflora (Evolution Stone)
+  { fromId: 191, toId: 192, method: "stone" },            // Sunkern -> Sunflora (Evolution Stone)
+
+  // Phase 14: Hoenn wild-encounter species. Same rules as Kanto/Johto above.
+  // Two mechanics this catalog can't model natively get the smallest
+  // compatible substitute rather than a new mechanic:
+  //  - Feebas -> Milotic normally requires a high Beauty/contest stat (no
+  //    such stat exists anywhere in this app) - reuses the existing
+  //    generic "stone" method exactly like every other non-level Kanto/
+  //    Johto evolution already does for real stone-types.
+  //  - Nincada -> Ninjask normally also spawns a bonus Shedinja - only the
+  //    Ninjask evolution itself is implemented, as a plain level evolution;
+  //    no bonus-Pokemon mechanic is introduced.
+  // Clamperl -> Huntail/Gorebyss requires trade + a held item, so (matching
+  // this catalog's existing, already-documented Kadabra/Haunter precedent
+  // of leaving trade-only evolutions out entirely) it has no entry at all -
+  // Clamperl simply never evolves in this app.
+  { fromId: 261, toId: 262, method: "level", level: 18 },  // Poochyena -> Mightyena
+  { fromId: 263, toId: 264, method: "level", level: 20 },  // Zigzagoon -> Linoone
+  { fromId: 270, toId: 271, method: "level", level: 14 },  // Lotad -> Lombre
+  { fromId: 273, toId: 274, method: "level", level: 14 },  // Seedot -> Nuzleaf
+  { fromId: 276, toId: 277, method: "level", level: 22 },  // Taillow -> Swellow
+  { fromId: 278, toId: 279, method: "level", level: 25 },  // Wingull -> Pelipper
+  { fromId: 280, toId: 281, method: "level", level: 20 },  // Ralts -> Kirlia
+  { fromId: 281, toId: 282, method: "level", level: 30 },  // Kirlia -> Gardevoir
+  { fromId: 285, toId: 286, method: "level", level: 23 },  // Shroomish -> Breloom
+  { fromId: 287, toId: 288, method: "level", level: 18 },  // Slakoth -> Vigoroth
+  { fromId: 288, toId: 289, method: "level", level: 36 },  // Vigoroth -> Slaking
+  { fromId: 290, toId: 291, method: "level", level: 20 },  // Nincada -> Ninjask (Shedinja bonus-spawn not modeled)
+  { fromId: 293, toId: 294, method: "level", level: 20 },  // Whismur -> Loudred
+  { fromId: 294, toId: 295, method: "level", level: 40 },  // Loudred -> Exploud
+  { fromId: 296, toId: 297, method: "level", level: 24 },  // Makuhita -> Hariyama
+  { fromId: 304, toId: 305, method: "level", level: 32 },  // Aron -> Lairon
+  { fromId: 305, toId: 306, method: "level", level: 42 },  // Lairon -> Aggron
+  { fromId: 307, toId: 308, method: "level", level: 37 },  // Meditite -> Medicham
+  { fromId: 309, toId: 310, method: "level", level: 26 },  // Electrike -> Manectric
+  { fromId: 322, toId: 323, method: "level", level: 33 },  // Numel -> Camerupt
+  { fromId: 325, toId: 326, method: "level", level: 32 },  // Spoink -> Grumpig
+  { fromId: 328, toId: 329, method: "level", level: 35 },  // Trapinch -> Vibrava
+  { fromId: 329, toId: 330, method: "level", level: 45 },  // Vibrava -> Flygon
+  { fromId: 331, toId: 332, method: "level", level: 32 },  // Cacnea -> Cacturne
+  { fromId: 333, toId: 334, method: "level", level: 35 },  // Swablu -> Altaria
+  { fromId: 339, toId: 340, method: "level", level: 30 },  // Barboach -> Whiscash
+  { fromId: 341, toId: 342, method: "level", level: 30 },  // Corphish -> Crawdaunt
+  { fromId: 343, toId: 344, method: "level", level: 36 },  // Baltoy -> Claydol
+  { fromId: 349, toId: 350, method: "stone" },             // Feebas -> Milotic (Evolution Stone, substitutes Beauty)
+  { fromId: 353, toId: 354, method: "level", level: 37 },  // Shuppet -> Banette
+  { fromId: 355, toId: 356, method: "level", level: 37 },  // Duskull -> Dusclops
+  { fromId: 361, toId: 362, method: "level", level: 42 },  // Snorunt -> Glalie
+  { fromId: 363, toId: 364, method: "level", level: 32 },  // Spheal -> Sealeo
+  { fromId: 364, toId: 365, method: "level", level: 44 },  // Sealeo -> Walrein
+  { fromId: 371, toId: 372, method: "level", level: 30 },  // Bagon -> Shelgon
+  { fromId: 372, toId: 373, method: "level", level: 50 },  // Shelgon -> Salamence
+  { fromId: 374, toId: 375, method: "level", level: 20 },  // Beldum -> Metang
+  { fromId: 375, toId: 376, method: "level", level: 45 }   // Metang -> Metagross
 ];
 
 function getEvolutionFor(speciesId) {

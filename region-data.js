@@ -370,6 +370,270 @@ const LOCATIONS = [
   {
     id: "johto-pokemon-league", region: "johto", name: "Pokémon League", type: "town",
     order: 34, requires: "blackthorn-city", gymId: null, leagueId: "johto_league", encounters: []
+  },
+
+  // ---- Hoenn (Phase 14) ----
+  // Same schema/functions as Kanto and Johto above - a simplified but
+  // coherent playable route (not a 1:1 Emerald remake): some real routes
+  // (107/108/121 etc.) are folded into their neighbors rather than added as
+  // empty dead-end nodes. Petalburg City is visited early (it's on the
+  // direct path to Rustboro) but its gym (`hoenn_petalburg`) has
+  // requiresBadge:"heat" in gym-data.js, so visiting the location and being
+  // able to challenge the gym stay the two separate concepts they already
+  // are for every other gym in this app.
+  {
+    id: "littleroot-town", region: "hoenn", name: "Littleroot Town", type: "town",
+    order: 1, requires: null, gymId: null, encounters: []
+  },
+  {
+    id: "route-101", region: "hoenn", name: "Route 101", type: "route",
+    order: 2, requires: "littleroot-town", gymId: null,
+    encounters: [
+      { speciesId: 263, minLevel: 2, maxLevel: 4, weight: 40 }, // Zigzagoon
+      { speciesId: 265, minLevel: 2, maxLevel: 4, weight: 35 }, // Wurmple
+      { speciesId: 261, minLevel: 2, maxLevel: 4, weight: 25 }  // Poochyena
+    ]
+  },
+  {
+    id: "oldale-town", region: "hoenn", name: "Oldale Town", type: "town",
+    order: 3, requires: "route-101", gymId: null, encounters: []
+  },
+  {
+    id: "route-102", region: "hoenn", name: "Route 102", type: "route",
+    order: 4, requires: "oldale-town", gymId: null,
+    encounters: [
+      { speciesId: 273, minLevel: 3, maxLevel: 5, weight: 30 }, // Seedot
+      { speciesId: 270, minLevel: 3, maxLevel: 5, weight: 30 }, // Lotad
+      { speciesId: 263, minLevel: 3, maxLevel: 5, weight: 25 }, // Zigzagoon
+      { speciesId: 280, minLevel: 3, maxLevel: 5, weight: 5 }   // Ralts (rare)
+    ]
+  },
+  {
+    id: "petalburg-city", region: "hoenn", name: "Petalburg City", type: "town",
+    order: 5, requires: "route-102", gymId: "hoenn_petalburg", encounters: []
+  },
+  {
+    id: "route-104-south", region: "hoenn", name: "Route 104", type: "route",
+    order: 6, requires: "petalburg-city", gymId: null,
+    encounters: [
+      { speciesId: 278, minLevel: 4, maxLevel: 6, weight: 35 }, // Wingull
+      { speciesId: 276, minLevel: 4, maxLevel: 6, weight: 35 }, // Taillow
+      { speciesId: 263, minLevel: 4, maxLevel: 6, weight: 30 }  // Zigzagoon
+    ]
+  },
+  {
+    id: "petalburg-woods", region: "hoenn", name: "Petalburg Woods", type: "route",
+    order: 7, requires: "route-104-south", gymId: null,
+    encounters: [
+      { speciesId: 285, minLevel: 5, maxLevel: 7, weight: 30 }, // Shroomish
+      { speciesId: 287, minLevel: 5, maxLevel: 7, weight: 25 }, // Slakoth
+      { speciesId: 265, minLevel: 5, maxLevel: 7, weight: 25 }, // Wurmple
+      { speciesId: 266, minLevel: 6, maxLevel: 8, weight: 20 }  // Silcoon
+    ]
+  },
+  {
+    id: "rustboro-city", region: "hoenn", name: "Rustboro City", type: "town",
+    order: 8, requires: "petalburg-woods", gymId: "hoenn_rustboro", encounters: []
+  },
+  {
+    id: "route-116", region: "hoenn", name: "Route 116", type: "route",
+    order: 9, requires: "rustboro-city", gymId: null,
+    encounters: [
+      { speciesId: 293, minLevel: 6, maxLevel: 9, weight: 30 }, // Whismur
+      { speciesId: 290, minLevel: 6, maxLevel: 9, weight: 30 }, // Nincada
+      { speciesId: 276, minLevel: 6, maxLevel: 9, weight: 25 }, // Taillow
+      { speciesId: 263, minLevel: 6, maxLevel: 9, weight: 15 }  // Zigzagoon
+    ]
+  },
+  {
+    id: "rusturf-tunnel", region: "hoenn", name: "Rusturf Tunnel", type: "route",
+    order: 10, requires: "route-116", gymId: null,
+    encounters: [
+      { speciesId: 293, minLevel: 7, maxLevel: 9, weight: 45 }, // Whismur
+      { speciesId: 74, minLevel: 7, maxLevel: 9, weight: 35 },  // Geodude
+      { speciesId: 304, minLevel: 8, maxLevel: 10, weight: 20 } // Aron (rare)
+    ]
+  },
+  {
+    id: "route-106", region: "hoenn", name: "Route 106", type: "route",
+    order: 11, requires: "rusturf-tunnel", gymId: null,
+    encounters: [
+      { speciesId: 278, minLevel: 8, maxLevel: 10, weight: 40 }, // Wingull
+      { speciesId: 72, minLevel: 8, maxLevel: 10, weight: 35 },  // Tentacool
+      { speciesId: 263, minLevel: 8, maxLevel: 10, weight: 25 }  // Zigzagoon
+    ]
+  },
+  {
+    id: "dewford-town", region: "hoenn", name: "Dewford Town", type: "town",
+    order: 12, requires: "route-106", gymId: "hoenn_dewford", encounters: []
+  },
+  {
+    id: "granite-cave", region: "hoenn", name: "Granite Cave", type: "route",
+    order: 13, requires: "dewford-town", gymId: null,
+    encounters: [
+      { speciesId: 296, minLevel: 9, maxLevel: 12, weight: 35 }, // Makuhita
+      { speciesId: 304, minLevel: 9, maxLevel: 12, weight: 30 }, // Aron
+      { speciesId: 41, minLevel: 9, maxLevel: 12, weight: 25 },  // Zubat
+      { speciesId: 302, minLevel: 10, maxLevel: 12, weight: 10 } // Sableye (rare)
+    ]
+  },
+  {
+    id: "route-109", region: "hoenn", name: "Route 109", type: "route",
+    order: 14, requires: "granite-cave", gymId: null,
+    encounters: [
+      { speciesId: 278, minLevel: 10, maxLevel: 13, weight: 35 }, // Wingull
+      { speciesId: 72, minLevel: 10, maxLevel: 13, weight: 35 },  // Tentacool
+      { speciesId: 320, minLevel: 12, maxLevel: 14, weight: 30 }  // Wailmer
+    ]
+  },
+  {
+    id: "slateport-city", region: "hoenn", name: "Slateport City", type: "town",
+    order: 15, requires: "route-109", gymId: null, encounters: []
+  },
+  {
+    id: "route-110", region: "hoenn", name: "Route 110", type: "route",
+    order: 16, requires: "slateport-city", gymId: null,
+    encounters: [
+      { speciesId: 309, minLevel: 13, maxLevel: 16, weight: 30 }, // Electrike
+      { speciesId: 311, minLevel: 13, maxLevel: 16, weight: 25 }, // Plusle
+      { speciesId: 312, minLevel: 13, maxLevel: 16, weight: 25 }, // Minun
+      { speciesId: 343, minLevel: 13, maxLevel: 16, weight: 20 }  // Baltoy
+    ]
+  },
+  {
+    id: "mauville-city", region: "hoenn", name: "Mauville City", type: "town",
+    order: 17, requires: "route-110", gymId: "hoenn_mauville", encounters: []
+  },
+  {
+    id: "route-111", region: "hoenn", name: "Route 111", type: "route",
+    order: 18, requires: "mauville-city", gymId: null,
+    encounters: [
+      { speciesId: 328, minLevel: 15, maxLevel: 18, weight: 35 }, // Trapinch
+      { speciesId: 27, minLevel: 15, maxLevel: 18, weight: 30 },  // Sandshrew
+      { speciesId: 322, minLevel: 16, maxLevel: 19, weight: 25 }  // Numel
+    ]
+  },
+  {
+    id: "route-112", region: "hoenn", name: "Route 112", type: "route",
+    order: 19, requires: "route-111", gymId: null,
+    encounters: [
+      { speciesId: 322, minLevel: 17, maxLevel: 20, weight: 35 }, // Numel
+      { speciesId: 218, minLevel: 17, maxLevel: 20, weight: 30 }, // Slugma
+      { speciesId: 66, minLevel: 17, maxLevel: 20, weight: 25 }   // Machop
+    ]
+  },
+  {
+    id: "fallarbor-town", region: "hoenn", name: "Fallarbor Town", type: "town",
+    order: 20, requires: "route-112", gymId: null, encounters: []
+  },
+  {
+    id: "meteor-falls", region: "hoenn", name: "Meteor Falls", type: "route",
+    order: 21, requires: "fallarbor-town", gymId: null,
+    encounters: [
+      { speciesId: 41, minLevel: 18, maxLevel: 21, weight: 40 },  // Zubat
+      { speciesId: 338, minLevel: 19, maxLevel: 22, weight: 15 }, // Solrock (rare)
+      { speciesId: 337, minLevel: 19, maxLevel: 22, weight: 15 }, // Lunatone (rare)
+      { speciesId: 371, minLevel: 20, maxLevel: 22, weight: 10 }  // Bagon (rare)
+    ]
+  },
+  {
+    id: "route-113", region: "hoenn", name: "Route 113", type: "route",
+    order: 22, requires: "meteor-falls", gymId: null,
+    encounters: [
+      { speciesId: 327, minLevel: 19, maxLevel: 22, weight: 45 }, // Spinda
+      { speciesId: 322, minLevel: 19, maxLevel: 22, weight: 35 }, // Numel
+      { speciesId: 227, minLevel: 20, maxLevel: 23, weight: 10 }  // Skarmory (rare)
+    ]
+  },
+  {
+    id: "mt-chimney", region: "hoenn", name: "Mt. Chimney", type: "route",
+    order: 23, requires: "route-113", gymId: null,
+    encounters: [
+      { speciesId: 322, minLevel: 20, maxLevel: 23, weight: 35 }, // Numel
+      { speciesId: 325, minLevel: 20, maxLevel: 23, weight: 35 }, // Spoink
+      { speciesId: 66, minLevel: 20, maxLevel: 23, weight: 30 }   // Machop
+    ]
+  },
+  {
+    id: "lavaridge-town", region: "hoenn", name: "Lavaridge Town", type: "town",
+    order: 24, requires: "mt-chimney", gymId: "hoenn_lavaridge", encounters: []
+  },
+  {
+    id: "route-119", region: "hoenn", name: "Route 119", type: "route",
+    order: 25, requires: "lavaridge-town", gymId: null,
+    encounters: [
+      { speciesId: 357, minLevel: 22, maxLevel: 25, weight: 25 }, // Tropius
+      { speciesId: 263, minLevel: 22, maxLevel: 25, weight: 30 }, // Zigzagoon
+      { speciesId: 43, minLevel: 22, maxLevel: 25, weight: 25 },  // Oddish
+      { speciesId: 285, minLevel: 22, maxLevel: 25, weight: 20 }  // Shroomish
+    ]
+  },
+  {
+    id: "fortree-city", region: "hoenn", name: "Fortree City", type: "town",
+    order: 26, requires: "route-119", gymId: "hoenn_fortree", encounters: []
+  },
+  {
+    id: "route-120", region: "hoenn", name: "Route 120", type: "route",
+    order: 27, requires: "fortree-city", gymId: null,
+    encounters: [
+      { speciesId: 313, minLevel: 24, maxLevel: 27, weight: 30 }, // Volbeat
+      { speciesId: 314, minLevel: 24, maxLevel: 27, weight: 30 }, // Illumise
+      { speciesId: 263, minLevel: 24, maxLevel: 27, weight: 25 }, // Zigzagoon
+      { speciesId: 359, minLevel: 26, maxLevel: 28, weight: 8 }   // Absol (rare)
+    ]
+  },
+  {
+    id: "lilycove-city", region: "hoenn", name: "Lilycove City", type: "town",
+    order: 28, requires: "route-120", gymId: null, encounters: []
+  },
+  {
+    id: "mt-pyre", region: "hoenn", name: "Mt. Pyre", type: "route",
+    order: 29, requires: "lilycove-city", gymId: null,
+    encounters: [
+      { speciesId: 353, minLevel: 25, maxLevel: 28, weight: 50 }, // Shuppet
+      { speciesId: 355, minLevel: 25, maxLevel: 28, weight: 50 }  // Duskull
+    ]
+  },
+  {
+    id: "route-124", region: "hoenn", name: "Route 124", type: "route",
+    order: 30, requires: "lilycove-city", gymId: null,
+    encounters: [
+      { speciesId: 370, minLevel: 26, maxLevel: 29, weight: 35 }, // Luvdisc
+      { speciesId: 278, minLevel: 26, maxLevel: 29, weight: 35 }, // Wingull
+      { speciesId: 366, minLevel: 27, maxLevel: 29, weight: 20 }  // Clamperl
+    ]
+  },
+  {
+    id: "mossdeep-city", region: "hoenn", name: "Mossdeep City", type: "town",
+    order: 31, requires: "route-124", gymId: "hoenn_mossdeep", encounters: []
+  },
+  {
+    id: "route-126", region: "hoenn", name: "Route 126", type: "route",
+    order: 32, requires: "mossdeep-city", gymId: null,
+    encounters: [
+      { speciesId: 318, minLevel: 28, maxLevel: 31, weight: 30 }, // Carvanha
+      { speciesId: 320, minLevel: 28, maxLevel: 31, weight: 30 }, // Wailmer
+      { speciesId: 222, minLevel: 28, maxLevel: 31, weight: 25 }, // Corsola
+      { speciesId: 319, minLevel: 30, maxLevel: 32, weight: 10 }  // Sharpedo (rare)
+    ]
+  },
+  {
+    id: "sootopolis-city", region: "hoenn", name: "Sootopolis City", type: "town",
+    order: 33, requires: "route-126", gymId: "hoenn_sootopolis", encounters: []
+  },
+  {
+    id: "victory-road-hoenn", region: "hoenn", name: "Victory Road", type: "route",
+    order: 34, requires: "sootopolis-city", gymId: null,
+    encounters: [
+      { speciesId: 308, minLevel: 32, maxLevel: 36, weight: 30 }, // Medicham
+      { speciesId: 302, minLevel: 32, maxLevel: 36, weight: 25 }, // Sableye
+      { speciesId: 303, minLevel: 32, maxLevel: 36, weight: 25 }, // Mawile
+      { speciesId: 334, minLevel: 34, maxLevel: 37, weight: 8 }   // Altaria (rare)
+    ]
+  },
+  {
+    id: "hoenn-pokemon-league", region: "hoenn", name: "Pokémon League", type: "town",
+    order: 35, requires: "victory-road-hoenn", gymId: null, leagueId: "hoenn_league", encounters: []
   }
 ];
 

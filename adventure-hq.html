@@ -222,6 +222,8 @@
   <div class="badge-grid" id="badgeGridKanto"></div>
   <div class="section-title">🏅 Johto Rozetleri</div>
   <div class="badge-grid" id="badgeGridJohto"></div>
+  <div class="section-title">🏅 Hoenn Rozetleri</div>
+  <div class="badge-grid" id="badgeGridHoenn"></div>
   <div class="region-row" id="regionRow"></div>
 
   <div class="section-title">📊 Pokédex Completion</div>
@@ -304,17 +306,21 @@ function renderProgression() {
 
   const kantoGyms = getGymsForRegion('kanto');
   const johtoGyms = getGymsForRegion('johto');
+  const hoennGyms = getGymsForRegion('hoenn');
   const kantoGymCount = kantoGyms.filter(g => isGymDefeated(g, player)).length;
   const johtoGymCount = johtoGyms.filter(g => isGymDefeated(g, player)).length;
+  const hoennGymCount = hoennGyms.filter(g => isGymDefeated(g, player)).length;
 
   const kantoLeague = getLeagueById('kanto');
   const johtoLeague = getLeagueById('johto_league');
+  const hoennLeague = getLeagueById('hoenn_league');
   const leagueLabelFor = (league) => {
     const s = leagueStatus(league, player);
     return s === 'completed' ? '🏆 Tamamlandı' : (s === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
   };
   const leagueLabel = leagueLabelFor(kantoLeague);
   const johtoLeagueLabel = johtoLeague ? leagueLabelFor(johtoLeague) : '🔒 Kilitli';
+  const hoennLeagueLabel = hoennLeague ? leagueLabelFor(hoennLeague) : '🔒 Kilitli';
 
   el('progressSummary').innerHTML = `
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
@@ -322,10 +328,13 @@ function renderProgression() {
     <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto League</div></div>
     <div class="progress-stat"><div class="p-num">${johtoGymCount}/${johtoGyms.length}</div><div class="p-label">🏆 Johto Gym</div></div>
     <div class="progress-stat"><div class="p-num">${johtoLeagueLabel}</div><div class="p-label">🏟️ Johto League</div></div>
+    <div class="progress-stat"><div class="p-num">${hoennGymCount}/${hoennGyms.length}</div><div class="p-label">🏆 Hoenn Gym</div></div>
+    <div class="progress-stat"><div class="p-num">${hoennLeagueLabel}</div><div class="p-label">🏟️ Hoenn League</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
   const johtoUnlocked = isRegionUnlocked(player, 'johto');
+  const hoennUnlocked = isRegionUnlocked(player, 'hoenn');
   el('regionRow').innerHTML = `
     <div class="region-card">
       <div class="region-card-title">🗺️ Kanto</div>
@@ -336,17 +345,26 @@ function renderProgression() {
       <div class="region-card-status">${johtoUnlocked ? '🔓 Unlocked — Adventure begins in New Bark Town' : '🔒 Locked — Defeat Kanto Champion to unlock'}</div>
       ${johtoUnlocked ? `<button class="region-card-btn" id="openJohtoBtn">🗺️ Haritayı Aç</button>` : ''}
     </div>
+    <div class="region-card ${hoennUnlocked ? '' : 'locked'}">
+      <div class="region-card-title">🗺️ Hoenn</div>
+      <div class="region-card-status">${hoennUnlocked ? '🔓 Unlocked — Adventure begins in Littleroot Town' : '🔒 Locked — Defeat Johto Champion to unlock'}</div>
+      ${hoennUnlocked ? `<button class="region-card-btn" id="openHoennBtn">🗺️ Haritayı Aç</button>` : ''}
+    </div>
   `;
   if (johtoUnlocked) {
     el('openJohtoBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=johto'; });
   }
+  if (hoennUnlocked) {
+    el('openHoennBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=hoenn'; });
+  }
 
   renderBadgeGrid('badgeGridKanto', kantoGyms, player);
-  // Johto badges stay visible (all locked) even before the region itself
-  // unlocks - identical to how Kanto's own gym cards already show
+  // Johto/Hoenn badges stay visible (all locked) even before the region
+  // itself unlocks - identical to how Kanto's own gym cards already show
   // "locked" rather than disappearing, just one level up (region instead
   // of badge prerequisite).
   renderBadgeGrid('badgeGridJohto', johtoGyms, player);
+  renderBadgeGrid('badgeGridHoenn', hoennGyms, player);
 }
 
 // Phase 13: derived entirely from the existing Adventure dex + region
@@ -358,12 +376,14 @@ function renderDexCompletion() {
   const dex = getAdventureDex();
   const kanto = getDexCompletionForRegion('kanto', dex);
   const johto = getDexCompletionForRegion('johto', dex);
-  const overallCaught = kanto.caught + johto.caught;
-  const overallTotal = kanto.total + johto.total;
+  const hoenn = getDexCompletionForRegion('hoenn', dex);
+  const overallCaught = kanto.caught + johto.caught + hoenn.caught;
+  const overallTotal = kanto.total + johto.total + hoenn.total;
   const shinyCaught = dex.filter(p => p.shiny).length;
   el('dexCompletionArea').innerHTML = `
     <div class="progress-stat"><div class="p-num">${kanto.caught}/${kanto.total}</div><div class="p-label">🗺️ Kanto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${johto.caught}/${johto.total}</div><div class="p-label">🗺️ Johto Pokédex</div></div>
+    <div class="progress-stat"><div class="p-num">${hoenn.caught}/${hoenn.total}</div><div class="p-label">🗺️ Hoenn Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${overallCaught}/${overallTotal}</div><div class="p-label">📊 Genel Tamamlanma</div></div>
     <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Shiny Koleksiyonu</div></div>
   `;
@@ -667,8 +687,10 @@ function renderHallOfFame() {
   const player = getAdventurePlayer();
   const kantoLeague = getLeagueById('kanto');
   const johtoLeague = getLeagueById('johto_league');
+  const hoennLeague = getLeagueById('hoenn_league');
   const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
   const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
+  const hoennRows = renderGymHofRows(getGymsForRegion('hoenn'), player);
 
   el('hofArea').innerHTML = `
     <div class="achievement-category-title">Kanto Gyms</div>
@@ -682,6 +704,12 @@ function renderHallOfFame() {
     <div class="achievement-category-title">Johto Elite Four</div>
     ${renderEliteFourHofRows(johtoLeague, player)}
     ${renderChampionHofRow(johtoLeague, player)}` : ''}
+    <div class="achievement-category-title">Hoenn Gyms</div>
+    ${hoennRows}
+    ${hoennLeague ? `
+    <div class="achievement-category-title">Hoenn Elite Four</div>
+    ${renderEliteFourHofRows(hoennLeague, player)}
+    ${renderChampionHofRow(hoennLeague, player)}` : ''}
   `;
   el('hofArea').querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -134,7 +134,80 @@ const LEAGUE_CATALOG = [
         { speciesId: 149, level: 50 }  // Dragonite
       ],
       rewards: { trainerXp: 1600, coins: 2700 }
+    },
+    // Phase 14: Johto Champion victory now also unlocks Hoenn, the exact
+    // same mechanism Kanto's own entry already uses for Johto - see
+    // awardChampionVictory below. (Players who already beat Johto's
+    // Champion before this field existed are handled by the one-time
+    // backfillHoennUnlock() in adventure-state.js, since that one-time
+    // unlock branch below never re-runs for an already-completed league.)
+    unlocksRegion: "hoenn"
+  },
+
+  // ---- Hoenn (Phase 14) ----
+  {
+    leagueId: "hoenn_league", regionId: "hoenn",
+    requiresBadges: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
+    eliteFour: [
+      {
+        id: "sidney", order: 1, name: "Sidney", type: "dark",
+        description: "Karanlık ustası Sidney, Hoenn Elite Four'un ilk üyesi.",
+        team: [
+          { speciesId: 262, level: 46 }, // Mightyena
+          { speciesId: 332, level: 46 }, // Cacturne
+          { speciesId: 359, level: 47 }, // Absol
+          { speciesId: 319, level: 48 }  // Sharpedo
+        ],
+        rewards: { trainerXp: 600, coins: 850 }
+      },
+      {
+        id: "phoebe", order: 2, name: "Phoebe", type: "ghost",
+        description: "Hayalet ustası Phoebe, Hoenn Elite Four'un ikinci üyesi.",
+        team: [
+          { speciesId: 356, level: 48 }, // Dusclops
+          { speciesId: 354, level: 49 }, // Banette
+          { speciesId: 302, level: 49 }, // Sableye
+          { speciesId: 356, level: 50 }  // Dusclops
+        ],
+        rewards: { trainerXp: 600, coins: 850 }
+      },
+      {
+        id: "glacia", order: 3, name: "Glacia", type: "ice",
+        description: "Buz ustası Glacia, Hoenn Elite Four'un üçüncü üyesi.",
+        team: [
+          { speciesId: 362, level: 50 }, // Glalie
+          { speciesId: 364, level: 50 }, // Sealeo
+          { speciesId: 362, level: 52 }, // Glalie
+          { speciesId: 365, level: 53 }  // Walrein
+        ],
+        rewards: { trainerXp: 600, coins: 850 }
+      },
+      {
+        id: "drake", order: 4, name: "Drake", type: "dragon",
+        description: "Ejderha ustası Drake, Hoenn Elite Four'un son üyesi.",
+        team: [
+          { speciesId: 372, level: 52 }, // Shelgon
+          { speciesId: 334, level: 53 }, // Altaria
+          { speciesId: 230, level: 53 }, // Kingdra
+          { speciesId: 373, level: 55 }  // Salamence
+        ],
+        rewards: { trainerXp: 600, coins: 850 }
+      }
+    ],
+    champion: {
+      id: "champion", order: 5, name: "Wallace (Şampiyon)", type: "water",
+      description: "Su ustası Wallace, Hoenn Champion'ı! Son sınav.",
+      team: [
+        { speciesId: 370, level: 54 }, // Luvdisc
+        { speciesId: 340, level: 55 }, // Whiscash
+        { speciesId: 224, level: 56 }, // Tentacruel
+        { speciesId: 350, level: 57 }  // Milotic
+      ],
+      rewards: { trainerXp: 1800, coins: 3000 }
     }
+    // No unlocksRegion - Hoenn Champion marks Hoenn completed via the
+    // existing generic mechanism (completedRegions) and intentionally does
+    // NOT invent a fourth region unlock.
   }
 ];
 
