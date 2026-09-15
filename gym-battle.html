@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pokédex">
-<title>Gym Savaşı</title>
+<title>Salon Savaşı</title>
 <style>
   :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
   * { box-sizing: border-box; }
@@ -85,7 +85,7 @@
 </head>
 <body>
 
-<header><h1>🏟️ Gym Savaşı</h1></header>
+<header><h1>🏟️ Salon Savaşı</h1></header>
 
 <div class="wrap" id="wrap"></div>
 
@@ -134,7 +134,7 @@ function renderPartyPicker() {
     <div class="card">
       <div class="leader-banner">
         <div class="leader-name">${gym.leader}</div>
-        <div class="leader-sub">${TYPE_TR[gym.type] || gym.type} Gym Lideri</div>
+        <div class="leader-sub">${TYPE_TR[gym.type] || gym.type} Salon Lideri</div>
         <div class="team-progress">${gym.team.length} Pokémon'luk takım</div>
       </div>
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla savaşmak istersin?</div>
@@ -142,7 +142,7 @@ function renderPartyPicker() {
     </div>`;
   const pickList = el('pickList');
   if (!mydex.length) {
-    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Adventure HQ\'ya dön</a>.</p>';
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Macera Karargâhı\'na dön</a>.</p>';
     return;
   }
   pickList.innerHTML = mydex.map(p => {
@@ -191,7 +191,7 @@ async function startGymBattle(playerMon) {
   };
   enemyIndex = 0;
   logLines = [];
-  log(`${gym.leader} seni Gym'e davet etti!`);
+  log(`${gym.leader} seni Salona davet etti!`);
   recordAdventureEvent('challenge_gym');
   el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
   await loadCurrentEnemy();
@@ -370,7 +370,7 @@ function useHealItemInBattle(itemKey) {
 function giveUp() {
   if (battleEnded) return;
   battleEnded = true;
-  showResult({ title: '🏳️ Gym\'den vazgeçtin.', rewards: [], continueLabel: 'Geri Dön' });
+  showResult({ title: '🏳️ Salondan vazgeçtin.', rewards: [], continueLabel: 'Geri Dön' });
 }
 
 function endBattle(outcome) {
@@ -384,7 +384,7 @@ function endBattle(outcome) {
       showResult({
         title: `🏆 ${gym.leader}'i tekrar yendin!`,
         rewards: [],
-        note: 'Bu Gym zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.',
+        note: 'Bu Salon zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.',
         continueLabel: 'Haritaya Dön'
       });
     } else {
@@ -427,7 +427,7 @@ function showResult({ title, rewards, continueLabel, note, selfieUrl }) {
 
 function init() {
   if (!gym) {
-    el('wrap').innerHTML = '<div class="card"><p>Geçersiz Gym. <a href="adventure.html">Haritaya dön</a>.</p></div>';
+    el('wrap').innerHTML = '<div class="card"><p>Geçersiz Salon. <a href="adventure.html">Haritaya dön</a>.</p></div>';
     return;
   }
   const player = getAdventurePlayer();
@@ -442,7 +442,7 @@ function init() {
     return;
   }
   if (!isGymUnlocked(gym, player)) {
-    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu Gym henüz kilitli. Önce önceki rozeti kazanmalısın.</p></div>`;
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu Salon henüz kilitli. Önce önceki rozeti kazanmalısın.</p></div>`;
     return;
   }
   renderPartyPicker();

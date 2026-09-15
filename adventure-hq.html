@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pokédex">
-<title>Adventure Trainer HQ</title>
+<title>Macera Eğitmen Karargâhı</title>
 <style>
   :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
   * { box-sizing: border-box; }
@@ -195,7 +195,7 @@
 <body>
 
 <header>
-  <h1>🗺️ Adventure Trainer HQ</h1>
+  <h1>🗺️ Macera Eğitmen Karargâhı</h1>
   <div class="nav-row">
     <a class="nav-back" href="adventure.html">⬅️ Harita</a>
     <a class="nav-mart" href="pokemart.html">🛒 PokéMart</a>
@@ -207,7 +207,7 @@
 <div class="wrap">
 
   <div class="trainer-card">
-    <div class="t-title">ADVENTURE TRAINER</div>
+    <div class="t-title">MACERA EĞİTMENİ</div>
     <div class="t-level" id="trainerLevel">Seviye 1</div>
     <div class="xp-track">
       <div class="xp-fill" id="xpFill" style="width:0%"></div>
@@ -226,13 +226,13 @@
   <div class="badge-grid" id="badgeGridHoenn"></div>
   <div class="region-row" id="regionRow"></div>
 
-  <div class="section-title">📊 Pokédex Completion</div>
+  <div class="section-title">📊 Pokédex Tamamlanma Durumu</div>
   <div class="progress-summary" id="dexCompletionArea"></div>
 
-  <div class="section-title">🎯 Daily Quests</div>
+  <div class="section-title">🎯 Günlük Görevler</div>
   <div id="questArea"></div>
 
-  <div class="section-title">🏆 Achievements</div>
+  <div class="section-title">🏆 Başarımlar</div>
   <div class="achievement-summary" id="achievementSummary"></div>
   <div id="achievementArea"></div>
 
@@ -243,10 +243,10 @@
   <div class="section-title">📦 Adventure Pokémon'larım</div>
   <div id="collectionArea"></div>
 
-  <div class="section-title">🏆 Hall of Fame</div>
+  <div class="section-title">🏆 Onur Listesi</div>
   <div id="hofArea"></div>
 
-  <div class="section-title">🖼️ Memories</div>
+  <div class="section-title">🖼️ Anılar</div>
   <div id="memoriesArea"></div>
 
 </div>
@@ -324,12 +324,12 @@ function renderProgression() {
 
   el('progressSummary').innerHTML = `
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
-    <div class="progress-stat"><div class="p-num">${kantoGymCount}/${kantoGyms.length}</div><div class="p-label">🏆 Kanto Gym</div></div>
-    <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto League</div></div>
-    <div class="progress-stat"><div class="p-num">${johtoGymCount}/${johtoGyms.length}</div><div class="p-label">🏆 Johto Gym</div></div>
-    <div class="progress-stat"><div class="p-num">${johtoLeagueLabel}</div><div class="p-label">🏟️ Johto League</div></div>
-    <div class="progress-stat"><div class="p-num">${hoennGymCount}/${hoennGyms.length}</div><div class="p-label">🏆 Hoenn Gym</div></div>
-    <div class="progress-stat"><div class="p-num">${hoennLeagueLabel}</div><div class="p-label">🏟️ Hoenn League</div></div>
+    <div class="progress-stat"><div class="p-num">${kantoGymCount}/${kantoGyms.length}</div><div class="p-label">🏆 Kanto Salon</div></div>
+    <div class="progress-stat"><div class="p-num">${leagueLabel}</div><div class="p-label">🏟️ Kanto Ligi</div></div>
+    <div class="progress-stat"><div class="p-num">${johtoGymCount}/${johtoGyms.length}</div><div class="p-label">🏆 Johto Salon</div></div>
+    <div class="progress-stat"><div class="p-num">${johtoLeagueLabel}</div><div class="p-label">🏟️ Johto Ligi</div></div>
+    <div class="progress-stat"><div class="p-num">${hoennGymCount}/${hoennGyms.length}</div><div class="p-label">🏆 Hoenn Salon</div></div>
+    <div class="progress-stat"><div class="p-num">${hoennLeagueLabel}</div><div class="p-label">🏟️ Hoenn Ligi</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
@@ -338,16 +338,16 @@ function renderProgression() {
   el('regionRow').innerHTML = `
     <div class="region-card">
       <div class="region-card-title">🗺️ Kanto</div>
-      <div class="region-card-status">${kantoCompleted ? '✅ Completed' : '⏳ In Progress'}</div>
+      <div class="region-card-status">${kantoCompleted ? '✅ Tamamlandı' : '⏳ Devam Ediyor'}</div>
     </div>
     <div class="region-card ${johtoUnlocked ? '' : 'locked'}">
       <div class="region-card-title">🗺️ Johto</div>
-      <div class="region-card-status">${johtoUnlocked ? '🔓 Unlocked — Adventure begins in New Bark Town' : '🔒 Locked — Defeat Kanto Champion to unlock'}</div>
+      <div class="region-card-status">${johtoUnlocked ? '🔓 Açıldı — Macera New Bark Town\'da başlar' : '🔒 Kilitli — Açmak için Kanto Şampiyonu\'nu yen'}</div>
       ${johtoUnlocked ? `<button class="region-card-btn" id="openJohtoBtn">🗺️ Haritayı Aç</button>` : ''}
     </div>
     <div class="region-card ${hoennUnlocked ? '' : 'locked'}">
       <div class="region-card-title">🗺️ Hoenn</div>
-      <div class="region-card-status">${hoennUnlocked ? '🔓 Unlocked — Adventure begins in Littleroot Town' : '🔒 Locked — Defeat Johto Champion to unlock'}</div>
+      <div class="region-card-status">${hoennUnlocked ? '🔓 Açıldı — Macera Littleroot Town\'da başlar' : '🔒 Kilitli — Açmak için Johto Şampiyonu\'nu yen'}</div>
       ${hoennUnlocked ? `<button class="region-card-btn" id="openHoennBtn">🗺️ Haritayı Aç</button>` : ''}
     </div>
   `;
@@ -385,7 +385,7 @@ function renderDexCompletion() {
     <div class="progress-stat"><div class="p-num">${johto.caught}/${johto.total}</div><div class="p-label">🗺️ Johto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${hoenn.caught}/${hoenn.total}</div><div class="p-label">🗺️ Hoenn Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${overallCaught}/${overallTotal}</div><div class="p-label">📊 Genel Tamamlanma</div></div>
-    <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Shiny Koleksiyonu</div></div>
+    <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Parlak Koleksiyonu</div></div>
   `;
 }
 
@@ -414,7 +414,7 @@ function renderQuests() {
         <div class="quest-foot">
           <span class="quest-reward">${q.progress}/${catalogEntry.targetValue} · ${rewardLabel}</span>
           <button class="claim-btn" data-quest="${q.id}" ${(!done || q.claimed) ? 'disabled' : ''}>
-            ${q.claimed ? '✅ Alındı' : 'CLAIM'}
+            ${q.claimed ? '✅ Alındı' : 'AL'}
           </button>
         </div>
       </div>`;
@@ -436,7 +436,7 @@ function renderAchievements() {
   const ctx = buildAdventureAchievementContext(player, dex, progress);
   const unlockedCount = (player.adventureAchievements || []).length;
 
-  el('achievementSummary').textContent = `${unlockedCount} / ${ACHIEVEMENT_CATALOG.length} unlocked`;
+  el('achievementSummary').textContent = `${unlockedCount} / ${ACHIEVEMENT_CATALOG.length} açıldı`;
 
   const area = el('achievementArea');
   area.innerHTML = getAdventureAchievementCategories().map(category => {
@@ -499,20 +499,20 @@ function renderCollection() {
     const hpPct = Math.max(0, Math.round(curHp / maxHp * 100));
     const actions = [];
     if (fainted) {
-      actions.push(`<button class="m-action-btn" data-action="revive" data-instance="${p.instanceId}" ${(inv.revive || 0) <= 0 ? 'disabled' : ''}>✨ Revive (${inv.revive || 0})</button>`);
+      actions.push(`<button class="m-action-btn" data-action="revive" data-instance="${p.instanceId}" ${(inv.revive || 0) <= 0 ? 'disabled' : ''}>✨ Canlandırıcı (${inv.revive || 0})</button>`);
     } else if (curHp < maxHp) {
-      actions.push(`<button class="m-action-btn" data-action="potion" data-instance="${p.instanceId}" ${(inv.potion || 0) <= 0 ? 'disabled' : ''}>🧪 Potion (${inv.potion || 0})</button>`);
-      actions.push(`<button class="m-action-btn" data-action="super-potion" data-instance="${p.instanceId}" ${(inv['super-potion'] || 0) <= 0 ? 'disabled' : ''}>💊 S.Potion (${inv['super-potion'] || 0})</button>`);
+      actions.push(`<button class="m-action-btn" data-action="potion" data-instance="${p.instanceId}" ${(inv.potion || 0) <= 0 ? 'disabled' : ''}>🧪 İksir (${inv.potion || 0})</button>`);
+      actions.push(`<button class="m-action-btn" data-action="super-potion" data-instance="${p.instanceId}" ${(inv['super-potion'] || 0) <= 0 ? 'disabled' : ''}>💊 S.İksir (${inv['super-potion'] || 0})</button>`);
     }
     if ((p.level || 1) < 100) {
-      actions.push(`<button class="m-action-btn" data-action="rare-candy" data-instance="${p.instanceId}" ${(inv['rare-candy'] || 0) <= 0 ? 'disabled' : ''}>🍬 Rare Candy (${inv['rare-candy'] || 0})</button>`);
+      actions.push(`<button class="m-action-btn" data-action="rare-candy" data-instance="${p.instanceId}" ${(inv['rare-candy'] || 0) <= 0 ? 'disabled' : ''}>🍬 Ender Şeker (${inv['rare-candy'] || 0})</button>`);
     }
     const friendship = typeof p.friendship === 'number' ? p.friendship : 0;
     const evoStatus = checkEvolutionStatus(p);
     let evoHtml = '';
     if (evoStatus && !fainted) {
       if (evoStatus.ready) {
-        evoHtml = `<div class="evo-ready-tag">✨ Evolution Ready</div><button class="evo-btn" data-evolve="${p.instanceId}">EVOLVE</button>`;
+        evoHtml = `<div class="evo-ready-tag">✨ Evrime Hazır</div><button class="evo-btn" data-evolve="${p.instanceId}">EVRİMLEŞTİR</button>`;
       } else {
         evoHtml = `<div class="evo-blocked">🔒 ${evoStatus.blockedReason}</div>`;
       }
@@ -585,7 +585,7 @@ function renderCollection() {
       else if (action === 'potion' || action === 'super-potion') result = applyHealItem(instanceId, action);
       else if (action === 'rare-candy') result = applyRareCandy(instanceId);
       if (result && !result.ok) {
-        const messages = { 'no-item': 'Bu item elinde kalmadı.', 'max-level': 'Bu Pokémon zaten Lv.100!', 'full-hp': 'HP zaten dolu.', 'fainted': 'Baygın Pokémon önce Revive ister.', 'not-fainted': 'Bu Pokémon zaten baygın değil.' };
+        const messages = { 'no-item': 'Bu eşyadan elinde kalmadı.', 'max-level': 'Bu Pokémon zaten Lv.100!', 'full-hp': 'HP zaten dolu.', 'fainted': 'Baygın Pokémon önce Canlandırıcı ister.', 'not-fainted': 'Bu Pokémon zaten baygın değil.' };
         alert(messages[result.reason] || 'Yapılamadı.');
       }
       renderAll();
@@ -618,14 +618,14 @@ function renderGymHofRows(gyms, player) {
     const btn = !defeated
       ? ''
       : memory
-        ? `<button class="hof-btn view-btn" data-view="${memory.id}">🖼️ View</button>`
-        : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=gym&gymId=${g.gymId}" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
+        ? `<button class="hof-btn view-btn" data-view="${memory.id}">🖼️ Görüntüle</button>`
+        : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=gym&gymId=${g.gymId}" style="text-decoration:none;display:inline-block;">📸 Selfie Çek</a>`;
     return `
       <div class="hof-row ${defeated ? '' : 'locked'}">
         <span class="hof-icon">${defeated ? g.badge.icon : '🔒'}</span>
         <div class="hof-info">
           <div class="hof-name">${g.badge.name}</div>
-          <div class="hof-sub">${defeated ? `${g.leader} defeated` : 'Henüz kazanılmadı'}</div>
+          <div class="hof-sub">${defeated ? `${g.leader} yenildi` : 'Henüz kazanılmadı'}</div>
         </div>
         ${btn}
       </div>`;
@@ -646,14 +646,14 @@ function renderEliteFourHofRows(league, player) {
     const btn = !defeated
       ? ''
       : memory
-        ? `<button class="hof-btn view-btn" data-view="${memory.id}">🖼️ View</button>`
-        : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_elitefour&leagueId=${league.leagueId}&stageId=${m.id}" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
+        ? `<button class="hof-btn view-btn" data-view="${memory.id}">🖼️ Görüntüle</button>`
+        : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_elitefour&leagueId=${league.leagueId}&stageId=${m.id}" style="text-decoration:none;display:inline-block;">📸 Selfie Çek</a>`;
     return `
       <div class="hof-row ${defeated ? '' : 'locked'}">
         <span class="hof-icon">${defeated ? '🎖️' : '🔒'}</span>
         <div class="hof-info">
           <div class="hof-name">${m.name}</div>
-          <div class="hof-sub">${defeated ? 'Defeated' : 'Henüz kazanılmadı'}</div>
+          <div class="hof-sub">${defeated ? 'Yenildi' : 'Henüz kazanılmadı'}</div>
         </div>
         ${btn}
       </div>`;
@@ -669,15 +669,15 @@ function renderChampionHofRow(league, player) {
   const champBtn = !champCompleted
     ? ''
     : champMemory
-      ? `<button class="hof-btn view-btn" data-view="${champMemory.id}">🖼️ View</button>`
-      : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_champion&leagueId=${league.leagueId}" style="text-decoration:none;display:inline-block;">📸 Selfie</a>`;
+      ? `<button class="hof-btn view-btn" data-view="${champMemory.id}">🖼️ Görüntüle</button>`
+      : `<a class="hof-btn selfie-btn" href="victory-selfie.html?type=league_champion&leagueId=${league.leagueId}" style="text-decoration:none;display:inline-block;">📸 Selfie Çek</a>`;
   const regionName = REGIONS[league.regionId] ? REGIONS[league.regionId].name : league.regionId;
   return `
     <div class="hof-row ${champCompleted ? '' : 'locked'}">
       <span class="hof-icon">${champCompleted ? '🏆' : '🔒'}</span>
       <div class="hof-info">
-        <div class="hof-name">${regionName} Champion</div>
-        <div class="hof-sub">${champCompleted ? `${league.champion.name} defeated` : 'Henüz kazanılmadı'}</div>
+        <div class="hof-name">${regionName} Şampiyonu</div>
+        <div class="hof-sub">${champCompleted ? `${league.champion.name} yenildi` : 'Henüz kazanılmadı'}</div>
       </div>
       ${champBtn}
     </div>`;
@@ -693,21 +693,21 @@ function renderHallOfFame() {
   const hoennRows = renderGymHofRows(getGymsForRegion('hoenn'), player);
 
   el('hofArea').innerHTML = `
-    <div class="achievement-category-title">Kanto Gyms</div>
+    <div class="achievement-category-title">Kanto Salonları</div>
     ${kantoRows}
-    <div class="achievement-category-title">Kanto Elite Four</div>
+    <div class="achievement-category-title">Kanto Elit Dörtlü</div>
     ${renderEliteFourHofRows(kantoLeague, player)}
     ${renderChampionHofRow(kantoLeague, player)}
-    <div class="achievement-category-title">Johto Gyms</div>
+    <div class="achievement-category-title">Johto Salonları</div>
     ${johtoRows}
     ${johtoLeague ? `
-    <div class="achievement-category-title">Johto Elite Four</div>
+    <div class="achievement-category-title">Johto Elit Dörtlü</div>
     ${renderEliteFourHofRows(johtoLeague, player)}
     ${renderChampionHofRow(johtoLeague, player)}` : ''}
-    <div class="achievement-category-title">Hoenn Gyms</div>
+    <div class="achievement-category-title">Hoenn Salonları</div>
     ${hoennRows}
     ${hoennLeague ? `
-    <div class="achievement-category-title">Hoenn Elite Four</div>
+    <div class="achievement-category-title">Hoenn Elit Dörtlü</div>
     ${renderEliteFourHofRows(hoennLeague, player)}
     ${renderChampionHofRow(hoennLeague, player)}` : ''}
   `;
@@ -723,7 +723,7 @@ function renderMemories() {
   const memories = getAdventureMemories();
   const area = el('memoriesArea');
   if (!memories.length) {
-    area.innerHTML = `<p style="text-align:center;color:#999;font-size:13px;">No memories yet. Bir Gym veya League zaferinden sonra Victory Selfie çekerek ilk anını oluştur!</p>`;
+    area.innerHTML = `<p style="text-align:center;color:#999;font-size:13px;">Henüz anı yok. Bir Salon veya Lig zaferinden sonra Selfie çekerek ilk anını oluştur!</p>`;
     return;
   }
   area.innerHTML = `<div class="memories-grid">${memories.slice().sort((a, b) => b.createdAt - a.createdAt).map(m => `

@@ -7,7 +7,7 @@ const GYM_CATALOG = [
   {
     gymId: "pewter", regionId: "kanto", locationId: "pewter-city", order: 1,
     leader: "Brock", type: "rock", requiresBadge: null,
-    badge: { id: "boulder", name: "Boulder Badge", icon: "🪨" },
+    badge: { id: "boulder", name: "Kaya Rozeti", icon: "🪨" },
     description: "Kayaların ustası Brock ile savaş!",
     team: [
       { speciesId: 74, level: 12 }, // Geodude
@@ -18,7 +18,7 @@ const GYM_CATALOG = [
   {
     gymId: "cerulean", regionId: "kanto", locationId: "cerulean-city", order: 2,
     leader: "Misty", type: "water", requiresBadge: "boulder",
-    badge: { id: "cascade", name: "Cascade Badge", icon: "💧" },
+    badge: { id: "cascade", name: "Şelale Rozeti", icon: "💧" },
     description: "Su ustası Misty ile savaş!",
     team: [
       { speciesId: 120, level: 18 }, // Staryu
@@ -29,7 +29,7 @@ const GYM_CATALOG = [
   {
     gymId: "vermilion", regionId: "kanto", locationId: "vermilion-city", order: 3,
     leader: "Lt. Surge", type: "electric", requiresBadge: "cascade",
-    badge: { id: "thunder", name: "Thunder Badge", icon: "⚡" },
+    badge: { id: "thunder", name: "Yıldırım Rozeti", icon: "⚡" },
     description: "Elektrik ustası Lt. Surge ile savaş!",
     team: [
       { speciesId: 100, level: 21 }, // Voltorb
@@ -41,7 +41,7 @@ const GYM_CATALOG = [
   {
     gymId: "celadon", regionId: "kanto", locationId: "celadon-city", order: 4,
     leader: "Erika", type: "grass", requiresBadge: "thunder",
-    badge: { id: "rainbow", name: "Rainbow Badge", icon: "🌈" },
+    badge: { id: "rainbow", name: "Gökkuşağı Rozeti", icon: "🌈" },
     description: "Çimen ustası Erika ile savaş!",
     team: [
       { speciesId: 114, level: 24 }, // Tangela
@@ -52,7 +52,7 @@ const GYM_CATALOG = [
   {
     gymId: "fuchsia", regionId: "kanto", locationId: "fuchsia-city", order: 5,
     leader: "Koga", type: "poison", requiresBadge: "rainbow",
-    badge: { id: "soul", name: "Soul Badge", icon: "💜" },
+    badge: { id: "soul", name: "Ruh Rozeti", icon: "💜" },
     description: "Zehir ustası Koga ile savaş!",
     team: [
       { speciesId: 109, level: 33 }, // Koffing
@@ -64,7 +64,7 @@ const GYM_CATALOG = [
   {
     gymId: "saffron", regionId: "kanto", locationId: "saffron-city", order: 6,
     leader: "Sabrina", type: "psychic", requiresBadge: "soul",
-    badge: { id: "marsh", name: "Marsh Badge", icon: "🔮" },
+    badge: { id: "marsh", name: "Bataklık Rozeti", icon: "🔮" },
     description: "Ruh ustası Sabrina ile savaş!",
     team: [
       { speciesId: 64, level: 38 },  // Kadabra
@@ -76,7 +76,7 @@ const GYM_CATALOG = [
   {
     gymId: "cinnabar", regionId: "kanto", locationId: "cinnabar-island", order: 7,
     leader: "Blaine", type: "fire", requiresBadge: "marsh",
-    badge: { id: "volcano", name: "Volcano Badge", icon: "🌋" },
+    badge: { id: "volcano", name: "Volkan Rozeti", icon: "🌋" },
     description: "Ateş ustası Blaine ile savaş!",
     team: [
       { speciesId: 58, level: 42 },  // Growlithe
@@ -88,7 +88,7 @@ const GYM_CATALOG = [
   {
     gymId: "viridian", regionId: "kanto", locationId: "viridian-city", order: 8,
     leader: "Giovanni", type: "ground", requiresBadge: "volcano",
-    badge: { id: "earth", name: "Earth Badge", icon: "🏔️" },
+    badge: { id: "earth", name: "Toprak Rozeti", icon: "🏔️" },
     description: "Gizemli lider Giovanni ile son Kanto savaşı!",
     team: [
       { speciesId: 111, level: 45 }, // Rhyhorn
@@ -110,7 +110,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_violet", regionId: "johto", locationId: "violet-city", order: 1,
     leader: "Falkner", type: "flying", requiresBadge: null,
-    badge: { id: "zephyr", name: "Zephyr Badge", icon: "🌪️" },
+    badge: { id: "zephyr", name: "Meltem Rozeti", icon: "🌪️" },
     description: "Uçan tip ustası Falkner ile savaş!",
     team: [
       { speciesId: 16, level: 7 }, // Pidgey
@@ -121,7 +121,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_azalea", regionId: "johto", locationId: "azalea-town", order: 2,
     leader: "Bugsy", type: "bug", requiresBadge: "zephyr",
-    badge: { id: "hive", name: "Hive Badge", icon: "🐝" },
+    badge: { id: "hive", name: "Kovan Rozeti", icon: "🐝" },
     description: "Böcek tip ustası Bugsy ile savaş!",
     team: [
       { speciesId: 11, level: 14 },  // Metapod
@@ -133,7 +133,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_goldenrod", regionId: "johto", locationId: "goldenrod-city", order: 3,
     leader: "Whitney", type: "normal", requiresBadge: "hive",
-    badge: { id: "plain", name: "Plain Badge", icon: "⚪" },
+    badge: { id: "plain", name: "Ova Rozeti", icon: "⚪" },
     description: "Normal tip ustası Whitney ile savaş!",
     team: [
       { speciesId: 35, level: 18 },  // Clefairy
@@ -144,7 +144,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_ecruteak", regionId: "johto", locationId: "ecruteak-city", order: 4,
     leader: "Morty", type: "ghost", requiresBadge: "plain",
-    badge: { id: "fog", name: "Fog Badge", icon: "🌫️" },
+    badge: { id: "fog", name: "Sis Rozeti", icon: "🌫️" },
     description: "Hayalet tip ustası Morty ile savaş!",
     team: [
       { speciesId: 92, level: 21 }, // Gastly
@@ -157,7 +157,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_cianwood", regionId: "johto", locationId: "cianwood-city", order: 5,
     leader: "Chuck", type: "fighting", requiresBadge: "fog",
-    badge: { id: "storm", name: "Storm Badge", icon: "⛈️" },
+    badge: { id: "storm", name: "Fırtına Rozeti", icon: "⛈️" },
     description: "Dövüş tip ustası Chuck ile savaş!",
     team: [
       { speciesId: 57, level: 27 }, // Primeape
@@ -168,7 +168,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_olivine", regionId: "johto", locationId: "olivine-city", order: 6,
     leader: "Jasmine", type: "steel", requiresBadge: "storm",
-    badge: { id: "mineral", name: "Mineral Badge", icon: "💎" },
+    badge: { id: "mineral", name: "Mineral Rozeti", icon: "💎" },
     description: "Çelik tip ustası Jasmine ile savaş!",
     team: [
       { speciesId: 81, level: 30 },  // Magnemite
@@ -180,7 +180,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_mahogany", regionId: "johto", locationId: "mahogany-town", order: 7,
     leader: "Pryce", type: "ice", requiresBadge: "mineral",
-    badge: { id: "glacier", name: "Glacier Badge", icon: "🧊" },
+    badge: { id: "glacier", name: "Buzul Rozeti", icon: "🧊" },
     description: "Buz tip ustası Pryce ile savaş!",
     team: [
       { speciesId: 86, level: 30 },  // Seel
@@ -192,7 +192,7 @@ const GYM_CATALOG = [
   {
     gymId: "johto_blackthorn", regionId: "johto", locationId: "blackthorn-city", order: 8,
     leader: "Clair", type: "dragon", requiresBadge: "glacier",
-    badge: { id: "rising", name: "Rising Badge", icon: "🐉" },
+    badge: { id: "rising", name: "Yükselen Rozet", icon: "🐉" },
     description: "Ejderha tip ustası Clair ile Johto'nun son savaşı!",
     team: [
       { speciesId: 148, level: 37 }, // Dragonair
@@ -215,7 +215,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_rustboro", regionId: "hoenn", locationId: "rustboro-city", order: 1,
     leader: "Roxanne", type: "rock", requiresBadge: null,
-    badge: { id: "stone", name: "Stone Badge", icon: "🪨" },
+    badge: { id: "stone", name: "Taş Rozeti", icon: "🪨" },
     description: "Kaya tipi ustası Roxanne ile Hoenn'in ilk savaşı!",
     team: [
       { speciesId: 74, level: 12 },  // Geodude
@@ -226,7 +226,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_dewford", regionId: "hoenn", locationId: "dewford-town", order: 2,
     leader: "Brawly", type: "fighting", requiresBadge: "stone",
-    badge: { id: "knuckle", name: "Knuckle Badge", icon: "👊" },
+    badge: { id: "knuckle", name: "Yumruk Rozeti", icon: "👊" },
     description: "Dövüş tipi ustası Brawly ile savaş!",
     team: [
       { speciesId: 66, level: 17 },  // Machop
@@ -237,7 +237,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_mauville", regionId: "hoenn", locationId: "mauville-city", order: 3,
     leader: "Wattson", type: "electric", requiresBadge: "knuckle",
-    badge: { id: "dynamo", name: "Dynamo Badge", icon: "⚡" },
+    badge: { id: "dynamo", name: "Dinamo Rozeti", icon: "⚡" },
     description: "Elektrik tipi ustası Wattson ile savaş!",
     team: [
       { speciesId: 100, level: 20 }, // Voltorb
@@ -249,7 +249,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_lavaridge", regionId: "hoenn", locationId: "lavaridge-town", order: 4,
     leader: "Flannery", type: "fire", requiresBadge: "dynamo",
-    badge: { id: "heat", name: "Heat Badge", icon: "🌋" },
+    badge: { id: "heat", name: "Alev Rozeti", icon: "🌋" },
     description: "Ateş tipi ustası Flannery ile savaş!",
     team: [
       { speciesId: 322, level: 24 }, // Numel
@@ -261,7 +261,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_petalburg", regionId: "hoenn", locationId: "petalburg-city", order: 5,
     leader: "Norman", type: "normal", requiresBadge: "heat",
-    badge: { id: "balance", name: "Balance Badge", icon: "⚖️" },
+    badge: { id: "balance", name: "Denge Rozeti", icon: "⚖️" },
     description: "Eğitmen babası Norman ile Hoenn'in orta sınavı!",
     team: [
       { speciesId: 287, level: 27 }, // Slakoth
@@ -273,7 +273,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_fortree", regionId: "hoenn", locationId: "fortree-city", order: 6,
     leader: "Winona", type: "flying", requiresBadge: "balance",
-    badge: { id: "feather", name: "Feather Badge", icon: "🪶" },
+    badge: { id: "feather", name: "Tüy Rozeti", icon: "🪶" },
     description: "Uçan tip ustası Winona ile savaş!",
     team: [
       { speciesId: 333, level: 29 }, // Swablu
@@ -285,7 +285,7 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_mossdeep", regionId: "hoenn", locationId: "mossdeep-city", order: 7,
     leader: "Tate & Liza", type: "psychic", requiresBadge: "feather",
-    badge: { id: "mind", name: "Mind Badge", icon: "🔮" },
+    badge: { id: "mind", name: "Zihin Rozeti", icon: "🔮" },
     description: "İkiz Ruh ustaları Tate & Liza ile savaş!",
     team: [
       { speciesId: 338, level: 41 }, // Solrock
@@ -296,8 +296,8 @@ const GYM_CATALOG = [
   {
     gymId: "hoenn_sootopolis", regionId: "hoenn", locationId: "sootopolis-city", order: 8,
     leader: "Juan", type: "water", requiresBadge: "mind",
-    badge: { id: "rain", name: "Rain Badge", icon: "🌧️" },
-    description: "Su tipi ustası Juan ile Hoenn'in son Gym savaşı!",
+    badge: { id: "rain", name: "Yağmur Rozeti", icon: "🌧️" },
+    description: "Su tipi ustası Juan ile Hoenn'in son Salon savaşı!",
     team: [
       { speciesId: 370, level: 43 }, // Luvdisc
       { speciesId: 340, level: 44 }, // Whiscash
