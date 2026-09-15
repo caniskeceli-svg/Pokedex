@@ -381,6 +381,34 @@ function getLocationById(locationId) {
   return LOCATIONS.find(l => l.id === locationId) || null;
 }
 
+// ---- Phase 13: Pokédex completion (derived, never persisted) ----
+// The distinct set of species actually catchable in a region, straight from
+// its own locations' encounter tables - no new data, just a dedup over data
+// that already exists. Starters and anything else never appearing in an
+// encounter table are simply outside this set (on both sides of any later
+// completion fraction), so they can never push a completion percentage past
+// 100%.
+function getEncounterableSpeciesForRegion(regionId) {
+  const ids = new Set();
+  getLocationsForRegion(regionId).forEach(loc => {
+    (loc.encounters || []).forEach(e => ids.add(e.speciesId));
+  });
+  return Array.from(ids);
+}
+
+// { caught, total } for one region, computed purely from the owned dex
+// (fusions - id >= 900000000 - excluded, same convention already used
+// everywhere else owned-species counts are computed) intersected with that
+// region's own encounterable set. A shiny and a normal catch of the same
+// species both count as ONE caught species here - shiny never inflates this
+// count, it's a separate collection concept (see shinyCount elsewhere).
+function getDexCompletionForRegion(regionId, dex) {
+  const encounterable = getEncounterableSpeciesForRegion(regionId);
+  const ownedSpeciesIds = new Set(dex.filter(p => p.id < 900000000).map(p => p.id));
+  const caught = encounterable.filter(id => ownedSpeciesIds.has(id)).length;
+  return { caught, total: encounterable.length };
+}
+
 // A location is unlocked once its prerequisite has been visited (or it has
 // no prerequisite at all). Already-visited locations always count as unlocked
 // too, so re-visiting a completed spot never looks locked.

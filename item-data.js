@@ -15,7 +15,11 @@ const ITEM_CATALOG = {
     category: "ball", effect: { type: "catch", multiplier: 1.5 }, usableIn: ["wild-battle"] },
   ultraball: { id: "ultraball", name: "Ultra Ball", emoji: "🟡", price: 400,
     description: "En yüksek yakalama şansına sahip top.",
-    category: "ball", effect: { type: "catch", multiplier: 2 }, usableIn: ["wild-battle"] },
+    // Phase 13: Trainer Level's first real consequence - Ultra Ball must be
+    // earned, not just afforded. minTrainerLevel is an optional field (only
+    // this item has it); anything already in a player's inventory is
+    // unaffected, this only gates future purchases.
+    category: "ball", effect: { type: "catch", multiplier: 2 }, usableIn: ["wild-battle"], minTrainerLevel: 10 },
   potion: { id: "potion", name: "Potion", emoji: "🧪", price: 100,
     description: "Bir Pokémon'un HP'sini biraz iyileştirir.",
     category: "healing", effect: { type: "heal", amount: 20 }, usableIn: ["wild-battle", "adventure-hq"] },
@@ -137,6 +141,14 @@ function healAllAtPokemonCenter() {
 function buyItem(itemId) {
   const item = ITEM_CATALOG[itemId];
   if (!item) return { ok: false, reason: "invalid-item" };
+  // Phase 13: Trainer Level gate, checked here (not just in pokemart.html's
+  // rendering) so a direct/bypassed call can never buy an item early -
+  // same "never trust the UI alone" precedent as every other Adventure
+  // write path in this codebase.
+  if (item.minTrainerLevel) {
+    const trainerLevel = levelInfo(getAdventurePlayer().xp).level;
+    if (trainerLevel < item.minTrainerLevel) return { ok: false, reason: "level-too-low" };
+  }
   if (!spendAdventureCoins(item.price)) return { ok: false, reason: "insufficient-coins" };
   addAdventureItems(itemId, 1);
   return { ok: true, newCoins: getAdventurePlayer().coins };
