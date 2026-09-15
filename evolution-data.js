@@ -109,6 +109,16 @@ async function performEvolution(instanceId) {
     }
     freshDex[freshIdx] = evolved;
     saveAdventureDex(freshDex);
+
+    // Phase 8: evolutionCount is the only place evolution history is
+    // tallied (a Pokemon's own record only shows its current species, not
+    // how it got there), so Evolution achievements read this counter rather
+    // than trying to derive a count from the dex.
+    const player = getAdventurePlayer();
+    player.evolutionCount = (player.evolutionCount || 0) + 1;
+    saveAdventurePlayer(player);
+    if (typeof recordAdventureEvent === "function") recordAdventureEvent("evolve_pokemon");
+
     return { ok: true, evolved };
   } catch (e) {
     console.error("Evolution failed", e);

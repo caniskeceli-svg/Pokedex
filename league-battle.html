@@ -101,6 +101,9 @@
 <script src="item-data.js"></script>
 <script src="gym-data.js"></script>
 <script src="league-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="adventure-achievement-data.js"></script>
+<script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const params = new URLSearchParams(window.location.search);
@@ -336,7 +339,10 @@ function useHealItemInBattle(itemKey) {
   if (!result.ok) return;
   player.hp = result.newHp;
   log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
-  if (itemKey === 'berry') increaseFriendship(player.instanceId, 3, 'berry');
+  if (itemKey === 'berry') {
+    increaseFriendship(player.instanceId, 3, 'berry');
+    recordAdventureEvent('use_berry');
+  }
 
   enemyTurn();
   if (player.hp <= 0) {
@@ -363,6 +369,7 @@ function onStageCleared() {
     return;
   }
   const result = awardEliteFourVictory(leagueId, stage.stageId);
+  recordAdventureEvent('league_progress');
   const rewards = result.alreadyWon ? [] : [`👑 +${result.trainerXp} Eğitmen XP`, `💰 +${result.coins} PokéCoin`];
   battleEnded = true;
   el('wrap').innerHTML = `
@@ -386,6 +393,7 @@ function endBattle(outcome) {
   battleEnded = true;
   if (outcome === 'win') {
     const result = awardChampionVictory(leagueId);
+    recordAdventureEvent('league_progress');
     if (result.alreadyCompleted) {
       showResult({
         title: '🏆 Kanto Champion\'ı tekrar yendin!',

@@ -96,6 +96,9 @@
 <script src="battle-engine.js"></script>
 <script src="item-data.js"></script>
 <script src="gym-data.js"></script>
+<script src="quest-data.js"></script>
+<script src="adventure-achievement-data.js"></script>
+<script src="adventure-events.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 const params = new URLSearchParams(window.location.search);
@@ -177,6 +180,7 @@ async function startGymBattle(playerMon) {
   enemyIndex = 0;
   logLines = [];
   log(`${gym.leader} seni Gym'e davet etti!`);
+  recordAdventureEvent('challenge_gym');
   el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
   await loadCurrentEnemy();
   renderBattle();
@@ -299,7 +303,10 @@ function useHealItemInBattle(itemKey) {
   if (!result.ok) return;
   player.hp = result.newHp;
   log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
-  if (itemKey === 'berry') increaseFriendship(player.instanceId, 3, 'berry');
+  if (itemKey === 'berry') {
+    increaseFriendship(player.instanceId, 3, 'berry');
+    recordAdventureEvent('use_berry');
+  }
 
   enemyTurn();
   if (player.hp <= 0) {
@@ -318,8 +325,10 @@ function giveUp() {
 function endBattle(outcome) {
   battleEnded = true;
   if (outcome === 'win') {
-    visitAdventureLocation(gym.locationId);
+    const visit = visitAdventureLocation(gym.locationId);
+    if (visit.wasNewVisit) recordAdventureEvent('explore_location');
     const result = awardGymVictory(gymId);
+    recordAdventureEvent('win_gym');
     if (result.alreadyDefeated) {
       showResult({
         title: `🏆 ${gym.leader}'i tekrar yendin!`,

@@ -24,7 +24,14 @@ const DEFAULT_ADVENTURE_PLAYER = {
   // plus the two region-progression fields future regions read from.
   leagueProgress: {},
   completedRegions: [],
-  unlockedRegions: ["kanto"]
+  unlockedRegions: ["kanto"],
+  // Phase 8: dailyQuests is set lazily by quest-data.js's ensureDailyQuests()
+  // (there's no "day 0" default to fill in here - it needs a server
+  // round-trip). adventureAchievements and evolutionCount are the Adventure-
+  // only achievement system's state, completely separate from the classic
+  // Ayaz/Baba `achievements` field above.
+  adventureAchievements: [],
+  evolutionCount: 0
 };
 const DEFAULT_ADVENTURE_INVENTORY = {
   pokeball: 5, greatball: 0, ultraball: 0,
@@ -176,15 +183,19 @@ function addAdventureItems(itemKey, qty) {
 
 function getAdventureProgress() { return ADVENTURE_STATE.progress; }
 function saveAdventureProgress(progress) { ADVENTURE_STATE.progress = progress; pushAdventureCloud({ progress }); }
+// Spreads the EXISTING progress object rather than replacing it wholesale,
+// so fields this function doesn't know about (like Phase 7's leagueAttempt)
+// are never dropped by a location visit. Returns `wasNewVisit` so callers
+// can fire a one-time "explore_location" event only on a genuinely new spot.
 function visitAdventureLocation(locationId) {
   const progress = getAdventureProgress();
   const alreadyVisited = progress.visitedLocations.includes(locationId);
-  const next = {
+  const next = Object.assign({}, progress, {
     visitedLocations: alreadyVisited ? progress.visitedLocations : [...progress.visitedLocations, locationId],
     currentLocationId: locationId
-  };
+  });
   saveAdventureProgress(next);
-  return next;
+  return Object.assign({}, next, { wasNewVisit: !alreadyVisited });
 }
 
 // Central Trainer XP grant (Phase 6) - Gym victories and any future League/
@@ -260,5 +271,8 @@ function increaseFriendship(instanceId, amount, reason) {
   if (next === current) return { ok: true, friendship: current, changed: false };
   mydex[idx] = Object.assign({}, mon, { friendship: next });
   saveAdventureDex(mydex);
+  // Phase 8: lets the Friendship achievement tier react without every
+  // friendship call site needing to know about the achievement system.
+  if (typeof recordAdventureEvent === "function") recordAdventureEvent("increase_friendship");
   return { ok: true, friendship: next, changed: true, reason };
 }
