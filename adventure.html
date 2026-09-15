@@ -207,9 +207,7 @@ async function openDetail(locationId) {
         }
         // Every possible encounter here is already owned (normal + shiny) - a
         // small consolation reward instead of an empty "nothing happened".
-        const p = getPlayer();
-        p.coins = (p.coins || 0) + 15;
-        savePlayer(p);
+        addCoins(15);
         visitLocation(locationId);
         closeDetail();
         renderPath();

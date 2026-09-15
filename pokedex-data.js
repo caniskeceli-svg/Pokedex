@@ -288,6 +288,24 @@ function saveMyDexShared(list) { CLOUD_STATE.mydex = list; pushCloud({ mydex: li
 function getPlayer() { return CLOUD_STATE.player; }
 function savePlayer(p) { CLOUD_STATE.player = p; pushCloud({ player: p }); }
 
+// Centralized PokeCoin economy (Phase 4) - every coin gain/spend anywhere in
+// the app should go through one of these two so "never negative" only needs
+// enforcing in one place. addCoins clamps negative input to 0 (use spendCoins
+// to remove coins); spendCoins refuses (returns false) rather than going negative.
+function addCoins(amount) {
+  const player = getPlayer();
+  player.coins = (player.coins || 0) + Math.max(0, Math.round(amount || 0));
+  savePlayer(player);
+  return player.coins;
+}
+function spendCoins(amount) {
+  const player = getPlayer();
+  if ((player.coins || 0) < amount) return false;
+  player.coins -= amount;
+  savePlayer(player);
+  return true;
+}
+
 function getInventory() { return CLOUD_STATE.inventory; }
 function saveInventory(inv) { CLOUD_STATE.inventory = inv; pushCloud({ inventory: inv }); }
 
@@ -720,6 +738,7 @@ function processCatch(pokemonData, speciesData) {
     if (!player.achievements.includes(id)) {
       player.achievements.push(id);
       player.xp += 100;
+      player.coins = (player.coins || 0) + 20;
       gained.xpEvents.push({ label: "Başarı: " + (getAchievementInfo(id)?.title || id), xp: 100 });
       gained.achievements.push(getAchievementInfo(id));
     }
