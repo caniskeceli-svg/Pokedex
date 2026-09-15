@@ -73,9 +73,6 @@
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: bold; color: #2c3e50;
   }
-  .coin-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
-  .coin-badge { background: #ffd24a; color: #6b3500; font-weight: bold; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
-  .mart-link { background: #e3350d; color: #fff; font-weight: bold; padding: 6px 14px; border-radius: 999px; font-size: 13px; text-decoration: none; }
 
   .hero {
     background: linear-gradient(135deg, #ffd24a, #ff9a3c);
@@ -127,10 +124,6 @@
   .bag-card .b-emoji { font-size: 30px; }
   .bag-card .b-name { font-size: 13px; font-weight: bold; margin: 4px 0 2px; }
   .bag-card .b-count { font-size: 22px; font-weight: bold; color: var(--accent-dark); }
-  .pokemon-center-btn {
-    display: block; width: 100%; margin-top: 10px; background: #16a085; color: #fff; border: none;
-    padding: 12px; border-radius: 999px; font-weight: bold; font-size: 14px; cursor: pointer;
-  }
 
   .badge-grid {
     display: grid;
@@ -214,17 +207,6 @@
     position: absolute; top: 4px; left: 6px;
     font-size: 15px;
   }
-  .m-hp-track { background: #eee; border-radius: 999px; height: 6px; overflow: hidden; margin: 4px 0 2px; }
-  .m-hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); }
-  .m-hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
-  .m-hp-text { font-size: 10px; color: #888; }
-  .m-fainted-tag { font-size: 11px; color: #c0392b; font-weight: bold; }
-  .m-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; justify-content: center; }
-  .m-action-btn {
-    font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 999px; border: none; cursor: pointer;
-    background: #27ae60; color: #fff;
-  }
-  .m-action-btn:disabled { background: #ddd; color: #999; cursor: default; }
 
   .empty-box {
     text-align: center;
@@ -248,7 +230,7 @@
   <h1>⭐ Ayaz'ın Pokémonları ⭐</h1>
   <div class="nav-row">
     <a class="nav-back" href="index.html">⬅️ Pokédex'e Dön</a>
-    <a class="nav-adventure" href="adventure.html">🗺️ Macera</a>
+    <a class="nav-adventure" href="adventure-hq.html">🗺️ Macera</a>
     <a class="nav-teams" href="teams.html">🛡️ Takımlarım</a>
     <a class="nav-battle" href="battle.html">⚔️ Savaştır</a>
     <a class="nav-quiz" href="quiz.html">❓ Quiz Oyna</a>
@@ -265,10 +247,6 @@
       <div class="xp-fill" id="xpFill" style="width:0%"></div>
       <div class="xp-text" id="xpText">0 / 1000 XP</div>
     </div>
-    <div class="coin-row">
-      <span class="coin-badge" id="coinBadge">💰 0</span>
-      <a class="mart-link" href="pokemart.html">🛒 PokéMart</a>
-    </div>
   </div>
 
   <div class="hero">
@@ -284,7 +262,6 @@
 
   <div class="section-title">🎒 Çantam</div>
   <div class="bag-grid" id="bagGrid"></div>
-  <button class="pokemon-center-btn" id="pokemonCenterBtn">🏥 Pokémon Center - Tüm Pokémon'ları Ücretsiz İyileştir</button>
 
   <div class="section-title">🏅 Rozetlerim</div>
   <div class="badge-grid" id="badgeGrid"></div>
@@ -304,8 +281,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
-<script src="battle-engine.js"></script>
-<script src="item-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
 
@@ -315,7 +290,6 @@ function renderTrainerCard() {
   el('trainerLevel').textContent = `Seviye ${level}`;
   el('xpFill').style.width = Math.round((xpIntoLevel / xpForNextLevel) * 100) + '%';
   el('xpText').textContent = `${xpIntoLevel} / ${xpForNextLevel} XP`;
-  el('coinBadge').textContent = `💰 ${player.coins || 0}`;
 }
 
 function renderBag() {
@@ -401,61 +375,19 @@ async function renderDashboard() {
     return;
   }
 
-  const inv = getInventory();
-  area.innerHTML = `<div class="mydex-grid">${shown.map(p => {
-    const hasInstance = !!p.instanceId;
-    const maxHp = hasInstance ? computeMonMaxHp(p) : 0;
-    const curHp = hasInstance ? computeMonCurrentHp(p) : 0;
-    const fainted = p.fainted === true;
-    const hpPct = hasInstance ? Math.max(0, Math.round(curHp / maxHp * 100)) : 100;
-    const actions = [];
-    if (hasInstance && fainted) {
-      actions.push(`<button class="m-action-btn" data-action="revive" data-instance="${p.instanceId}" ${(inv.revive || 0) <= 0 ? 'disabled' : ''}>✨ Revive (${inv.revive || 0})</button>`);
-    } else if (hasInstance && curHp < maxHp) {
-      actions.push(`<button class="m-action-btn" data-action="potion" data-instance="${p.instanceId}" ${(inv.potion || 0) <= 0 ? 'disabled' : ''}>🧪 Potion (${inv.potion || 0})</button>`);
-      actions.push(`<button class="m-action-btn" data-action="super-potion" data-instance="${p.instanceId}" ${(inv['super-potion'] || 0) <= 0 ? 'disabled' : ''}>💊 S.Potion (${inv['super-potion'] || 0})</button>`);
-    }
-    if (hasInstance && (p.level || 1) < 100) {
-      actions.push(`<button class="m-action-btn" data-action="rare-candy" data-instance="${p.instanceId}" ${(inv['rare-candy'] || 0) <= 0 ? 'disabled' : ''}>🍬 Rare Candy (${inv['rare-candy'] || 0})</button>`);
-    }
-    return `
+  area.innerHTML = `<div class="mydex-grid">${shown.map(p => `
     <div class="mydex-item" data-name="${p.name}">
       ${p.favorite ? '<span class="fav-mark">❤️</span>' : ''}
       <span class="remove-x" data-remove="${p.id}">✕</span>
       <img src="${p.img}" alt="${p.name}">
-      <span class="m-name">${p.name}${p.shiny ? ' ✨' : ''}</span>
+      <span class="m-name">${p.name}</span>
       ${p.nickname ? `<span class="m-nick">"${p.nickname}"</span>` : ''}
       <div class="m-types">${(p.types || []).map(t =>
         `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`
       ).join('')}</div>
-      ${hasInstance ? `
-        <div class="m-hp-track"><div class="m-hp-fill ${hpPct < 25 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
-        <div class="m-hp-text">${fainted ? '' : `${curHp}/${maxHp} HP · `}Lv.${p.level || 1}</div>
-        ${fainted ? '<div class="m-fainted-tag">😵 Baygın</div>' : ''}
-      ` : ''}
       <div class="m-power">💪 ${p.power || 0}</div>
-      ${actions.length ? `<div class="m-actions">${actions.join('')}</div>` : ''}
       <a class="card-link" href="card.html?id=${p.id}" data-card="1">🎴 Kart</a>
-    </div>`;
-  }).join('')}</div>`;
-
-  area.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (btn.disabled) return;
-      const action = btn.dataset.action;
-      const instanceId = btn.dataset.instance;
-      let result;
-      if (action === 'revive') result = applyRevive(instanceId);
-      else if (action === 'potion' || action === 'super-potion') result = applyHealItem(instanceId, action);
-      else if (action === 'rare-candy') result = applyRareCandy(instanceId);
-      if (result && !result.ok) {
-        const messages = { 'no-item': 'Bu item elinde kalmadı.', 'max-level': 'Bu Pokémon zaten Lv.100!', 'full-hp': 'HP zaten dolu.', 'fainted': 'Baygın Pokémon önce Revive ister.', 'not-fainted': 'Bu Pokémon zaten baygın değil.' };
-        alert(messages[result.reason] || 'Yapılamadı.');
-      }
-      renderDashboard();
-    });
-  });
+    </div>`).join('')}</div>`;
 
   area.querySelectorAll('.mydex-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -474,15 +406,6 @@ async function renderDashboard() {
 }
 
 el('favOnly').addEventListener('change', renderDashboard);
-let centerLocked = false;
-el('pokemonCenterBtn').addEventListener('click', () => {
-  if (centerLocked) return;
-  centerLocked = true;
-  const count = healAllAtPokemonCenter();
-  alert(`🏥 ${count} Pokémon'un HP'si tamamen yenilendi!`);
-  renderDashboard();
-  centerLocked = false;
-});
 
 waitForCloud().then(renderDashboard);
 onCloudChange(renderDashboard);

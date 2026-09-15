@@ -73,7 +73,7 @@
 <header>
   <h1>🛒 PokéMart</h1>
   <div class="nav-row">
-    <a class="nav-back" href="mypokemon.html">⬅️ Trainer HQ</a>
+    <a class="nav-back" href="adventure-hq.html">⬅️ Adventure HQ</a>
   </div>
 </header>
 
@@ -87,6 +87,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
 <script src="battle-engine.js"></script>
 <script src="item-data.js"></script>
 <script>
@@ -103,8 +104,8 @@ function showToast(text, isError) {
 }
 
 function render() {
-  const player = getPlayer();
-  const inv = getInventory();
+  const player = getAdventurePlayer();
+  const inv = getAdventureInventory();
   el('coinBar').textContent = `💰 ${player.coins || 0} PokéCoin`;
 
   el('catalog').innerHTML = CATEGORY_ORDER.map(cat => {
@@ -148,8 +149,8 @@ function handleBuy(itemId) {
   buyLocked = false;
 }
 
-waitForCloud().then(render);
-onCloudChange(render);
+waitForAdventureCloud().then(render);
+onAdventureCloudChange(render);
 </script>
 
 </body>
