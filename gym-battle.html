@@ -96,6 +96,7 @@
 <script src="battle-engine.js"></script>
 <script src="item-data.js"></script>
 <script src="gym-data.js"></script>
+<script src="league-data.js"></script>
 <script src="quest-data.js"></script>
 <script src="adventure-achievement-data.js"></script>
 <script src="adventure-events.js"></script>
@@ -380,6 +381,16 @@ function init() {
     return;
   }
   const player = getAdventurePlayer();
+  // Region-level gate first (e.g. Johto requires the Kanto Champion) - a
+  // gym's own requiresBadge chain has no idea which region it lives in, so
+  // this has to be checked separately, the same way the region tabs on
+  // adventure.html never even render a locked region's nodes at all. This
+  // matters for anyone landing here via a direct/typed URL, not just map
+  // clicks - a data-driven check via gym.regionId, never a per-gym branch.
+  if (!isRegionUnlocked(player, gym.regionId)) {
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 ${REGIONS[gym.regionId] ? REGIONS[gym.regionId].name : gym.regionId} henüz kilitli.</p></div>`;
+    return;
+  }
   if (!isGymUnlocked(gym, player)) {
     el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu Gym henüz kilitli. Önce önceki rozeti kazanmalısın.</p></div>`;
     return;

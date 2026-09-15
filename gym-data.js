@@ -96,6 +96,111 @@ const GYM_CATALOG = [
       { speciesId: 112, level: 50 }  // Rhydon
     ],
     rewards: { trainerXp: 1000, coins: 2000 }
+  },
+
+  // ---- Johto (Phase 10C) ----
+  // Same catalog, same functions below (getGymById/isGymUnlocked/
+  // awardGymVictory/etc.) - `order` is only compared within a region (see
+  // getGymsForRegion), so Johto's own 1-8 coexists with Kanto's without
+  // clashing. `requiresBadge` chains through Johto's own badge ids only,
+  // completely independent of Kanto's chain (Violet is unlocked purely by
+  // requiresBadge: null, not by anything Kanto-related - the Kanto-Champion
+  // gate lives one level up, at the Johto REGION itself, via
+  // isRegionUnlocked/unlockedRegions - see region-data.js/league-data.js).
+  {
+    gymId: "johto_violet", regionId: "johto", locationId: "violet-city", order: 1,
+    leader: "Falkner", type: "flying", requiresBadge: null,
+    badge: { id: "zephyr", name: "Zephyr Badge", icon: "🌪️" },
+    description: "Uçan tip ustası Falkner ile savaş!",
+    team: [
+      { speciesId: 16, level: 7 }, // Pidgey
+      { speciesId: 17, level: 9 }  // Pidgeotto
+    ],
+    rewards: { trainerXp: 400, coins: 800 }
+  },
+  {
+    gymId: "johto_azalea", regionId: "johto", locationId: "azalea-town", order: 2,
+    leader: "Bugsy", type: "bug", requiresBadge: "zephyr",
+    badge: { id: "hive", name: "Hive Badge", icon: "🐝" },
+    description: "Böcek tip ustası Bugsy ile savaş!",
+    team: [
+      { speciesId: 11, level: 14 },  // Metapod
+      { speciesId: 14, level: 14 },  // Kakuna
+      { speciesId: 123, level: 16 }  // Scyther
+    ],
+    rewards: { trainerXp: 500, coins: 1000 }
+  },
+  {
+    gymId: "johto_goldenrod", regionId: "johto", locationId: "goldenrod-city", order: 3,
+    leader: "Whitney", type: "normal", requiresBadge: "hive",
+    badge: { id: "plain", name: "Plain Badge", icon: "⚪" },
+    description: "Normal tip ustası Whitney ile savaş!",
+    team: [
+      { speciesId: 35, level: 18 },  // Clefairy
+      { speciesId: 241, level: 20 }  // Miltank
+    ],
+    rewards: { trainerXp: 600, coins: 1200 }
+  },
+  {
+    gymId: "johto_ecruteak", regionId: "johto", locationId: "ecruteak-city", order: 4,
+    leader: "Morty", type: "ghost", requiresBadge: "plain",
+    badge: { id: "fog", name: "Fog Badge", icon: "🌫️" },
+    description: "Hayalet tip ustası Morty ile savaş!",
+    team: [
+      { speciesId: 92, level: 21 }, // Gastly
+      { speciesId: 93, level: 21 }, // Haunter
+      { speciesId: 94, level: 25 }, // Gengar
+      { speciesId: 93, level: 23 }  // Haunter
+    ],
+    rewards: { trainerXp: 700, coins: 1400 }
+  },
+  {
+    gymId: "johto_cianwood", regionId: "johto", locationId: "cianwood-city", order: 5,
+    leader: "Chuck", type: "fighting", requiresBadge: "fog",
+    badge: { id: "storm", name: "Storm Badge", icon: "⛈️" },
+    description: "Dövüş tip ustası Chuck ile savaş!",
+    team: [
+      { speciesId: 57, level: 27 }, // Primeape
+      { speciesId: 62, level: 30 }  // Poliwrath
+    ],
+    rewards: { trainerXp: 800, coins: 1600 }
+  },
+  {
+    gymId: "johto_olivine", regionId: "johto", locationId: "olivine-city", order: 6,
+    leader: "Jasmine", type: "steel", requiresBadge: "storm",
+    badge: { id: "mineral", name: "Mineral Badge", icon: "💎" },
+    description: "Çelik tip ustası Jasmine ile savaş!",
+    team: [
+      { speciesId: 81, level: 30 },  // Magnemite
+      { speciesId: 81, level: 30 },  // Magnemite
+      { speciesId: 208, level: 35 }  // Steelix
+    ],
+    rewards: { trainerXp: 900, coins: 1800 }
+  },
+  {
+    gymId: "johto_mahogany", regionId: "johto", locationId: "mahogany-town", order: 7,
+    leader: "Pryce", type: "ice", requiresBadge: "mineral",
+    badge: { id: "glacier", name: "Glacier Badge", icon: "🧊" },
+    description: "Buz tip ustası Pryce ile savaş!",
+    team: [
+      { speciesId: 86, level: 30 },  // Seel
+      { speciesId: 87, level: 32 },  // Dewgong
+      { speciesId: 221, level: 34 }  // Piloswine
+    ],
+    rewards: { trainerXp: 1000, coins: 2000 }
+  },
+  {
+    gymId: "johto_blackthorn", regionId: "johto", locationId: "blackthorn-city", order: 8,
+    leader: "Clair", type: "dragon", requiresBadge: "glacier",
+    badge: { id: "rising", name: "Rising Badge", icon: "🐉" },
+    description: "Ejderha tip ustası Clair ile Johto'nun son savaşı!",
+    team: [
+      { speciesId: 148, level: 37 }, // Dragonair
+      { speciesId: 148, level: 37 }, // Dragonair
+      { speciesId: 148, level: 37 }, // Dragonair
+      { speciesId: 230, level: 40 }  // Kingdra
+    ],
+    rewards: { trainerXp: 1200, coins: 2500 }
   }
 ];
 

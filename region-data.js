@@ -165,7 +165,7 @@ const LOCATIONS = [
   },
   {
     id: "violet-city", region: "johto", name: "Violet City", type: "town",
-    order: 6, requires: "route-31", gymId: null, encounters: []
+    order: 6, requires: "route-31", gymId: "johto_violet", encounters: []
   },
   {
     id: "sprout-tower", region: "johto", name: "Sprout Tower", type: "route",
@@ -203,7 +203,7 @@ const LOCATIONS = [
   },
   {
     id: "azalea-town", region: "johto", name: "Azalea Town", type: "town",
-    order: 11, requires: "route-33", gymId: null, encounters: []
+    order: 11, requires: "route-33", gymId: "johto_azalea", encounters: []
   },
   {
     id: "slowpoke-well", region: "johto", name: "Slowpoke Well", type: "route",
@@ -227,7 +227,7 @@ const LOCATIONS = [
   },
   {
     id: "goldenrod-city", region: "johto", name: "Goldenrod City", type: "town",
-    order: 14, requires: "ilex-forest", gymId: null, encounters: []
+    order: 14, requires: "ilex-forest", gymId: "johto_goldenrod", encounters: []
   },
   {
     id: "route-34", region: "johto", name: "Route 34", type: "route",
@@ -280,7 +280,7 @@ const LOCATIONS = [
   },
   {
     id: "ecruteak-city", region: "johto", name: "Ecruteak City", type: "town",
-    order: 20, requires: "route-37", gymId: null, encounters: []
+    order: 20, requires: "route-37", gymId: "johto_ecruteak", encounters: []
   },
   {
     id: "route-38", region: "johto", name: "Route 38", type: "route",
@@ -302,7 +302,7 @@ const LOCATIONS = [
   },
   {
     id: "olivine-city", region: "johto", name: "Olivine City", type: "town",
-    order: 23, requires: "route-39", gymId: null, encounters: []
+    order: 23, requires: "route-39", gymId: "johto_olivine", encounters: []
   },
   {
     id: "route-40", region: "johto", name: "Route 40", type: "route",
@@ -314,11 +314,11 @@ const LOCATIONS = [
   },
   {
     id: "cianwood-city", region: "johto", name: "Cianwood City", type: "town",
-    order: 26, requires: "route-41", gymId: null, encounters: []
+    order: 26, requires: "route-41", gymId: "johto_cianwood", encounters: []
   },
   {
     id: "mahogany-town", region: "johto", name: "Mahogany Town", type: "town",
-    order: 27, requires: "ecruteak-city", gymId: null, encounters: []
+    order: 27, requires: "ecruteak-city", gymId: "johto_mahogany", encounters: []
   },
   {
     id: "route-42", region: "johto", name: "Route 42", type: "route",
@@ -365,7 +365,7 @@ const LOCATIONS = [
   },
   {
     id: "blackthorn-city", region: "johto", name: "Blackthorn City", type: "town",
-    order: 33, requires: "ice-path", gymId: null, encounters: []
+    order: 33, requires: "ice-path", gymId: "johto_blackthorn", encounters: []
   }
 ];
 
