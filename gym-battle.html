@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e3350d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<title>Gym Savaşı</title>
+<style>
+  :root { --card: #ffffff; --ink: #2b2b2b; --accent: #e3350d; --accent-dark: #a82008; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #ffe1c2 0%, #fff7e6 260px);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header { text-align: center; padding: 16px 16px 6px; }
+  header h1 {
+    margin: 0; font-size: clamp(20px, 5.5vw, 28px); color: var(--accent);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+  .card { background: #fff; border-radius: 20px; padding: 16px; margin-top: 14px; box-shadow: 0 6px 0 rgba(0,0,0,0.08); }
+
+  .leader-banner {
+    background: #2c3e50; color: #fff; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; text-align: center;
+  }
+  .leader-name { font-size: 18px; font-weight: bold; }
+  .leader-sub { font-size: 12px; color: #ffd24a; }
+  .team-progress { font-size: 12px; color: #bbb; margin-top: 4px; }
+
+  .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
+  .pick-item.disabled { opacity: 0.4; cursor: default; }
+  .pick-item:hover:not(.disabled) { background: #ffe6cc; }
+  .pick-item img { width: 44px; height: 44px; }
+  .pick-item .p-name { font-weight: bold; text-transform: capitalize; }
+  .pick-item .p-sub { font-size: 12px; color: #888; }
+
+  .vs-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mon-box { text-align: center; flex: 1; }
+  .mon-box img { width: 90px; height: 90px; }
+  .mon-name { font-weight: bold; text-transform: capitalize; font-size: 15px; }
+  .mon-lv { font-size: 12px; color: #888; }
+  .hp-track { background: #eee; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 4px; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); transition: width 0.3s ease; }
+  .hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
+  .vs-text { font-weight: bold; font-size: 20px; color: var(--accent); }
+
+  .log-box { background: #fff9ec; border: 2px dashed #ffd27a; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin-top: 12px; min-height: 40px; }
+
+  .move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .move-btn {
+    background: #3b6cdb; color: #fff; border: none; padding: 12px; border-radius: 12px;
+    font-size: 14px; font-weight: bold; cursor: pointer; text-transform: capitalize;
+  }
+  .move-btn:disabled { background: #ccc; cursor: default; }
+
+  .item-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .item-btn {
+    flex: 1; min-width: 90px; background: #27ae60; color: #fff; border: none; padding: 10px; border-radius: 12px;
+    font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+  .item-btn:disabled { background: #ccc; cursor: default; }
+  .run-btn { display: block; width: 100%; margin-top: 10px; background: none; border: 2px solid #ccc; color: #888; padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+  .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
+  .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
+  .reward-chip { background: #f0f8f0; border-radius: 999px; padding: 6px 14px; font-weight: bold; }
+  .badge-chip { background: #fff3cd; border: 2px solid #ffd24a; }
+  .continue-btn {
+    display: block; width: 100%; background: #27ae60; color: #fff; border: none; padding: 14px;
+    border-radius: 999px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+  }
+  .locked-msg { text-align: center; color: #a33; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header><h1>🏟️ Gym Savaşı</h1></header>
+
+<div class="wrap" id="wrap"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="pokedex-data.js"></script>
+<script src="adventure-state.js"></script>
+<script src="region-data.js"></script>
+<script src="battle-engine.js"></script>
+<script src="item-data.js"></script>
+<script src="gym-data.js"></script>
+<script>
+const el = (id) => document.getElementById(id);
+const params = new URLSearchParams(window.location.search);
+const gymId = params.get('gym');
+const gym = getGymById(gymId);
+
+let enemyIndex = 0;
+let enemy = null;   // current gym Pokemon being fought: { id, name, types, baseStats, sprite, maxHp, hp, moves, level }
+let player = null;
+let battleEnded = false;
+let logLines = [];
+
+function log(msg) {
+  logLines.unshift(msg);
+  logLines = logLines.slice(0, 4);
+}
+
+function spriteFor(speciesId) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`;
+}
+
+function hpBarClass(hp, maxHp) {
+  return (hp / maxHp) < 0.25 ? 'hp-fill low' : 'hp-fill';
+}
+
+function renderPartyPicker() {
+  const mydex = getAdventureDex().filter(p => p.id < 900000000);
+  const wrap = el('wrap');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="leader-banner">
+        <div class="leader-name">${gym.leader}</div>
+        <div class="leader-sub">${TYPE_TR[gym.type] || gym.type} Gym Lideri</div>
+        <div class="team-progress">${gym.team.length} Pokémon'luk takım</div>
+      </div>
+      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla savaşmak istersin?</div>
+      <div id="pickList"></div>
+    </div>`;
+  const pickList = el('pickList');
+  if (!mydex.length) {
+    pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Adventure HQ\'ya dön</a>.</p>';
+    return;
+  }
+  pickList.innerHTML = mydex.map(p => {
+    const fainted = p.fainted === true;
+    return `
+      <div class="pick-item ${fainted ? 'disabled' : ''}" data-instance="${p.instanceId || ''}">
+        <img src="${p.img}" alt="${p.name}">
+        <div>
+          <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
+          <div class="p-sub">Lv.${p.level || 1}${fainted ? ' · 😵 Baygın' : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  pickList.querySelectorAll('.pick-item:not(.disabled)').forEach(itemEl => {
+    itemEl.addEventListener('click', () => {
+      const mon = mydex.find(p => p.instanceId === itemEl.dataset.instance);
+      startGymBattle(mon);
+    });
+  });
+  if (mydex.every(p => p.fainted === true)) {
+    pickList.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:#a33;font-size:13px;margin-top:8px;">Tüm Pokémon\'ların baygın! Şimdilik savaşamazsın. 🏥</p>');
+  }
+}
+
+async function startGymBattle(playerMon) {
+  const pStats = computeBattleStats(playerMon.stats || {}, playerMon.level || 1);
+  player = {
+    instanceId: playerMon.instanceId,
+    id: playerMon.id,
+    name: playerMon.nickname || playerMon.name,
+    types: playerMon.types,
+    level: playerMon.level || 1,
+    maxHp: pStats.maxHp,
+    hp: computeMonCurrentHp(playerMon),
+    battleStats: pStats,
+    moves: buildMoveset(playerMon.types)
+  };
+  enemyIndex = 0;
+  logLines = [];
+  log(`${gym.leader} seni Gym'e davet etti!`);
+  el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
+  await loadCurrentEnemy();
+  renderBattle();
+}
+
+async function loadCurrentEnemy() {
+  const teamMon = gym.team[enemyIndex];
+  const speciesData = await fetchPokemonSpeciesData(teamMon.speciesId);
+  const stats = computeBattleStats(speciesData.stats, teamMon.level);
+  enemy = {
+    id: speciesData.id,
+    name: speciesData.name,
+    types: speciesData.types,
+    level: teamMon.level,
+    maxHp: stats.maxHp,
+    hp: stats.maxHp,
+    battleStats: stats,
+    moves: buildMoveset(speciesData.types),
+    sprite: spriteFor(speciesData.id)
+  };
+  log(`${gym.leader}, ${enemy.name}'i gönderdi!`);
+}
+
+function renderBattle() {
+  const wrap = el('wrap');
+  const inv = getAdventureInventory();
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="leader-banner">
+        <div class="leader-name">${gym.leader}</div>
+        <div class="team-progress">Pokémon ${enemyIndex + 1} / ${gym.team.length}</div>
+      </div>
+      <div class="vs-row">
+        <div class="mon-box">
+          <img src="${enemy.sprite}" alt="${enemy.name}">
+          <div class="mon-name">${enemy.name}</div>
+          <div class="mon-lv">Lv.${enemy.level}</div>
+          <div class="hp-track"><div class="${hpBarClass(enemy.hp, enemy.maxHp)}" style="width:${Math.max(0, enemy.hp / enemy.maxHp * 100)}%"></div></div>
+        </div>
+        <div class="vs-text">VS</div>
+        <div class="mon-box">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${player.id}.png" alt="${player.name}">
+          <div class="mon-name">${player.name}</div>
+          <div class="mon-lv">Lv.${player.level}</div>
+          <div class="hp-track"><div class="${hpBarClass(player.hp, player.maxHp)}" style="width:${Math.max(0, player.hp / player.maxHp * 100)}%"></div></div>
+        </div>
+      </div>
+
+      <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
+
+      <div class="move-grid" id="moveGrid">
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}">${m.name}</button>`).join('')}
+      </div>
+
+      <div class="item-row" id="itemRow">
+        ${['potion', 'super-potion', 'berry'].map(key => `
+          <button class="item-btn" data-heal="${key}" ${(inv[key] || 0) <= 0 || player.hp >= player.maxHp ? 'disabled' : ''}>
+            ${ITEM_CATALOG[key].emoji} ${ITEM_CATALOG[key].name} (${inv[key] || 0})
+          </button>`).join('')}
+      </div>
+      <button class="run-btn" id="runBtn">🏳️ Vazgeç</button>
+    </div>`;
+
+  el('moveGrid').querySelectorAll('.move-btn').forEach(btn => {
+    btn.addEventListener('click', () => useMove(Number(btn.dataset.move)));
+  });
+  el('itemRow').querySelectorAll('.item-btn').forEach(btn => {
+    btn.addEventListener('click', () => useHealItemInBattle(btn.dataset.heal));
+  });
+  el('runBtn').addEventListener('click', giveUp);
+}
+
+function persistPlayerHp() {
+  const mydex = getAdventureDex();
+  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
+  if (idx === -1) return;
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0 });
+  saveAdventureDex(mydex);
+}
+
+function enemyTurn() {
+  const wMove = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
+  const r = calcDamage({ move: wMove, attackerTypes: enemy.types, attackerStats: enemy.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  player.hp = Math.max(0, player.hp - r.damage);
+  log(`${enemy.name}, ${wMove.name} kullandı! ${r.damage} hasar.`);
+  persistPlayerHp();
+}
+
+async function useMove(moveIndex) {
+  if (battleEnded) return;
+  const move = player.moves[moveIndex];
+  const r = calcDamage({ move, attackerTypes: player.types, attackerStats: player.battleStats, defenderTypes: enemy.types, defenderStats: enemy.battleStats });
+  enemy.hp = Math.max(0, enemy.hp - r.damage);
+  log(`${player.name}, ${move.name} kullandı! ${r.damage} hasar${r.effectiveness > 1 ? ' (Etkili! 💥)' : r.effectiveness < 1 && r.effectiveness > 0 ? ' (Etkisiz...)' : r.effectiveness === 0 ? ' (Etkisiz!)' : ''}${r.isCrit ? ' Kritik vuruş!' : ''}`);
+
+  if (enemy.hp <= 0) {
+    log(`${enemy.name} bayıldı!`);
+    enemyIndex++;
+    if (enemyIndex >= gym.team.length) {
+      endBattle('win');
+      return;
+    }
+    el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
+    await loadCurrentEnemy();
+    renderBattle();
+    return;
+  }
+
+  enemyTurn();
+  if (player.hp <= 0) {
+    endBattle('loss');
+    return;
+  }
+  renderBattle();
+}
+
+function useHealItemInBattle(itemKey) {
+  if (battleEnded) return;
+  const result = applyHealItem(player.instanceId, itemKey);
+  if (!result.ok) return;
+  player.hp = result.newHp;
+  log(`${ITEM_CATALOG[itemKey].name} kullandın! ${player.name} ${result.newHp}/${result.maxHp} HP'ye ulaştı.`);
+  if (itemKey === 'berry') increaseFriendship(player.instanceId, 3, 'berry');
+
+  enemyTurn();
+  if (player.hp <= 0) {
+    endBattle('loss');
+    return;
+  }
+  renderBattle();
+}
+
+function giveUp() {
+  if (battleEnded) return;
+  battleEnded = true;
+  showResult({ title: '🏳️ Gym\'den vazgeçtin.', rewards: [], continueLabel: 'Geri Dön' });
+}
+
+function endBattle(outcome) {
+  battleEnded = true;
+  if (outcome === 'win') {
+    visitAdventureLocation(gym.locationId);
+    const result = awardGymVictory(gymId);
+    if (result.alreadyDefeated) {
+      showResult({
+        title: `🏆 ${gym.leader}'i tekrar yendin!`,
+        rewards: [],
+        note: 'Bu Gym zaten tamamlandı - ödüller yalnızca ilk galibiyette verilir.',
+        continueLabel: 'Haritaya Dön'
+      });
+    } else {
+      showResult({
+        title: `🏆 ${gym.leader} Yenildi!`,
+        rewards: [
+          `${result.gym.badge.icon} ${result.gym.badge.name}`,
+          `👑 +${result.trainerXp} Eğitmen XP`,
+          `💰 +${result.coins} PokéCoin`
+        ],
+        continueLabel: 'Haritaya Dön'
+      });
+    }
+  } else {
+    showResult({
+      title: `😵 ${gym.leader} seni yendi...`,
+      rewards: [],
+      continueLabel: 'Haritaya Dön',
+      note: 'Pokémon\'unu iyileştirip tekrar deneyebilirsin.'
+    });
+  }
+}
+
+function showResult({ title, rewards, continueLabel, note }) {
+  el('wrap').innerHTML = `
+    <div class="card">
+      <div class="result-title">${title}</div>
+      ${rewards.length ? `<div class="reward-row">${rewards.map(r => `<span class="reward-chip badge-chip">${r}</span>`).join('')}</div>` : ''}
+      ${note ? `<p style="text-align:center;color:#888;font-size:13px;">${note}</p>` : ''}
+      <button class="continue-btn" id="continueBtn">${continueLabel}</button>
+    </div>`;
+  el('continueBtn').addEventListener('click', () => { window.location.href = 'adventure.html'; });
+}
+
+function init() {
+  if (!gym) {
+    el('wrap').innerHTML = '<div class="card"><p>Geçersiz Gym. <a href="adventure.html">Haritaya dön</a>.</p></div>';
+    return;
+  }
+  const player = getAdventurePlayer();
+  if (!isGymUnlocked(gym, player)) {
+    el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu Gym henüz kilitli. Önce önceki rozeti kazanmalısın.</p></div>`;
+    return;
+  }
+  renderPartyPicker();
+}
+
+waitForAdventureCloud().then(init);
+</script>
+
+</body>
+</html>
