@@ -157,6 +157,14 @@
   }
   .evo-btn:disabled { background: #ccc; cursor: default; }
   .evo-blocked { font-size: 10px; color: #999; margin-top: 6px; }
+  .learn-move-box { background: #f0e6ff; border-radius: 10px; padding: 6px; margin-top: 6px; }
+  .learn-move-title { font-size: 11px; font-weight: bold; color: #5e3a9c; margin-bottom: 4px; }
+  .learn-move-options { display: flex; flex-direction: column; gap: 4px; }
+  .learn-replace-btn, .learn-keep-btn {
+    background: #8e44ad; color: #fff; border: none; padding: 5px; border-radius: 8px;
+    font-size: 10px; font-weight: bold; cursor: pointer;
+  }
+  .learn-keep-btn { background: #999; }
   .m-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; justify-content: center; }
   .m-action-btn {
     font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 999px; border: none; cursor: pointer;
@@ -243,6 +251,7 @@
 <script src="pokedex-data.js"></script>
 <script src="adventure-state.js"></script>
 <script src="battle-engine.js"></script>
+<script src="move-data.js"></script>
 <script src="item-data.js"></script>
 <script src="starter-data.js"></script>
 <script src="evolution-data.js"></script>
@@ -465,6 +474,25 @@ function renderCollection() {
         evoHtml = `<div class="evo-blocked">🔒 ${evoStatus.blockedReason}</div>`;
       }
     }
+    // Phase 11: a Pokemon that already has 4 moves and just leveled past a
+    // new learnable move parks it on pendingLearnMoveId instead of silently
+    // dropping either move - this is the minimal Replace/Keep UI for that,
+    // surfaced here rather than mid-battle.
+    let learnHtml = '';
+    if (p.pendingLearnMoveId && Array.isArray(p.moves)) {
+      const newMove = getMoveById(p.pendingLearnMoveId);
+      learnHtml = `
+        <div class="learn-move-box" data-instance="${p.instanceId}">
+          <div class="learn-move-title">✨ Yeni hamle: ${newMove ? newMove.name : p.pendingLearnMoveId}</div>
+          <div class="learn-move-options">
+            ${p.moves.map(m => {
+              const mc = getMoveById(m.id);
+              return `<button class="learn-replace-btn" data-instance="${p.instanceId}" data-replace="${m.id}">${mc ? mc.name : m.id} yerine öğret</button>`;
+            }).join('')}
+            <button class="learn-keep-btn" data-instance="${p.instanceId}">Mevcut hamleleri koru</button>
+          </div>
+        </div>`;
+    }
     return `
       <div class="mydex-item">
         <img src="${p.img}" alt="${p.name}">
@@ -479,8 +507,30 @@ function renderCollection() {
         ${fainted ? '<div class="m-fainted-tag">😵 Baygın</div>' : ''}
         ${actions.length ? `<div class="m-actions">${actions.join('')}</div>` : ''}
         ${evoHtml}
+        ${learnHtml}
       </div>`;
   }).join('')}</div>`;
+
+  area.querySelectorAll('.learn-replace-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mydex = getAdventureDex();
+      const idx = mydex.findIndex(p => p.instanceId === btn.dataset.instance);
+      if (idx === -1) return;
+      mydex[idx] = resolvePendingLearn(mydex[idx], 'replace', btn.dataset.replace);
+      saveAdventureDex(mydex);
+      renderAll();
+    });
+  });
+  area.querySelectorAll('.learn-keep-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mydex = getAdventureDex();
+      const idx = mydex.findIndex(p => p.instanceId === btn.dataset.instance);
+      if (idx === -1) return;
+      mydex[idx] = resolvePendingLearn(mydex[idx], 'keep');
+      saveAdventureDex(mydex);
+      renderAll();
+    });
+  });
 
   area.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {

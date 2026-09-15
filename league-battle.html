@@ -98,6 +98,7 @@
 <script src="adventure-state.js"></script>
 <script src="region-data.js"></script>
 <script src="battle-engine.js"></script>
+<script src="move-data.js"></script>
 <script src="item-data.js"></script>
 <script src="gym-data.js"></script>
 <script src="league-data.js"></script>
@@ -183,17 +184,29 @@ function renderPartyPicker() {
 
 async function startStageFromAttempt(attempt, playerMon) {
   stageIdx = Math.max(0, stages.findIndex(s => s.stageId === attempt.stage));
-  const pStats = computeBattleStats(playerMon.stats || {}, playerMon.level || 1);
+  // Phase 11: idempotent moves migration, same pattern as gym-battle.html -
+  // this only writes back once per instance (a no-op on every later stage/
+  // resume of the same gauntlet run).
+  const ensuredMon = ensureInstanceMoves(playerMon);
+  if (ensuredMon !== playerMon) {
+    const mydex0 = getAdventureDex();
+    const idx0 = mydex0.findIndex(p => p.instanceId === playerMon.instanceId);
+    if (idx0 !== -1) { mydex0[idx0] = ensuredMon; saveAdventureDex(mydex0); }
+  }
+  const pStats = computeBattleStats(ensuredMon.stats || {}, ensuredMon.level || 1);
   player = {
-    instanceId: playerMon.instanceId,
-    id: playerMon.id,
-    name: playerMon.nickname || playerMon.name,
-    types: playerMon.types,
-    level: playerMon.level || 1,
+    instanceId: ensuredMon.instanceId,
+    id: ensuredMon.id,
+    name: ensuredMon.nickname || ensuredMon.name,
+    types: ensuredMon.types,
+    level: ensuredMon.level || 1,
     maxHp: pStats.maxHp,
-    hp: computeMonCurrentHp(playerMon),
+    hp: computeMonCurrentHp(ensuredMon),
     battleStats: pStats,
-    moves: buildMoveset(playerMon.types)
+    // PP persists across League stages exactly like HP (Phase 11) - hydrated
+    // fresh from the instance's own stored moves on every stage load/resume,
+    // so a used move stays used until a Pokemon Center visit.
+    moves: hydrateBattleMoves(ensuredMon)
   };
   enemyIndex = 0;
   logLines = [];
@@ -231,7 +244,7 @@ async function loadCurrentEnemy() {
     maxHp: stats.maxHp,
     hp: stats.maxHp,
     battleStats: stats,
-    moves: buildMoveset(speciesData.types),
+    moves: freshBattleMoves(speciesData.id, teamMon.level, speciesData.types),
     sprite: spriteFor(speciesData.id)
   };
   log(`${stage.data.name}, ${enemy.name}'i gönderdi!`);
@@ -267,7 +280,7 @@ function renderBattle() {
       <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
 
       <div class="move-grid" id="moveGrid">
-        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}">${m.name}</button>`).join('')}
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} <span style="font-weight:normal;font-size:11px;">(${m.pp}/${m.maxPp} PP)</span></button>`).join('')}
       </div>
 
       <div class="item-row" id="itemRow">
@@ -292,28 +305,46 @@ function persistPlayerHp() {
   const mydex = getAdventureDex();
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx === -1) return;
-  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0 });
+  // PP persists exactly like HP (Phase 11), including across League stages -
+  // never reset between stages, never on loss/quit (see endLeagueAttempt),
+  // only by a Pokemon Center visit.
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves) });
   saveAdventureDex(mydex);
 }
 
-function enemyTurn() {
-  const wMove = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
-  const r = calcDamage({ move: wMove, attackerTypes: enemy.types, attackerStats: enemy.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
-  player.hp = Math.max(0, player.hp - r.damage);
-  log(`${enemy.name}, ${wMove.name} kullandı! ${r.damage} hasar.`);
+// One enemy counter-move outside the normal move-vs-move turn (used after
+// an item, which already costs the player's own turn) - still goes through
+// the same AI pick + accuracy/damage resolution as a real turn.
+function enemyCounterAttack() {
+  const move = chooseEnemyMove(enemy.moves, player.types);
+  if (move.pp > 0) move.pp -= 1;
+  const r = resolveMoveUse({ move, attackerTypes: enemy.types, attackerStats: enemy.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  if (r.hit) {
+    player.hp = Math.max(0, player.hp - r.damage);
+    log(`${enemy.name}, ${move.name} kullandı! ${r.damage} hasar.`);
+  } else {
+    log(`${enemy.name}, ${move.name} kullandı! Isabet etmedi.`);
+  }
   persistPlayerHp();
+}
+
+function formatMoveLogLine(step, actorName) {
+  if (!step.hit) return `${actorName}, ${step.move.name} kullandı! Isabet etmedi.`;
+  const effText = step.effectiveness > 1 ? ' (Etkili! 💥)' : (step.effectiveness < 1 && step.effectiveness > 0) ? ' (Etkisiz...)' : step.effectiveness === 0 ? ' (Etkisiz!)' : '';
+  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}`;
 }
 
 async function useMove(moveIndex) {
   if (battleEnded) return;
   const stage = stages[stageIdx];
   const move = player.moves[moveIndex];
-  const r = calcDamage({ move, attackerTypes: player.types, attackerStats: player.battleStats, defenderTypes: enemy.types, defenderStats: enemy.battleStats });
-  enemy.hp = Math.max(0, enemy.hp - r.damage);
-  log(`${player.name}, ${move.name} kullandı! ${r.damage} hasar${r.effectiveness > 1 ? ' (Etkili! 💥)' : r.effectiveness < 1 && r.effectiveness > 0 ? ' (Etkisiz...)' : r.effectiveness === 0 ? ' (Etkisiz!)' : ''}${r.isCrit ? ' Kritik vuruş!' : ''}`);
+  if (move.pp <= 0) return;
+  const steps = resolveBattleTurn({ player, playerMoveIndex: moveIndex, enemy });
+  steps.forEach(s => log(formatMoveLogLine(s, s.side === 'player' ? player.name : enemy.name)));
 
   if (enemy.hp <= 0) {
     log(`${enemy.name} bayıldı!`);
+    persistPlayerHp();
     enemyIndex++;
     if (enemyIndex >= stage.data.team.length) {
       onStageCleared();
@@ -325,7 +356,7 @@ async function useMove(moveIndex) {
     return;
   }
 
-  enemyTurn();
+  persistPlayerHp();
   if (player.hp <= 0) {
     endBattle('loss');
     return;
@@ -344,7 +375,7 @@ function useHealItemInBattle(itemKey) {
     recordAdventureEvent('use_berry');
   }
 
-  enemyTurn();
+  enemyCounterAttack();
   if (player.hp <= 0) {
     endBattle('loss');
     return;

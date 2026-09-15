@@ -4,8 +4,8 @@
 // here operates on the Adventure profile (adventure-state.js) ONLY - never
 // on the classic Ayaz/Baba inventory/collection, which has its own much
 // smaller item set (Poké Ball/Berry/Evolution Stone, unrelated to buying).
-// Depends on adventure-state.js and battle-engine.js (for computeBattleStats)
-// - load both before this file.
+// Depends on adventure-state.js, battle-engine.js (for computeBattleStats)
+// and move-data.js (for restoreAllPP) - load all three before this file.
 const ITEM_CATALOG = {
   pokeball: { id: "pokeball", name: "Poké Ball", emoji: "⚪", price: 50,
     description: "Vahşi Pokémon yakalamak için temel top.",
@@ -104,22 +104,29 @@ function applyRareCandy(instanceId) {
   if ((mon.level || 1) >= 100) return { ok: false, reason: "max-level" };
   const oldMaxHp = computeMonMaxHp(mon);
   const oldCurrentHp = computeMonCurrentHp(mon);
-  const newLevel = (mon.level || 1) + 1;
+  const oldLevel = mon.level || 1;
+  const newLevel = oldLevel + 1;
   // Keep pxp consistent with the new level so a later battle XP gain
   // computes the right next level (never lower than what levelInfo implies).
   const newPxp = Math.max(mon.pxp || 0, (newLevel - 1) * POKEMON_XP_PER_LEVEL);
   const newMaxHp = computeMonMaxHp(Object.assign({}, mon, { level: newLevel }));
   const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
-  mydex[idx] = Object.assign({}, mon, { level: newLevel, pxp: newPxp, currentHp: newCurrentHp });
+  const ensuredMon = ensureInstanceMoves(mon);
+  const learnResult = checkLevelUpLearn(ensuredMon, oldLevel, newLevel);
+  const leveled = Object.assign({}, ensuredMon, { level: newLevel, pxp: newPxp, currentHp: newCurrentHp });
+  mydex[idx] = applyLevelUpLearn(leveled, learnResult);
   saveAdventureDex(mydex);
   addAdventureItems("rare-candy", -1);
   return { ok: true, newLevel };
 }
 
-// Free, unlimited, heals and revives every Adventure Pokemon - the Pokemon Center.
+// Free, unlimited, heals and revives every Adventure Pokemon - the Pokemon
+// Center. Phase 11: also restores every move's PP to full (restoreAllPP is
+// itself migration-safe via ensureInstanceMoves, so this works identically
+// on a Pokemon that has never been through a move-based battle yet).
 function healAllAtPokemonCenter() {
   const mydex = getAdventureDex();
-  const healed = mydex.map(p => Object.assign({}, p, { fainted: false, currentHp: computeMonMaxHp(p) }));
+  const healed = mydex.map(p => Object.assign({}, restoreAllPP(p), { fainted: false, currentHp: computeMonMaxHp(p) }));
   saveAdventureDex(healed);
   return healed.length;
 }
