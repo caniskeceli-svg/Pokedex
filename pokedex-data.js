@@ -100,7 +100,7 @@ function safeParseLS(key, fallback) {
   } catch { return fallback; }
 }
 
-const DEFAULT_PLAYER = { xp: 0, coins: 0, discoveredIds: [], discoveredTypes: [], achievements: [] };
+const DEFAULT_PLAYER = { xp: 0, coins: 0, discoveredIds: [], discoveredTypes: [], achievements: [], wildWins: 0, wildLosses: 0 };
 const DEFAULT_INVENTORY = {
   pokeball: 0, greatball: 0, ultraball: 0,
   potion: 0, "super-potion": 0, revive: 0,
