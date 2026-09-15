@@ -26,7 +26,11 @@ const MOVE_CATALOG = {
   "quick-attack": { id: "quick-attack",   name: "Quick Attack",   type: "normal",   category: "physical", power: 40, accuracy: 100, pp: 30 },
   growl:          { id: "growl",          name: "Growl",          type: "normal",   category: "status",   power: 0,  accuracy: 100, pp: 40 },
   "karate-chop":  { id: "karate-chop",    name: "Karate Chop",    type: "fighting", category: "physical", power: 50, accuracy: 100, pp: 25 },
-  "poison-sting": { id: "poison-sting",   name: "Poison Sting",   type: "poison",   category: "physical", power: 15, accuracy: 100, pp: 35 },
+  "poison-sting": { id: "poison-sting",   name: "Poison Sting",   type: "poison",   category: "physical", power: 15, accuracy: 100, pp: 35,
+    // Phase 12: real canonical Poison Sting also carries a 30% poison
+    // chance - the fallback move for every Poison-type species, so poison
+    // is exercisable without touching any Gym/League roster.
+    effect: { type: "poison", chance: 30 } },
   "mud-slap":     { id: "mud-slap",       name: "Mud-Slap",       type: "ground",   category: "special",  power: 20, accuracy: 100, pp: 10 },
   gust:           { id: "gust",           name: "Gust",           type: "flying",   category: "special",  power: 40, accuracy: 100, pp: 35 },
   confusion:      { id: "confusion",      name: "Confusion",      type: "psychic",  category: "special",  power: 50, accuracy: 100, pp: 25 },
@@ -37,11 +41,19 @@ const MOVE_CATALOG = {
   bite:           { id: "bite",           name: "Bite",           type: "dark",     category: "physical", power: 60, accuracy: 100, pp: 25 },
   "metal-claw":   { id: "metal-claw",     name: "Metal Claw",     type: "steel",    category: "physical", power: 50, accuracy: 95,  pp: 35 },
   "fairy-wind":   { id: "fairy-wind",     name: "Fairy Wind",     type: "fairy",    category: "special",  power: 40, accuracy: 100, pp: 30 },
-  ember:          { id: "ember",          name: "Ember",          type: "fire",     category: "special",  power: 40, accuracy: 100, pp: 25 },
+  ember:          { id: "ember",          name: "Ember",          type: "fire",     category: "special",  power: 40, accuracy: 100, pp: 25,
+    // Phase 12: real canonical Ember also carries a 10% burn chance - this
+    // is the intended, minimal way burn actually gets tested/experienced in
+    // real Adventure battles (Charmander/Charmeleon/Charizard's own
+    // learnset already includes Ember, so no roster changed to enable it).
+    effect: { type: "burn", chance: 10 } },
   "water-gun":    { id: "water-gun",      name: "Water Gun",      type: "water",    category: "special",  power: 40, accuracy: 100, pp: 25 },
   "vine-whip":    { id: "vine-whip",      name: "Vine Whip",      type: "grass",    category: "physical", power: 45, accuracy: 100, pp: 25 },
   "thunder-shock": { id: "thunder-shock", name: "Thunder Shock",  type: "electric", category: "special",  power: 40, accuracy: 100, pp: 30 },
   "powder-snow":  { id: "powder-snow",    name: "Powder Snow",    type: "ice",      category: "special",  power: 40, accuracy: 100, pp: 25 },
+  // Phase 12: real canonical Thunder Wave - pure status move, 100% chance
+  // to paralyze on hit (its own 90 accuracy is the only way it can fail).
+  "thunder-wave": { id: "thunder-wave",   name: "Thunder Wave",   type: "electric", category: "status",  power: 0,  accuracy: 90,  pp: 20, effect: { type: "paralysis", chance: 100 } },
 
   // Extra flavor moves for the curated starter learnsets below.
   "razor-leaf":   { id: "razor-leaf",     name: "Razor Leaf",     type: "grass",    category: "physical", power: 55, accuracy: 95,  pp: 25 },
@@ -91,7 +103,8 @@ const MOVESETS = {
   ],
   25: [ // Pikachu
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "thunder-shock" },
-    { level: 10, moveId: "quick-attack" }, { level: 26, moveId: "thunderbolt" }
+    { level: 10, moveId: "quick-attack" }, { level: 18, moveId: "thunder-wave" },
+    { level: 26, moveId: "thunderbolt" }
   ]
 };
 

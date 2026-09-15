@@ -56,6 +56,7 @@
   .hp-track { background: #eee; border-radius: 999px; height: 10px; overflow: hidden; margin-top: 4px; }
   .hp-fill { height: 100%; background: linear-gradient(90deg,#49a84c,#8bd98e); transition: width 0.3s ease; }
   .hp-fill.low { background: linear-gradient(90deg,#e3350d,#ff8a65); }
+  .status-badge { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: bold; background: #fff3cd; border: 1px solid #ffd24a; border-radius: 999px; padding: 2px 8px; }
   .vs-text { font-weight: bold; font-size: 20px; color: var(--accent); }
 
   .log-box { background: #fdf7ff; border: 2px dashed #d9b8ff; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin-top: 12px; min-height: 40px; }
@@ -206,7 +207,9 @@ async function startStageFromAttempt(attempt, playerMon) {
     // PP persists across League stages exactly like HP (Phase 11) - hydrated
     // fresh from the instance's own stored moves on every stage load/resume,
     // so a used move stays used until a Pokemon Center visit.
-    moves: hydrateBattleMoves(ensuredMon)
+    moves: hydrateBattleMoves(ensuredMon),
+    // Status persists across League stages exactly like HP/PP (Phase 12).
+    status: ensuredMon.status || null
   };
   enemyIndex = 0;
   logLines = [];
@@ -245,9 +248,18 @@ async function loadCurrentEnemy() {
     hp: stats.maxHp,
     battleStats: stats,
     moves: freshBattleMoves(speciesData.id, teamMon.level, speciesData.types),
+    status: null, // an Elite Four/Champion Pokemon's own status is never persisted, only lasts this one fight
     sprite: spriteFor(speciesData.id)
   };
   log(`${stage.data.name}, ${enemy.name}'i gönderdi!`);
+}
+
+// Phase 12: tiny display map for the 3 in-scope statuses - each battle page
+// keeps its own copy (same "no shared renderer" split as Phase 11), the
+// actual status VALUES always come from battle-engine.js.
+const STATUS_LABEL = { burn: '🔥 Yanık', poison: '☠️ Zehir', paralysis: '⚡ Felç' };
+function statusBadge(status) {
+  return status && STATUS_LABEL[status] ? `<div class="status-badge">${STATUS_LABEL[status]}</div>` : '';
 }
 
 function renderBattle() {
@@ -267,6 +279,7 @@ function renderBattle() {
           <div class="mon-name">${enemy.name}</div>
           <div class="mon-lv">Lv.${enemy.level}</div>
           <div class="hp-track"><div class="${hpBarClass(enemy.hp, enemy.maxHp)}" style="width:${Math.max(0, enemy.hp / enemy.maxHp * 100)}%"></div></div>
+          ${statusBadge(enemy.status)}
         </div>
         <div class="vs-text">VS</div>
         <div class="mon-box">
@@ -274,6 +287,7 @@ function renderBattle() {
           <div class="mon-name">${player.name}</div>
           <div class="mon-lv">Lv.${player.level}</div>
           <div class="hp-track"><div class="${hpBarClass(player.hp, player.maxHp)}" style="width:${Math.max(0, player.hp / player.maxHp * 100)}%"></div></div>
+          ${statusBadge(player.status)}
         </div>
       </div>
 
@@ -305,23 +319,29 @@ function persistPlayerHp() {
   const mydex = getAdventureDex();
   const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
   if (idx === -1) return;
-  // PP persists exactly like HP (Phase 11), including across League stages -
-  // never reset between stages, never on loss/quit (see endLeagueAttempt),
-  // only by a Pokemon Center visit.
-  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves) });
+  // PP and status persist exactly like HP (Phase 11/12), including across
+  // League stages - never reset between stages, never on loss/quit (see
+  // endLeagueAttempt), only by a Pokemon Center visit.
+  mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves), status: player.status || null });
   saveAdventureDex(mydex);
 }
 
 // One enemy counter-move outside the normal move-vs-move turn (used after
 // an item, which already costs the player's own turn) - still goes through
-// the same AI pick + accuracy/damage resolution as a real turn.
+// the same AI pick + accuracy/damage/status resolution as a real turn
+// (including the Elite Four/Champion Pokemon's own paralysis check).
 function enemyCounterAttack() {
+  if (enemy.status === 'paralysis' && rollParalysisPrevented()) {
+    log(`${enemy.name} felç oldu! Hareket edemedi.`);
+    return;
+  }
   const move = chooseEnemyMove(enemy.moves, player.types);
   if (move.pp > 0) move.pp -= 1;
-  const r = resolveMoveUse({ move, attackerTypes: enemy.types, attackerStats: enemy.battleStats, defenderTypes: player.types, defenderStats: player.battleStats });
+  const r = resolveMoveUse({ move, attackerTypes: enemy.types, attackerStats: enemy.battleStats, defenderTypes: player.types, defenderStats: player.battleStats, defenderStatus: player.status });
   if (r.hit) {
     player.hp = Math.max(0, player.hp - r.damage);
-    log(`${enemy.name}, ${move.name} kullandı! ${r.damage} hasar.`);
+    if (r.appliedStatus) player.status = r.appliedStatus;
+    log(`${enemy.name}, ${move.name} kullandı! ${r.damage} hasar.${r.appliedStatus ? ` ${player.name} ${STATUS_LABEL[r.appliedStatus]} oldu!` : ''}`);
   } else {
     log(`${enemy.name}, ${move.name} kullandı! Isabet etmedi.`);
   }
@@ -329,9 +349,14 @@ function enemyCounterAttack() {
 }
 
 function formatMoveLogLine(step, actorName) {
+  if (step.kind === 'status-damage') {
+    return `${actorName}, ${STATUS_LABEL[step.status]} nedeniyle ${step.damage} hasar aldı!${step.targetFaintedByThis ? ' Bayıldı!' : ''}`;
+  }
+  if (step.prevented) return `${actorName} felç oldu! Hareket edemedi.`;
   if (!step.hit) return `${actorName}, ${step.move.name} kullandı! Isabet etmedi.`;
   const effText = step.effectiveness > 1 ? ' (Etkili! 💥)' : (step.effectiveness < 1 && step.effectiveness > 0) ? ' (Etkisiz...)' : step.effectiveness === 0 ? ' (Etkisiz!)' : '';
-  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}`;
+  const statusText = step.appliedStatus ? ` ${STATUS_LABEL[step.appliedStatus]} oldu!` : '';
+  return `${actorName}, ${step.move.name} kullandı! ${step.damage} hasar${effText}${step.isCrit ? ' Kritik vuruş!' : ''}${statusText}`;
 }
 
 async function useMove(moveIndex) {
