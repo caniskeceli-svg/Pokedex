@@ -76,6 +76,16 @@
   }
   .item-btn:disabled { background: #ccc; cursor: default; }
   .run-btn { display: block; width: 100%; margin-top: 10px; background: none; border: 2px solid #ccc; color: #888; padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+  .switch-btn { display: block; width: 100%; margin-top: 10px; background: #8e44ad; color: #fff; border: none; padding: 10px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+  .switch-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
+  .switch-item.disabled { opacity: 0.4; cursor: default; }
+  .switch-item.active { border: 2px solid #8e44ad; }
+  .switch-item:hover:not(.disabled) { background: #f0e6ff; }
+  .switch-item img { width: 44px; height: 44px; }
+  .switch-item .s-name { font-weight: bold; text-transform: capitalize; }
+  .switch-item .s-hp { font-size: 12px; color: #888; }
+  .switch-item .hp-track { width: 100px; }
 
   .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
   .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
@@ -112,7 +122,9 @@ const wildLevel = Number(params.get('level'));
 const wildIsShiny = params.get('shiny') === '1';
 
 let wild = null;   // { id, name, types, baseStats, sprite, power, maxHp, hp, moves }
-let player = null; // { instanceId, id, name, types, level, maxHp, hp, moves }
+let player = null; // { instanceId, id, name, types, level, maxHp, hp, moves } - always battleParty[activeIndex]
+let battleParty = []; // every non-fainted party member available for this battle, built once at battle start
+let activeIndex = -1;
 let battleEnded = false;
 let catchLocked = false;
 let logLines = [];
@@ -185,18 +197,20 @@ function renderPartyPicker() {
   }
 }
 
-function startBattle(playerMon) {
-  // Phase 11: migrate this instance to have a `moves` field the first time
-  // it ever enters battle (idempotent - a no-op if it already has moves),
-  // and persist that immediately so PP starts accruing from here on.
-  const ensuredMon = ensureInstanceMoves(playerMon);
-  if (ensuredMon !== playerMon) {
+// Phase 15: builds the battle-ready shape for one party member (same shape
+// startBattle always built for the single chosen mon) - migrating it to
+// have a `moves` field first if this is its first-ever battle, exactly like
+// before. Used for every non-fainted party member up front so any of them
+// can be switched in later without re-fetching or re-deriving anything.
+function buildBattlePartyMember(mon) {
+  const ensuredMon = ensureInstanceMoves(mon);
+  if (ensuredMon !== mon) {
     const mydex0 = getAdventureDex();
-    const idx0 = mydex0.findIndex(p => p.instanceId === playerMon.instanceId);
+    const idx0 = mydex0.findIndex(p => p.instanceId === mon.instanceId);
     if (idx0 !== -1) { mydex0[idx0] = ensuredMon; saveAdventureDex(mydex0); }
   }
   const pStats = computeBattleStats(ensuredMon.stats || {}, ensuredMon.level || 1);
-  player = {
+  return {
     instanceId: ensuredMon.instanceId,
     id: ensuredMon.id,
     name: ensuredMon.nickname || ensuredMon.name,
@@ -208,6 +222,16 @@ function startBattle(playerMon) {
     moves: hydrateBattleMoves(ensuredMon), // PP persists across battles too (Phase 11)
     status: ensuredMon.status || null // burn/poison/paralysis persists across battles too (Phase 12)
   };
+}
+
+function startBattle(playerMon) {
+  // Phase 15: the whole non-fainted party enters the battle available to
+  // switch into, not just the chosen starter - mirrors the exact same
+  // filter renderPartyPicker already used to decide who's selectable.
+  const eligible = getAdventureDex().filter(p => p.id < 900000000 && p.fainted !== true);
+  battleParty = eligible.map(buildBattlePartyMember);
+  activeIndex = battleParty.findIndex(m => m.instanceId === playerMon.instanceId);
+  player = battleParty[activeIndex];
   const wStats = computeBattleStats(wild.baseStats, wildLevel);
   wild.level = wildLevel;
   wild.maxHp = wStats.maxHp;
@@ -276,6 +300,7 @@ function renderBattle() {
             ${ITEM_CATALOG[key].emoji} ${ITEM_CATALOG[key].name} (${inv[key] || 0})
           </button>`).join('')}
       </div>
+      ${battleParty.some((m, i) => i !== activeIndex && m.hp > 0) ? '<button class="switch-btn" id="switchBtn">🔄 Değiştir</button>' : ''}
       <button class="run-btn" id="runBtn">🏃 Kaç</button>
     </div>`;
 
@@ -288,6 +313,8 @@ function renderBattle() {
   el('ballRow').querySelectorAll('.ball-btn').forEach(btn => {
     btn.addEventListener('click', () => throwBall(btn.dataset.ball));
   });
+  const switchBtn = el('switchBtn');
+  if (switchBtn) switchBtn.addEventListener('click', () => renderSwitchPicker(false));
   el('runBtn').addEventListener('click', runAway);
 }
 
@@ -302,6 +329,72 @@ function persistPlayerHp() {
   // together on every turn so a mid-battle refresh/close never loses any.
   mydex[idx] = Object.assign({}, mydex[idx], { currentHp: player.hp, fainted: player.hp <= 0, moves: serializeBattleMoves(player.moves), status: player.status || null });
   saveAdventureDex(mydex);
+}
+
+// Phase 15: mid-battle switching. `renderSwitchPicker(forced)` lists every
+// OTHER non-fainted party member; `forced` (the active mon just fainted)
+// drops the cancel button since there's no "stay in" option. Switching
+// itself never fetches or rebuilds anything - battleParty already holds
+// each member's live HP/status/moves from the moment battle started (or
+// their last turn as the active fighter), so a Pokemon switched out and
+// back in later resumes exactly where it left off.
+function renderSwitchPicker(forced) {
+  const wrap = el('wrap');
+  wrap.innerHTML = `
+    <div class="card">
+      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">${forced ? `<span style="text-transform:capitalize;">${player.name}</span> baygın düştü! Sırada kim var?` : 'Hangi Pokémon\'unla devam etmek istersin?'}</div>
+      <div id="switchList"></div>
+      ${forced ? '' : '<button class="run-btn" id="switchCancelBtn">◀ Vazgeç</button>'}
+    </div>`;
+  el('switchList').innerHTML = battleParty.map((m, i) => {
+    const disabled = i === activeIndex || m.hp <= 0;
+    return `
+      <div class="switch-item ${disabled ? 'disabled' : ''} ${i === activeIndex ? 'active' : ''}" data-idx="${i}">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${m.id}.png" alt="${m.name}">
+        <div style="flex:1;">
+          <div class="s-name">${m.name}${i === activeIndex ? ' (aktif)' : ''}</div>
+          <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
+          <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+  el('switchList').querySelectorAll('.switch-item:not(.disabled)').forEach(itemEl => {
+    itemEl.addEventListener('click', () => confirmSwitch(Number(itemEl.dataset.idx), forced));
+  });
+  if (!forced) {
+    el('switchCancelBtn').addEventListener('click', renderBattle);
+  }
+}
+
+function confirmSwitch(idx, forced) {
+  activeIndex = idx;
+  player = battleParty[idx];
+  if (forced) {
+    log(`Hadi ${player.name}!`);
+    renderBattle();
+    return;
+  }
+  log(`Dön! Hadi ${player.name}!`);
+  const steps = resolveSwitchTurn({ player, enemy: wild });
+  steps.forEach(s => log(formatMoveLogLine(s, s.side === 'player' ? player.name : `Vahşi ${wild.name}`)));
+  persistPlayerHp();
+  if (wild.hp <= 0) { endBattle('win'); return; }
+  if (handleFaintCheck()) return;
+  renderBattle();
+}
+
+// Replaces every "if (player.hp <= 0) { endBattle('loss'); return; }" call
+// site: a team wipe (no other non-fainted party member left) still ends the
+// battle in a loss exactly as before, but otherwise the player is walked
+// into a forced switch instead of the fight ending on one fainted Pokemon.
+// Returns true when it took over rendering (forced switch or loss), so
+// callers know not to also call renderBattle() themselves.
+function handleFaintCheck() {
+  if (player.hp > 0) return false;
+  const nextIdx = battleParty.findIndex((m, i) => i !== activeIndex && m.hp > 0);
+  if (nextIdx === -1) { endBattle('loss'); return true; }
+  renderSwitchPicker(true);
+  return true;
 }
 
 // One enemy counter-move outside the normal move-vs-move turn (used after
@@ -341,10 +434,7 @@ function useHealItemInBattle(itemKey) {
   // Using an item still costs your turn - the wild Pokemon gets to attack.
   enemyCounterAttack();
 
-  if (player.hp <= 0) {
-    endBattle('loss');
-    return;
-  }
+  if (handleFaintCheck()) return;
   renderBattle();
 }
 
@@ -372,10 +462,7 @@ function useMove(moveIndex) {
   }
 
   persistPlayerHp();
-  if (player.hp <= 0) {
-    endBattle('loss');
-    return;
-  }
+  if (handleFaintCheck()) return;
   renderBattle();
 }
 
@@ -399,10 +486,7 @@ function throwBall(ballType) {
   enemyCounterAttack();
   catchLocked = false;
 
-  if (player.hp <= 0) {
-    endBattle('loss');
-    return;
-  }
+  if (handleFaintCheck()) return;
   renderBattle();
 }
 
@@ -462,7 +546,7 @@ function endBattle(outcome, ballType) {
     p.wildLosses = (p.wildLosses || 0) + 1;
     saveAdventurePlayer(p);
     showResult({
-      title: `😵 ${player.name} baygın düştü...`,
+      title: battleParty.length > 1 ? '😵 Tüm Pokémon\'ların baygın düştü...' : `😵 <span style="text-transform:capitalize;">${player.name}</span> baygın düştü...`,
       rewards: [],
       continueLabel: 'Haritaya Dön',
       note: 'Baygın Pokémon\'lar dinlenene kadar savaşamaz.'
