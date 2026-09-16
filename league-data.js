@@ -304,6 +304,20 @@ function advanceLeagueAttemptFrom(leagueId, stageId) {
   return next;
 }
 
+// Phase 15: mid-battle switching lets the active fighter change during a
+// gauntlet - if the attempt is ever resumed after a page refresh, it must
+// reload whichever Pokemon was actually last active, not just the one the
+// run started with. Same guarded shape as advanceLeagueAttemptFrom (a no-op
+// if the attempt already ended/moved to another league in the meantime).
+function updateLeagueAttemptInstance(leagueId, instanceId) {
+  const progress = getAdventureProgress();
+  const attempt = (progress.leagueAttempts || {})[leagueId];
+  if (!attempt || !attempt.active || attempt.leagueId !== leagueId) return;
+  const next = Object.assign({}, attempt, { instanceId });
+  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
+  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
+}
+
 // Clears the active attempt back to the default (inactive) shape - used on a
 // loss, a give-up, or a Champion victory. Never touches player.xp/coins/
 // badges or any Pokemon's currentHp/fainted, so losing and re-entering the

@@ -212,19 +212,56 @@ function resolveBattleTurn({ player, playerMoveIndex, enemy, rng }) {
   // Residual burn/poison damage only runs if the turn's actions didn't
   // already end the battle - a move-caused faint already stopped the loop
   // above, so both sides being alive here is the correct gate.
-  if (player.hp > 0 && enemy.hp > 0) {
-    const residualOrder = [{ side: "player", mon: player }, { side: "enemy", mon: enemy }];
-    for (const entry of residualOrder) {
-      if (entry.mon.hp <= 0) continue;
-      if (entry.mon.status !== "burn" && entry.mon.status !== "poison") continue;
-      const dmg = residualStatusDamage(entry.mon.maxHp);
-      entry.mon.hp = Math.max(0, entry.mon.hp - dmg);
-      const faintedByThis = entry.mon.hp <= 0;
-      steps.push({ side: entry.side, kind: "status-damage", status: entry.mon.status, damage: dmg, targetFaintedByThis: faintedByThis });
-      if (faintedByThis) break; // battle is over here - the other side's residual tick never happens
-    }
+  applyResidualDamage(player, enemy, steps);
+
+  return steps;
+}
+
+// Player-then-enemy end-of-turn burn/poison chip damage, shared by
+// resolveBattleTurn and resolveSwitchTurn (Phase 15) so the "first tick
+// faints its target -> the other side's tick never happens" rule lives in
+// exactly one place. Mutates `player`/`enemy` hp in place and appends any
+// resulting steps to the caller's `steps` array.
+function applyResidualDamage(player, enemy, steps) {
+  if (player.hp <= 0 || enemy.hp <= 0) return;
+  const residualOrder = [{ side: "player", mon: player }, { side: "enemy", mon: enemy }];
+  for (const entry of residualOrder) {
+    if (entry.mon.hp <= 0) continue;
+    if (entry.mon.status !== "burn" && entry.mon.status !== "poison") continue;
+    const dmg = residualStatusDamage(entry.mon.maxHp);
+    entry.mon.hp = Math.max(0, entry.mon.hp - dmg);
+    const faintedByThis = entry.mon.hp <= 0;
+    steps.push({ side: entry.side, kind: "status-damage", status: entry.mon.status, damage: dmg, targetFaintedByThis: faintedByThis });
+    if (faintedByThis) break; // battle is over here - the other side's residual tick never happens
+  }
+}
+
+// ---- Phase 15: mid-battle Pokemon switching ----
+// A voluntary switch consumes the player's own turn, so the enemy still
+// gets to act - against whichever Pokemon is now active - exactly like the
+// real games. Reuses the same AI pick / accuracy / damage / status /
+// paralysis-check / residual-damage rules as resolveBattleTurn (no combat
+// math is duplicated), just without a player move. A FORCED switch (the
+// active Pokemon just fainted) never calls this - fainting already
+// consumed the opponent's turn, so the newly sent-in Pokemon enters clean.
+function resolveSwitchTurn({ player, enemy, rng }) {
+  const steps = [];
+  if (enemy.status === "paralysis" && rollParalysisPrevented(rng)) {
+    steps.push({ side: "enemy", move: null, prevented: true, reason: "paralysis", hit: false, damage: 0, effectiveness: 1, isCrit: false, isStab: false, appliedStatus: null, targetFaintedByThis: false });
+  } else {
+    const move = chooseEnemyMove(enemy.moves, player.types, rng);
+    if (move.pp > 0) move.pp -= 1;
+    const result = resolveMoveUse({
+      move, attackerTypes: enemy.types, attackerStats: enemy.battleStats,
+      defenderTypes: player.types, defenderStats: player.battleStats,
+      defenderStatus: player.status, rng
+    });
+    if (result.hit) player.hp = Math.max(0, player.hp - result.damage);
+    if (result.appliedStatus) player.status = result.appliedStatus;
+    steps.push(Object.assign({ side: "enemy", move, targetFaintedByThis: result.hit && player.hp <= 0 }, result));
   }
 
+  applyResidualDamage(player, enemy, steps);
   return steps;
 }
 
