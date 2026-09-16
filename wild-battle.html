@@ -30,6 +30,12 @@
 
   .card { background: #fff; border-radius: 20px; padding: 16px; margin-top: 14px; box-shadow: 0 6px 0 rgba(0,0,0,0.08); }
 
+  .wild-preview { display: flex; align-items: center; gap: 10px; justify-content: center; background: #eaf5ee; border-radius: 14px; padding: 10px 12px; margin-bottom: 12px; }
+  .wild-preview img { width: 56px; height: 56px; }
+  .wild-preview .wp-name { font-weight: bold; text-transform: capitalize; font-size: 16px; }
+  .wild-preview .wp-name .shiny { color: #e6a700; }
+  .wild-preview .wp-lv { font-size: 12px; color: #888; }
+
   .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
   .pick-item.disabled { opacity: 0.4; cursor: default; }
   .pick-item:hover:not(.disabled) { background: #ffe6cc; }
@@ -141,7 +147,14 @@ function renderPartyPicker() {
   const wrap = el('wrap');
   wrap.innerHTML = `
     <div class="card">
-      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Bir vahşi Pokémon çıktı! Hangi Pokémon'unla savaşmak istersin?</div>
+      <div class="wild-preview">
+        <img src="${spriteFor(wild.id, wildIsShiny)}" alt="${wild.name}">
+        <div>
+          <div class="wp-name">${wildIsShiny ? '<span class="shiny">✨</span> ' : ''}${wild.name}</div>
+          <div class="wp-lv">Lv.${wildLevel}</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Karşına <span style="text-transform:capitalize;">${wild.name}</span> çıktı! Hangi Pokémon'unla savaşmak istersin?</div>
       <div id="pickList"></div>
     </div>`;
   const pickList = el('pickList');
