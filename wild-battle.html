@@ -376,9 +376,9 @@ function confirmSwitch(idx, forced) {
   }
   log(`Dön! Hadi ${player.name}!`);
   const steps = resolveSwitchTurn({ player, enemy: wild });
+  keepWildAlive(steps);
   steps.forEach(s => log(formatMoveLogLine(s, s.side === 'player' ? player.name : `Vahşi ${wild.name}`)));
   persistPlayerHp();
-  if (wild.hp <= 0) { endBattle('win'); return; }
   if (handleFaintCheck()) return;
   renderBattle();
 }
@@ -438,6 +438,21 @@ function useHealItemInBattle(itemKey) {
   renderBattle();
 }
 
+// Approved design: a wild Pokemon can never be defeated by combat alone -
+// only caught (or the player can always just run away) - so a hit or
+// residual tick that would faint it instead leaves it at 1 HP, keeping a
+// catch attempt possible for the rest of the encounter. Also clears the
+// fainted flag on whichever step targeted it, so the log never claims a
+// wild Pokemon fainted when it's actually still standing.
+function keepWildAlive(steps) {
+  if (wild.hp > 0) return;
+  wild.hp = 1;
+  steps.forEach(s => {
+    const targetsWild = s.kind === 'status-damage' ? s.side === 'enemy' : s.side === 'player';
+    if (targetsWild) s.targetFaintedByThis = false;
+  });
+}
+
 function formatMoveLogLine(step, actorName) {
   if (step.kind === 'status-damage') {
     return `${actorName}, ${STATUS_LABEL[step.status]} nedeniyle ${step.damage} hasar aldı!${step.targetFaintedByThis ? ' Bayıldı!' : ''}`;
@@ -454,12 +469,8 @@ function useMove(moveIndex) {
   const move = player.moves[moveIndex];
   if (move.pp <= 0) return;
   const steps = resolveBattleTurn({ player, playerMoveIndex: moveIndex, enemy: wild });
+  keepWildAlive(steps);
   steps.forEach(s => log(formatMoveLogLine(s, s.side === 'player' ? player.name : `Vahşi ${wild.name}`)));
-
-  if (wild.hp <= 0) {
-    endBattle('win');
-    return;
-  }
 
   persistPlayerHp();
   if (handleFaintCheck()) return;
@@ -525,23 +536,10 @@ function endBattle(outcome, ballType) {
   // (or player.hp never changed if the fight ended on the attacker's own
   // move/ball this turn), so no extra write is needed here.
 
-  if (outcome === 'win') {
-    const trainerXp = 15;
-    const pokemonXp = 20;
-    const coins = 10;
-    awardBattleXp(pokemonXp, trainerXp);
-    addAdventureCoins(coins);
-    increaseFriendship(player.instanceId, 2, 'battle-win');
-    const p = getAdventurePlayer();
-    p.wildWins = (p.wildWins || 0) + 1;
-    saveAdventurePlayer(p);
-    recordAdventureEvent('win_wild_battle');
-    showResult({
-      title: `🏆 ${wild.name} savaşı kazandın!`,
-      rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${coins} PokéCoin`],
-      continueLabel: 'Haritaya Dön'
-    });
-  } else if (outcome === 'loss') {
+  // Approved design: a wild Pokemon can never be defeated by combat alone
+  // (see keepWildAlive) - only caught or run from - so there is no longer a
+  // "win without catching" outcome to handle here at all.
+  if (outcome === 'loss') {
     const p = getAdventurePlayer();
     p.wildLosses = (p.wildLosses || 0) + 1;
     saveAdventurePlayer(p);
