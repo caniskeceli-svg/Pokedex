@@ -36,6 +36,11 @@
   .wild-preview .wp-name .shiny { color: #e6a700; }
   .wild-preview .wp-lv { font-size: 12px; color: #888; }
 
+  .type-hint { background: #fff9ec; border: 1px dashed #ffd27a; border-radius: 12px; padding: 8px 10px; margin-bottom: 12px; font-size: 12px; }
+  .type-hint .th-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 3px 0; }
+  .type-hint .th-label { font-weight: bold; color: #7a6a3a; }
+  .type-chip { color: #fff; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 999px; text-shadow: 1px 1px 0 rgba(0,0,0,0.15); }
+
   .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
   .pick-item.disabled { opacity: 0.4; cursor: default; }
   .pick-item:hover:not(.disabled) { background: #ffe6cc; }
@@ -154,6 +159,23 @@ async function fetchWildSpecies() {
   };
 }
 
+// Type-effectiveness tip for the party picker: which attacking types would
+// hit this wild Pokemon hard (super effective) vs which it shrugs off
+// (resisted/immune) - pure lookup against pokedex-data.js's own TYPE_CHART,
+// no new type data of any kind.
+function typeHintHtml(types) {
+  const allTypes = Object.keys(TYPE_CHART);
+  const strongAgainst = allTypes.filter(t => typeMultiplier(t, types) > 1);
+  const resistedBy = allTypes.filter(t => typeMultiplier(t, types) < 1);
+  const chip = t => `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`;
+  return `
+    <div class="type-hint">
+      <div class="th-row"><span class="th-label">Türü:</span> ${types.map(chip).join(' ')}</div>
+      ${strongAgainst.length ? `<div class="th-row"><span class="th-label">⚡ Zayıf:</span> ${strongAgainst.map(chip).join(' ')}</div>` : ''}
+      ${resistedBy.length ? `<div class="th-row"><span class="th-label">🛡️ Dirençli:</span> ${resistedBy.map(chip).join(' ')}</div>` : ''}
+    </div>`;
+}
+
 function renderPartyPicker() {
   const mydex = getAdventureDex().filter(p => p.id < 900000000); // fusions can't be sent into wild battles (Phase 3 scope)
   const wrap = el('wrap');
@@ -166,6 +188,7 @@ function renderPartyPicker() {
           <div class="wp-lv">Lv.${wildLevel}</div>
         </div>
       </div>
+      ${typeHintHtml(wild.types)}
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Karşına <span style="text-transform:capitalize;">${wild.name}</span> çıktı! Hangi Pokémon'unla savaşmak istersin?</div>
       <div id="pickList"></div>
     </div>`;
