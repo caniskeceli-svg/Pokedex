@@ -116,18 +116,12 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const cloudDb = firebase.firestore();
-// Without this, every single page load opens a brand new connection to
-// Firestore with nothing cached locally - onSnapshot can only fire once
-// that round trip completes, which is the ~10s "page just sits there"
-// delay this was added to fix. With persistence on, a returning device
-// gets its last-known data from local IndexedDB almost immediately while
-// the real snapshot syncs in the background, so only the very first-ever
-// load on a device still pays the full network cost. synchronizeTabs
-// lets multiple open tabs share one cache instead of the enable call
-// failing outright in every tab but the first.
-cloudDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-  console.warn("Firestore önbelleği açılamadı (tarayıcı desteklemiyor olabilir):", err.code || err);
-});
+// Reverted: enablePersistence() caused repeated connection-error banners
+// in the field (a user got 5 in a row and couldn't even pick a starter
+// Pokemon) - worse than the load delay it was meant to fix. Likely an
+// IndexedDB persistence layer issue on their device/browser (Safari/iPad
+// multi-tab persistence is known to be flaky). Do not re-add without
+// testing on an actual affected device first.
 
 function safeParseLS(key, fallback) {
   try {
