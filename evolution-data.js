@@ -197,7 +197,7 @@ async function performEvolution(instanceId) {
     // than trying to derive a count from the dex.
     const player = getAdventurePlayer();
     player.evolutionCount = (player.evolutionCount || 0) + 1;
-    saveAdventurePlayer(player);
+    pushAdventureCloudAtomic({ "player.evolutionCount": firebase.firestore.FieldValue.increment(1) });
     if (typeof recordAdventureEvent === "function") recordAdventureEvent("evolve_pokemon");
 
     return { ok: true, evolved };

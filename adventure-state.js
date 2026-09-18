@@ -131,15 +131,18 @@ function pushAdventureCloud(partial) {
   adventureDocRef.set(partial, { merge: true }).catch(err => console.error("Adventure Firestore yazma hatası:", err));
 }
 
-// For a permanent, never-revocable unlock (a badge, a league completion) -
-// unlike pushAdventureCloud, this never sends a whole-object snapshot that a
-// stale concurrent write (another tab, another device, a page that read
-// `player` slightly earlier and is still saving) could overwrite. Every
-// field here must be a Firestore atomic op (FieldValue.arrayUnion/increment)
-// so two writers racing on the same document converge to the same correct
-// result regardless of which one's network request lands last - this is
-// what a plain saveAdventurePlayer() round-trip of the whole player object
-// cannot guarantee (see the Sep 2026 "Misty badge disappeared" incident).
+// For any player/progress field a stale concurrent write must never be
+// allowed to clobber (a badge, a league completion, XP/coin totals, quest
+// progress) - unlike pushAdventureCloud, this never sends a whole-object
+// snapshot that another tab/device/page (one that read `player` slightly
+// earlier and is still saving) could overwrite. Every field here should be
+// either a Firestore atomic op (FieldValue.arrayUnion/increment) or scoped
+// to a single leaf the field's own writer exclusively owns, so two writers
+// racing on the same document converge to the same correct result
+// regardless of which one's network request lands last - this is what a
+// whole-object merge cannot guarantee (see the Sep 2026 "Misty badge
+// disappeared" incident, which is what this replaced saveAdventurePlayer
+// for).
 function pushAdventureCloudAtomic(fields) {
   if (!adventureReady) { console.error("Adventure verisi henüz yüklenmeden yazma engellendi:", fields); return; }
   adventureDocRef.update(fields).catch(err => console.error("Adventure Firestore atomik yazma hatası:", err));
@@ -345,7 +348,6 @@ function getAdventureMemories() { return ADVENTURE_STATE.memories; }
 function saveAdventureMemories(list) { ADVENTURE_STATE.memories = list; pushAdventureCloud({ memories: list }); }
 
 function getAdventurePlayer() { return ADVENTURE_STATE.player; }
-function saveAdventurePlayer(p) { ADVENTURE_STATE.player = p; pushAdventureCloud({ player: p }); }
 
 function getAdventureInventory() { return ADVENTURE_STATE.inventory; }
 function saveAdventureInventory(inv) { ADVENTURE_STATE.inventory = inv; pushAdventureCloud({ inventory: inv }); }
@@ -384,22 +386,24 @@ function visitAdventureLocation(locationId) {
 // (a completely separate value on each owned instance).
 function addAdventureTrainerXP(amount, reason) {
   const player = getAdventurePlayer();
-  player.xp += Math.max(0, Math.round(amount || 0));
-  saveAdventurePlayer(player);
+  const delta = Math.max(0, Math.round(amount || 0));
+  player.xp += delta;
+  pushAdventureCloudAtomic({ "player.xp": firebase.firestore.FieldValue.increment(delta) });
   return { xp: player.xp, reason };
 }
 
 function addAdventureCoins(amount) {
   const player = getAdventurePlayer();
-  player.coins = (player.coins || 0) + Math.max(0, Math.round(amount || 0));
-  saveAdventurePlayer(player);
+  const delta = Math.max(0, Math.round(amount || 0));
+  player.coins = (player.coins || 0) + delta;
+  pushAdventureCloudAtomic({ "player.coins": firebase.firestore.FieldValue.increment(delta) });
   return player.coins;
 }
 function spendAdventureCoins(amount) {
   const player = getAdventurePlayer();
   if ((player.coins || 0) < amount) return false;
   player.coins -= amount;
-  saveAdventurePlayer(player);
+  pushAdventureCloudAtomic({ "player.coins": firebase.firestore.FieldValue.increment(-amount) });
   return true;
 }
 
@@ -409,7 +413,7 @@ function spendAdventureCoins(amount) {
 function processAdventureCatch() {
   const player = getAdventurePlayer();
   player.xp += 10;
-  saveAdventurePlayer(player);
+  pushAdventureCloudAtomic({ "player.xp": firebase.firestore.FieldValue.increment(10) });
   addAdventureItems("pokeball", 1);
   addAdventureItems("berry", 2);
   return {

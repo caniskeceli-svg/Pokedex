@@ -555,7 +555,7 @@ function awardBattleXp(pokemonXp, trainerXp) {
   }
   const p = getAdventurePlayer();
   p.xp += trainerXp;
-  saveAdventurePlayer(p);
+  pushAdventureCloudAtomic({ "player.xp": firebase.firestore.FieldValue.increment(trainerXp) });
 }
 
 function endBattle(outcome, ballType) {
@@ -573,7 +573,7 @@ function endBattle(outcome, ballType) {
   if (outcome === 'loss') {
     const p = getAdventurePlayer();
     p.wildLosses = (p.wildLosses || 0) + 1;
-    saveAdventurePlayer(p);
+    pushAdventureCloudAtomic({ "player.wildLosses": firebase.firestore.FieldValue.increment(1) });
     showResult({
       title: battleParty.length > 1 ? '😵 Tüm Pokémon\'ların baygın düştü...' : `😵 <span style="text-transform:capitalize;">${player.name}</span> baygın düştü...`,
       rewards: [],
@@ -612,7 +612,7 @@ function endBattle(outcome, ballType) {
     addAdventureCoins(coins);
     const p = getAdventurePlayer();
     p.wildWins = (p.wildWins || 0) + 1;
-    saveAdventurePlayer(p);
+    pushAdventureCloudAtomic({ "player.wildWins": firebase.firestore.FieldValue.increment(1) });
     recordAdventureEvent('win_wild_battle');
     recordAdventureEvent('catch_pokemon');
 
