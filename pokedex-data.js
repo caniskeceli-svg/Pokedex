@@ -1,3 +1,27 @@
+// Shown when the Firestore connection stalls (no response within a
+// timeout) or errors out outright - without this, a page's own init() just
+// hangs forever on whatever "Yükleniyor..." placeholder it already showed,
+// since nothing else ever tells the user something went wrong. Idempotent
+// (a second call just replaces the message) and never touches the rest of
+// the page, so it's safe to call from any page's cloud-sync error path.
+function showConnectionRetryBanner(message) {
+  let banner = document.getElementById("connectionRetryBanner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "connectionRetryBanner";
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9998;background:#c0392b;color:#fff;padding:10px 14px;font-family:'Trebuchet MS','Segoe UI',sans-serif;font-size:13px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);";
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = `
+    <span>⚠️ ${message || "Bağlantı kurulamadı. İnternetini kontrol et."}</span>
+    <button id="connectionRetryBtn" style="background:#fff;color:#c0392b;border:none;padding:6px 14px;border-radius:999px;font-weight:bold;cursor:pointer;">🔄 Tekrar Dene</button>`;
+  document.getElementById("connectionRetryBtn").addEventListener("click", () => location.reload());
+}
+function clearConnectionRetryBanner() {
+  const banner = document.getElementById("connectionRetryBanner");
+  if (banner) banner.remove();
+}
+
 const TYPE_TR = {
   normal: "Normal", fire: "Ateş", water: "Su", electric: "Elektrik",
   grass: "Çimen", ice: "Buz", fighting: "Dövüş", poison: "Zehir",
@@ -172,7 +196,12 @@ function waitForCloud() {
   if (cloudReady) return Promise.resolve();
   return new Promise(resolve => cloudReadyResolvers.push(resolve));
 }
+// Guarded against writing before the real snapshot has ever loaded - see
+// adventure-state.js's identical pushAdventureCloud guard for the full
+// rationale (a write here before CLOUD_STATE holds real data would merge
+// its still-default shape over whatever's actually saved in Firestore).
 function pushCloud(partial) {
+  if (!cloudReady) { console.error("Cloud verisi henüz yüklenmeden yazma engellendi:", partial); return; }
   cloudDocRef.set(partial, { merge: true }).catch(err => console.error("Firestore yazma hatası:", err));
 }
 
@@ -215,6 +244,15 @@ async function startCloudSync(profileId) {
   CURRENT_PROFILE = profileId;
   cloudDocRef = cloudDb.collection("profiles").doc(profileId);
 
+  // A stalled connection (flaky network, Firestore unreachable) otherwise
+  // just leaves every page hanging on its own "Yükleniyor..." forever, with
+  // nothing telling the user something's wrong - this is the single point
+  // that can happen from, so the timeout/error banner only needs wiring
+  // here, not on every page.
+  const connectionTimeout = setTimeout(() => {
+    if (!cloudReady) showConnectionRetryBanner("Bağlantı uzun sürüyor... internetini kontrol et.");
+  }, 10000);
+
   cloudDocRef.onSnapshot(async (snap) => {
     if (!snap.exists) {
       let seed = null;
@@ -256,6 +294,8 @@ async function startCloudSync(profileId) {
 
     const firstTime = !cloudReady;
     cloudReady = true;
+    clearTimeout(connectionTimeout);
+    clearConnectionRetryBanner();
     cloudReadyResolvers.forEach(r => r());
     cloudReadyResolvers = [];
     cloudChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
@@ -268,6 +308,8 @@ async function startCloudSync(profileId) {
     }
   }, (err) => {
     console.error("Firestore bağlantı hatası:", err);
+    clearTimeout(connectionTimeout);
+    showConnectionRetryBanner("Bağlantı hatası oluştu.");
   });
 }
 

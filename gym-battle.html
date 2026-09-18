@@ -217,9 +217,23 @@ async function startGymBattle(playerMon) {
   logLines = [];
   log(`${gym.leader} seni Salona davet etti!`);
   recordAdventureEvent('challenge_gym');
+  await loadEnemyAndRender();
+}
+
+// Wraps loadCurrentEnemy() with a visible loading state and, if the PokeAPI
+// fetch fails or times out (fetchWithTimeout), a "yüklenemedi, tekrar dene"
+// screen instead of leaving the page stuck on "Yükleniyor..." forever with
+// no way forward.
+async function loadEnemyAndRender() {
   el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
-  await loadCurrentEnemy();
-  renderBattle();
+  try {
+    await loadCurrentEnemy();
+    renderBattle();
+  } catch (e) {
+    console.error(e);
+    el('wrap').innerHTML = `<div class="card"><p style="text-align:center;color:#a33;">Pokémon yüklenemedi 😕 İnternetini kontrol et.</p><button class="continue-btn" id="retryLoadBtn">🔄 Tekrar Dene</button></div>`;
+    el('retryLoadBtn').addEventListener('click', loadEnemyAndRender);
+  }
 }
 
 async function loadCurrentEnemy() {
@@ -420,9 +434,7 @@ async function useMove(moveIndex) {
       endBattle('win');
       return;
     }
-    el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
-    await loadCurrentEnemy();
-    renderBattle();
+    await loadEnemyAndRender();
     return;
   }
 

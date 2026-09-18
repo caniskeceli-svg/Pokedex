@@ -753,9 +753,18 @@ function renderAll() {
   renderMemories();
 }
 
+// This button lives in the page's static HTML (unlike every other action,
+// which is only ever wired up from inside a render function that itself
+// only runs after the real data has loaded), so it's clickable the instant
+// the page opens - before waitForAdventureCloud() below has resolved. A
+// click that early used to run healAllAtPokemonCenter() against the still-
+// empty default ADVENTURE_STATE and push that over the player's real saved
+// data (see pushAdventureCloud's own guard for the permanent fix); this
+// check keeps the click a harmless no-op with clear feedback in that window.
 let centerLocked = false;
 el('pokemonCenterBtn').addEventListener('click', () => {
   if (centerLocked) return;
+  if (!adventureReady) { alert('Veriler hâlâ yükleniyor, birkaç saniye bekleyip tekrar dene.'); return; }
   centerLocked = true;
   const count = healAllAtPokemonCenter();
   alert(`🏥 ${count} Pokémon'un HP'si tamamen yenilendi!`);

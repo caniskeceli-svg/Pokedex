@@ -119,7 +119,15 @@ function waitForAdventureCloud() {
   if (adventureReady) return Promise.resolve();
   return new Promise(resolve => adventureReadyResolvers.push(resolve));
 }
+// Guarded against writing before the real snapshot has ever loaded: until
+// then, ADVENTURE_STATE is still sitting at its empty/default shape, so any
+// write here would merge those defaults (e.g. mydex: []) over whatever the
+// player actually has saved in Firestore - permanently wiping it. This was
+// reachable through adventure-hq.html's Pokemon Center button, which was
+// wired to click before the page's own data-ready check (now fixed there
+// too, but this guard protects every write path, present and future).
 function pushAdventureCloud(partial) {
+  if (!adventureReady) { console.error("Adventure verisi henüz yüklenmeden yazma engellendi:", partial); return; }
   adventureDocRef.set(partial, { merge: true }).catch(err => console.error("Adventure Firestore yazma hatası:", err));
 }
 
@@ -223,6 +231,14 @@ function backfillHoennUnlock(player) {
 
 function startAdventureCloudSync() {
   adventureDocRef = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID);
+
+  // Same stalled-connection safety net as the classic profile's own
+  // startCloudSync (pokedex-data.js) - without it, every Adventure page just
+  // hangs on "Yükleniyor..." forever with no indication anything's wrong.
+  const connectionTimeout = setTimeout(() => {
+    if (!adventureReady) showConnectionRetryBanner("Bağlantı uzun sürüyor... internetini kontrol et.");
+  }, 10000);
+
   adventureDocRef.onSnapshot(async (snap) => {
     if (!snap.exists) {
       const recovered = await migrateLegacyAdventureData();
@@ -247,11 +263,15 @@ function startAdventureCloudSync() {
       };
     }
     adventureReady = true;
+    clearTimeout(connectionTimeout);
+    clearConnectionRetryBanner();
     adventureReadyResolvers.forEach(r => r());
     adventureReadyResolvers = [];
     adventureChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
   }, (err) => {
     console.error("Adventure Firestore bağlantı hatası:", err);
+    clearTimeout(connectionTimeout);
+    showConnectionRetryBanner("Bağlantı hatası oluştu.");
   });
 }
 
@@ -330,11 +350,21 @@ function processAdventureCatch() {
   };
 }
 
+// Wraps fetch with a timeout (default 10s) so a stalled PokeAPI request
+// (flaky network, PokeAPI unreachable) rejects instead of leaving the
+// caller's `await` hanging forever - every PokeAPI call in Adventure goes
+// through this rather than a bare fetch().
+function fetchWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms || 10000);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 // Shared PokeAPI lookup (id/name/types/stats/power/artwork) used anywhere
 // Adventure needs a species' data: starter selection and evolution both
 // call this instead of duplicating the fetch/shape logic.
 async function fetchPokemonSpeciesData(speciesId) {
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${speciesId}`);
+  const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${speciesId}`);
   const data = await res.json();
   const statMap = {};
   data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });
