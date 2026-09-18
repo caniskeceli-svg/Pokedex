@@ -41,6 +41,15 @@
   .gauntlet-step.done { background: #27ae60; color: #fff; }
   .gauntlet-step.current { background: #ffd24a; color: #2c3e50; font-weight: bold; }
 
+  .team-preview { background: #fdf7ff; border: 1px dashed #d9b8ff; border-radius: 12px; padding: 10px; margin-bottom: 12px; }
+  .team-preview .tp-title { font-weight: bold; color: #6b4a8a; font-size: 13px; margin-bottom: 6px; text-align: center; }
+  .team-preview .tp-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .team-preview .tp-item { background: #fff; border-radius: 12px; padding: 8px; text-align: center; width: 88px; }
+  .team-preview .tp-item img { width: 48px; height: 48px; }
+  .team-preview .tp-name { font-weight: bold; font-size: 12px; text-transform: capitalize; }
+  .team-preview .tp-lv { font-size: 11px; color: #888; }
+  .team-preview .type-chip { display: inline-block; color: #fff; font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 999px; margin-top: 2px; }
+
   .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
   .pick-item.disabled { opacity: 0.4; cursor: default; }
   .pick-item:hover:not(.disabled) { background: #f0e6ff; }
@@ -152,7 +161,44 @@ function gauntletTrackHtml() {
   }).join('')}</div>`;
 }
 
-function renderPartyPicker() {
+// Fetches the very first opponent's (stages[0]) team names/types up front
+// so the player can see who they're about to face before picking their own
+// Pokémon - shows a retry screen instead of leaving the picker stuck if the
+// fetches fail or time out. Only the first stage is previewed: the rest of
+// the gauntlet reveals itself as the player advances, same pacing as before.
+async function loadTeamPreviewAndRender() {
+  el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
+  try {
+    const firstStage = stages[0];
+    const teamInfo = await Promise.all(firstStage.data.team.map(async (m) => {
+      const species = await fetchPokemonSpeciesData(m.speciesId);
+      return { speciesId: m.speciesId, name: species.name, types: species.types, level: m.level };
+    }));
+    renderPartyPicker(firstStage, teamInfo);
+  } catch (e) {
+    console.error(e);
+    el('wrap').innerHTML = `<div class="card"><p style="text-align:center;color:#a33;">Takım bilgisi yüklenemedi 😕 İnternetini kontrol et.</p><button class="continue-btn" id="retryTeamBtn">🔄 Tekrar Dene</button></div>`;
+    el('retryTeamBtn').addEventListener('click', loadTeamPreviewAndRender);
+  }
+}
+
+function teamPreviewHtml(stageName, teamInfo) {
+  return `
+    <div class="team-preview">
+      <div class="tp-title">👥 ${stageName}'in Takımı</div>
+      <div class="tp-list">
+        ${teamInfo.map(m => `
+          <div class="tp-item">
+            <img src="${spriteFor(m.speciesId)}" alt="${m.name}">
+            <div class="tp-name">${m.name}</div>
+            <div class="tp-lv">Lv.${m.level}</div>
+            <div>${m.types.map(t => `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`).join(' ')}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderPartyPicker(firstStage, teamInfo) {
   const mydex = getAdventureDex().filter(p => p.id < 900000000);
   const wrap = el('wrap');
   wrap.innerHTML = `
@@ -162,6 +208,7 @@ function renderPartyPicker() {
         <div class="leader-sub">Elit Dörtlü + Şampiyon</div>
         ${gauntletTrackHtml()}
       </div>
+      ${firstStage ? teamPreviewHtml(firstStage.data.name, teamInfo) : ''}
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla Lige gireceksin?</div>
       <p style="text-align:center;color:#888;font-size:12px;">Bu Pokémon tüm mücadele boyunca (Elit Dörtlü + Şampiyon) aynı HP ile devam edecek.</p>
       <div id="pickList"></div>
@@ -266,7 +313,7 @@ async function resumeAttempt(attempt) {
     // attempt can't safely continue (no Adventure Team to swap in), so end
     // it cleanly and send the player back to a fresh pick.
     endLeagueAttempt(leagueId);
-    renderPartyPicker();
+    loadTeamPreviewAndRender();
     return;
   }
   await startStageFromAttempt(attempt, mon);
@@ -613,7 +660,7 @@ function init() {
   if (attempt) {
     resumeAttempt(attempt);
   } else {
-    renderPartyPicker();
+    loadTeamPreviewAndRender();
   }
 }
 
