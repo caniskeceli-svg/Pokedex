@@ -182,6 +182,10 @@ async function loadTeamPreviewAndRender() {
   }
 }
 
+function typeChip(t) {
+  return `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`;
+}
+
 function teamPreviewHtml(stageName, teamInfo) {
   return `
     <div class="team-preview">
@@ -192,7 +196,7 @@ function teamPreviewHtml(stageName, teamInfo) {
             <img src="${spriteFor(m.speciesId)}" alt="${m.name}">
             <div class="tp-name">${m.name}</div>
             <div class="tp-lv">Lv.${m.level}</div>
-            <div>${m.types.map(t => `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`).join(' ')}</div>
+            <div>${m.types.map(typeChip).join(' ')}</div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -226,6 +230,7 @@ function renderPartyPicker(firstStage, teamInfo) {
         <div>
           <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
           <div class="p-sub">Lv.${p.level || 1}${fainted ? ' · 😵 Baygın' : ''}</div>
+          <div>${(p.types || []).map(typeChip).join(' ')}</div>
         </div>
       </div>`;
   }).join('');
@@ -379,7 +384,7 @@ function renderBattle() {
       <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
 
       <div class="move-grid" id="moveGrid">
-        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} <span style="font-weight:normal;font-size:11px;">(${m.pp}/${m.maxPp} PP)</span></button>`).join('')}
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} ${typeChip(m.type)}<br><span style="font-weight:normal;font-size:11px;">${m.pp}/${m.maxPp} PP</span></button>`).join('')}
       </div>
 
       <div class="item-row" id="itemRow">
@@ -436,6 +441,7 @@ function renderSwitchPicker(forced) {
           <div class="s-name">${m.name}${i === activeIndex ? ' (aktif)' : ''}</div>
           <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
           <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
+          <div>${(m.types || []).map(typeChip).join(' ')}</div>
         </div>
       </div>`;
   }).join('');

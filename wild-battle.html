@@ -159,6 +159,13 @@ async function fetchWildSpecies() {
   };
 }
 
+// Small colored type badge, shared everywhere a Pokemon's or a move's type
+// needs to show (the type hint below, the player's own party list, and each
+// move button) - one lookup against pokedex-data.js's TYPE_TR/TYPE_COLORS.
+function typeChip(t) {
+  return `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`;
+}
+
 // Type-effectiveness tip for the party picker: which attacking types would
 // hit this wild Pokemon hard (super effective) vs which it shrugs off
 // (resisted/immune) - pure lookup against pokedex-data.js's own TYPE_CHART,
@@ -167,12 +174,11 @@ function typeHintHtml(types) {
   const allTypes = Object.keys(TYPE_CHART);
   const strongAgainst = allTypes.filter(t => typeMultiplier(t, types) > 1);
   const resistedBy = allTypes.filter(t => typeMultiplier(t, types) < 1);
-  const chip = t => `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`;
   return `
     <div class="type-hint">
-      <div class="th-row"><span class="th-label">Türü:</span> ${types.map(chip).join(' ')}</div>
-      ${strongAgainst.length ? `<div class="th-row"><span class="th-label">⚡ Zayıf:</span> ${strongAgainst.map(chip).join(' ')}</div>` : ''}
-      ${resistedBy.length ? `<div class="th-row"><span class="th-label">🛡️ Dirençli:</span> ${resistedBy.map(chip).join(' ')}</div>` : ''}
+      <div class="th-row"><span class="th-label">Türü:</span> ${types.map(typeChip).join(' ')}</div>
+      ${strongAgainst.length ? `<div class="th-row"><span class="th-label">⚡ Zayıf:</span> ${strongAgainst.map(typeChip).join(' ')}</div>` : ''}
+      ${resistedBy.length ? `<div class="th-row"><span class="th-label">🛡️ Dirençli:</span> ${resistedBy.map(typeChip).join(' ')}</div>` : ''}
     </div>`;
 }
 
@@ -205,6 +211,7 @@ function renderPartyPicker() {
         <div>
           <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
           <div class="p-sub">Lv.${p.level || 1}${fainted ? ' · 😵 Baygın' : ''}</div>
+          <div>${(p.types || []).map(typeChip).join(' ')}</div>
         </div>
       </div>`;
   }).join('');
@@ -307,7 +314,7 @@ function renderBattle() {
       <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
 
       <div class="move-grid" id="moveGrid">
-        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} <span style="font-weight:normal;font-size:11px;">(${m.pp}/${m.maxPp} PP)</span></button>`).join('')}
+        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} ${typeChip(m.type)}<br><span style="font-weight:normal;font-size:11px;">${m.pp}/${m.maxPp} PP</span></button>`).join('')}
       </div>
 
       <div class="ball-row" id="itemRow">
@@ -378,6 +385,7 @@ function renderSwitchPicker(forced) {
           <div class="s-name">${m.name}${i === activeIndex ? ' (aktif)' : ''}</div>
           <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
           <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
+          <div>${(m.types || []).map(typeChip).join(' ')}</div>
         </div>
       </div>`;
   }).join('');
