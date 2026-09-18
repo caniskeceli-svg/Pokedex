@@ -131,6 +131,20 @@ function pushAdventureCloud(partial) {
   adventureDocRef.set(partial, { merge: true }).catch(err => console.error("Adventure Firestore yazma hatası:", err));
 }
 
+// For a permanent, never-revocable unlock (a badge, a league completion) -
+// unlike pushAdventureCloud, this never sends a whole-object snapshot that a
+// stale concurrent write (another tab, another device, a page that read
+// `player` slightly earlier and is still saving) could overwrite. Every
+// field here must be a Firestore atomic op (FieldValue.arrayUnion/increment)
+// so two writers racing on the same document converge to the same correct
+// result regardless of which one's network request lands last - this is
+// what a plain saveAdventurePlayer() round-trip of the whole player object
+// cannot guarantee (see the Sep 2026 "Misty badge disappeared" incident).
+function pushAdventureCloudAtomic(fields) {
+  if (!adventureReady) { console.error("Adventure verisi henüz yüklenmeden yazma engellendi:", fields); return; }
+  adventureDocRef.update(fields).catch(err => console.error("Adventure Firestore atomik yazma hatası:", err));
+}
+
 // One-time best-effort delete of the single shared "adventure" doc that
 // existed briefly before this per-profile split - it never held real
 // progress (created but unplayed), so it's discarded outright rather than
