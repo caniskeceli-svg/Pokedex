@@ -358,7 +358,14 @@ function awardGymVictory(gymId) {
     player.badges.push(gym.badge.id);
     player.xp += gym.rewards.trainerXp;
     player.coins = (player.coins || 0) + gym.rewards.coins;
-    saveAdventurePlayer(player);
+    // Atomic write, not saveAdventurePlayer: a badge must never be
+    // clobbered by another tab/device's stale whole-player save landing
+    // after this one.
+    pushAdventureCloudAtomic({
+      "player.badges": firebase.firestore.FieldValue.arrayUnion(gym.badge.id),
+      "player.xp": firebase.firestore.FieldValue.increment(gym.rewards.trainerXp),
+      "player.coins": firebase.firestore.FieldValue.increment(gym.rewards.coins)
+    });
     return { ok: true, alreadyDefeated: false, gym, trainerXp: gym.rewards.trainerXp, coins: gym.rewards.coins };
   } finally {
     gymVictoryLocked[gymId] = false;

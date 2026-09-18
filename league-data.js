@@ -361,7 +361,13 @@ function awardEliteFourVictory(leagueId, memberId) {
       player.coins = (player.coins || 0) + member.rewards.coins;
       trainerXp = member.rewards.trainerXp;
       coins = member.rewards.coins;
-      saveAdventurePlayer(player);
+      // Atomic write, not saveAdventurePlayer: same "must never be
+      // clobbered by a stale concurrent save" reasoning as gym badges.
+      pushAdventureCloudAtomic({
+        [`player.leagueProgress.${leagueId}.eliteFourWins`]: firebase.firestore.FieldValue.arrayUnion(memberId),
+        "player.xp": firebase.firestore.FieldValue.increment(member.rewards.trainerXp),
+        "player.coins": firebase.firestore.FieldValue.increment(member.rewards.coins)
+      });
     }
     const nextAttempt = advanceLeagueAttemptFrom(leagueId, memberId);
     return { ok: true, alreadyWon, member, nextAttempt, trainerXp, coins };
@@ -399,7 +405,19 @@ function awardChampionVictory(leagueId) {
       }
       trainerXp = league.champion.rewards.trainerXp;
       coins = league.champion.rewards.coins;
-      saveAdventurePlayer(player);
+      // Atomic write, not saveAdventurePlayer: same "must never be
+      // clobbered by a stale concurrent save" reasoning as gym badges.
+      const atomicFields = {
+        [`player.leagueProgress.${leagueId}.championDefeated`]: true,
+        [`player.leagueProgress.${leagueId}.completed`]: true,
+        "player.xp": firebase.firestore.FieldValue.increment(league.champion.rewards.trainerXp),
+        "player.coins": firebase.firestore.FieldValue.increment(league.champion.rewards.coins),
+        "player.completedRegions": firebase.firestore.FieldValue.arrayUnion(league.regionId)
+      };
+      if (league.unlocksRegion) {
+        atomicFields["player.unlockedRegions"] = firebase.firestore.FieldValue.arrayUnion(league.unlocksRegion);
+      }
+      pushAdventureCloudAtomic(atomicFields);
     }
     endLeagueAttempt(leagueId);
     return { ok: true, alreadyCompleted, league, trainerXp, coins };
