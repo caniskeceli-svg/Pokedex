@@ -1,66 +1,28 @@
-const CACHE_NAME = "ayaz-pokedex-v2";
-const SHELL_FILES = [
-  "index.html",
-  "mypokemon.html",
-  "teams.html",
-  "battle.html",
-  "quiz.html",
-  "alldex.html",
-  "card.html",
-  "adventure.html",
-  "adventure-hq.html",
-  "wild-battle.html",
-  "pokemart.html",
-  "gym-battle.html",
-  "league-battle.html",
-  "victory-selfie.html",
-  "pokedex-data.js",
-  "adventure-state.js",
-  "region-data.js",
-  "battle-engine.js",
-  "move-data.js",
-  "item-data.js",
-  "starter-data.js",
-  "evolution-data.js",
-  "gym-data.js",
-  "league-data.js",
-  "quest-data.js",
-  "adventure-achievement-data.js",
-  "adventure-events.js",
-  "hall-of-fame-data.js",
-  "manifest.json",
-  "icon-192.png",
-  "icon-512.png",
-  "header-charizard.jpg"
-];
+// v3: caching the app shell here has caused three separate real incidents
+// (a stale UI position, and twice now a stuck iPad PWA still running
+// broken JS minutes/hours after the fix was already live) - the app needs
+// a live connection anyway (Firestore + PokeAPI), so there was never a
+// meaningful offline mode to protect. This version stops caching app files
+// entirely and purges every previously cached version on activate, so a
+// device that was stuck on old code updates the moment this file itself
+// is next fetched.
+const CACHE_NAME = "ayaz-pokedex-v3-nocache";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES)).catch(() => {})
-  );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)))
-    )
+    caches.keys().then((names) => Promise.all(names.map((n) => caches.delete(n))))
   );
   self.clients.claim();
 });
 
-// Network-first for everything (so Firestore data and live pages always stay fresh);
-// falls back to the cached app shell only when offline.
+// Pure passthrough - always hits the network, never reads or writes any
+// cache. Kept registered only because some platforms (iOS "Add to Home
+// Screen") expect an active service worker for PWA install/standalone mode.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(
-    fetch(event.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  event.respondWith(fetch(event.request));
 });
