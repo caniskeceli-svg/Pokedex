@@ -254,10 +254,28 @@ function startAdventureCloudSync() {
       const data = snap.data() || {};
       const mergedProgress = Object.assign({}, DEFAULT_ADVENTURE_PROGRESS, data.progress || {});
       mergedProgress.leagueAttempts = migrateLegacyLeagueAttempt(data.progress);
+      let mydex = data.mydex || [];
+      // Auto-recovery: an empty mydex on a profile that has ever caught
+      // anything is always a bug, never a legitimate state (Pokemon are
+      // never removable in this app) - restore silently from the last
+      // known-good backup (see the backup-write below) instead of the
+      // player just losing their whole collection outright, per the Sep
+      // 2026 Pokemon Center incident.
+      if (mydex.length === 0) {
+        try {
+          const backupSnap = await cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID + "_backup").get();
+          const backupMydex = backupSnap.exists ? (backupSnap.data() || {}).mydex || [] : [];
+          if (backupMydex.length > 0) {
+            mydex = backupMydex;
+            adventureDocRef.set({ mydex }, { merge: true });
+            console.warn("Adventure mydex was empty on load - auto-restored", mydex.length, "Pokemon from backup.");
+          }
+        } catch (e) { console.error("Yedekten geri yükleme hatası:", e); }
+      }
       ADVENTURE_STATE = {
         player: backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {})),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
-        mydex: data.mydex || [],
+        mydex: mydex,
         progress: mergedProgress,
         memories: data.memories || []
       };
@@ -268,6 +286,7 @@ function startAdventureCloudSync() {
     adventureReadyResolvers.forEach(r => r());
     adventureReadyResolvers = [];
     adventureChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
+    backupAdventureDexIfChanged();
   }, (err) => {
     console.error("Adventure Firestore bağlantı hatası:", err);
     clearTimeout(connectionTimeout);
@@ -275,8 +294,38 @@ function startAdventureCloudSync() {
   });
 }
 
+// Mirrors mydex into a separate "<doc>_backup" document whenever the
+// Pokemon count actually changes (a new catch/evolution/starter pick) - not
+// on every single save, since HP/PP ticks would otherwise write a backup
+// every turn for no benefit. This is what auto-recovery (above) restores
+// from if the main document's mydex is ever found wiped. Deliberately a
+// separate document, never touched by the normal read/write path, so a bug
+// in that path can't also corrupt the backup.
+let lastBackedUpMydexLength = -1;
+function backupAdventureDexIfChanged() {
+  const mydex = ADVENTURE_STATE.mydex;
+  if (mydex.length === 0 || mydex.length === lastBackedUpMydexLength) return;
+  lastBackedUpMydexLength = mydex.length;
+  cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID + "_backup")
+    .set({ mydex, backedUpAt: firebase.firestore.FieldValue.serverTimestamp() })
+    .catch(e => console.error("Adventure yedekleme hatası:", e));
+}
+
 function getAdventureDex() { return ADVENTURE_STATE.mydex; }
-function saveAdventureDex(list) { ADVENTURE_STATE.mydex = list; pushAdventureCloud({ mydex: list }); }
+// Refuses to ever collapse a real collection down to empty in one write -
+// every existing caller only ever adds/updates/heals entries in place, none
+// legitimately empties the whole array, so this can only ever catch a bug
+// (like the Pokemon Center incident this guard was added for), never block
+// real gameplay.
+function saveAdventureDex(list) {
+  if (list.length === 0 && ADVENTURE_STATE.mydex.length > 0) {
+    console.error("saveAdventureDex refused: would wipe", ADVENTURE_STATE.mydex.length, "Pokemon down to 0.");
+    return;
+  }
+  ADVENTURE_STATE.mydex = list;
+  pushAdventureCloud({ mydex: list });
+  backupAdventureDexIfChanged();
+}
 
 function getAdventureMemories() { return ADVENTURE_STATE.memories; }
 function saveAdventureMemories(list) { ADVENTURE_STATE.memories = list; pushAdventureCloud({ memories: list }); }

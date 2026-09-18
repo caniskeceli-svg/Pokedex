@@ -37,6 +37,15 @@
   .leader-sub { font-size: 12px; color: #ffd24a; }
   .team-progress { font-size: 12px; color: #bbb; margin-top: 4px; }
 
+  .team-preview { background: #fff9ec; border: 1px dashed #ffd27a; border-radius: 12px; padding: 10px; margin-bottom: 12px; }
+  .team-preview .tp-title { font-weight: bold; color: #7a6a3a; font-size: 13px; margin-bottom: 6px; text-align: center; }
+  .team-preview .tp-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .team-preview .tp-item { background: #fff; border-radius: 12px; padding: 8px; text-align: center; width: 88px; }
+  .team-preview .tp-item img { width: 48px; height: 48px; }
+  .team-preview .tp-name { font-weight: bold; font-size: 12px; text-transform: capitalize; }
+  .team-preview .tp-lv { font-size: 11px; color: #888; }
+  .team-preview .type-chip { display: inline-block; color: #fff; font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 999px; margin-top: 2px; }
+
   .pick-item { display: flex; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
   .pick-item.disabled { opacity: 0.4; cursor: default; }
   .pick-item:hover:not(.disabled) { background: #ffe6cc; }
@@ -139,7 +148,42 @@ function hpBarClass(hp, maxHp) {
   return (hp / maxHp) < 0.25 ? 'hp-fill low' : 'hp-fill';
 }
 
-function renderPartyPicker() {
+// Fetches every team member's name/types up front (parallel, one request
+// each) so the player can see who they're about to face before picking
+// their own Pokémon - shows a retry screen instead of leaving the party
+// picker stuck if the fetches fail or time out.
+async function loadTeamPreviewAndRender() {
+  el('wrap').innerHTML = '<div class="card"><p style="text-align:center;color:#999;">Yükleniyor...</p></div>';
+  try {
+    const teamInfo = await Promise.all(gym.team.map(async (m) => {
+      const species = await fetchPokemonSpeciesData(m.speciesId);
+      return { speciesId: m.speciesId, name: species.name, types: species.types, level: m.level };
+    }));
+    renderPartyPicker(teamInfo);
+  } catch (e) {
+    console.error(e);
+    el('wrap').innerHTML = `<div class="card"><p style="text-align:center;color:#a33;">Takım bilgisi yüklenemedi 😕 İnternetini kontrol et.</p><button class="continue-btn" id="retryTeamBtn">🔄 Tekrar Dene</button></div>`;
+    el('retryTeamBtn').addEventListener('click', loadTeamPreviewAndRender);
+  }
+}
+
+function teamPreviewHtml(teamInfo) {
+  return `
+    <div class="team-preview">
+      <div class="tp-title">👥 ${gym.leader}'un Takımı</div>
+      <div class="tp-list">
+        ${teamInfo.map(m => `
+          <div class="tp-item">
+            <img src="${spriteFor(m.speciesId)}" alt="${m.name}">
+            <div class="tp-name">${m.name}</div>
+            <div class="tp-lv">Lv.${m.level}</div>
+            <div>${m.types.map(t => `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`).join(' ')}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderPartyPicker(teamInfo) {
   const mydex = getAdventureDex().filter(p => p.id < 900000000);
   const wrap = el('wrap');
   wrap.innerHTML = `
@@ -149,6 +193,7 @@ function renderPartyPicker() {
         <div class="leader-sub">${TYPE_TR[gym.type] || gym.type} Salon Lideri</div>
         <div class="team-progress">${gym.team.length} Pokémon'luk takım</div>
       </div>
+      ${teamPreviewHtml(teamInfo)}
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Hangi Pokémon'unla savaşmak istersin?</div>
       <div id="pickList"></div>
     </div>`;
@@ -537,7 +582,7 @@ function init() {
     el('wrap').innerHTML = `<div class="card"><p class="locked-msg">🔒 Bu Salon henüz kilitli. Önce önceki rozeti kazanmalısın.</p></div>`;
     return;
   }
-  renderPartyPicker();
+  loadTeamPreviewAndRender();
 }
 
 waitForAdventureCloud().then(init);
