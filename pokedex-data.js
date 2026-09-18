@@ -196,7 +196,12 @@ function waitForCloud() {
   if (cloudReady) return Promise.resolve();
   return new Promise(resolve => cloudReadyResolvers.push(resolve));
 }
+// Guarded against writing before the real snapshot has ever loaded - see
+// adventure-state.js's identical pushAdventureCloud guard for the full
+// rationale (a write here before CLOUD_STATE holds real data would merge
+// its still-default shape over whatever's actually saved in Firestore).
 function pushCloud(partial) {
+  if (!cloudReady) { console.error("Cloud verisi henüz yüklenmeden yazma engellendi:", partial); return; }
   cloudDocRef.set(partial, { merge: true }).catch(err => console.error("Firestore yazma hatası:", err));
 }
 

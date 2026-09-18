@@ -119,7 +119,15 @@ function waitForAdventureCloud() {
   if (adventureReady) return Promise.resolve();
   return new Promise(resolve => adventureReadyResolvers.push(resolve));
 }
+// Guarded against writing before the real snapshot has ever loaded: until
+// then, ADVENTURE_STATE is still sitting at its empty/default shape, so any
+// write here would merge those defaults (e.g. mydex: []) over whatever the
+// player actually has saved in Firestore - permanently wiping it. This was
+// reachable through adventure-hq.html's Pokemon Center button, which was
+// wired to click before the page's own data-ready check (now fixed there
+// too, but this guard protects every write path, present and future).
 function pushAdventureCloud(partial) {
+  if (!adventureReady) { console.error("Adventure verisi henüz yüklenmeden yazma engellendi:", partial); return; }
   adventureDocRef.set(partial, { merge: true }).catch(err => console.error("Adventure Firestore yazma hatası:", err));
 }
 
