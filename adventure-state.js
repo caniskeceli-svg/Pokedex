@@ -357,20 +357,25 @@ function addAdventureItems(itemKey, qty) {
 }
 
 function getAdventureProgress() { return ADVENTURE_STATE.progress; }
-function saveAdventureProgress(progress) { ADVENTURE_STATE.progress = progress; pushAdventureCloud({ progress }); }
-// Spreads the EXISTING progress object rather than replacing it wholesale,
-// so fields this function doesn't know about (like Phase 7/10D's leagueAttempts)
-// are never dropped by a location visit. Returns `wasNewVisit` so callers
-// can fire a one-time "explore_location" event only on a genuinely new spot.
+// Mutates the progress object in place and writes back only the specific
+// field(s) that changed (see pushAdventureCloudAtomic) - never a whole-
+// progress merge, so this can never be dropped by a stale concurrent write.
+// Returns `wasNewVisit` so callers can fire a one-time "explore_location"
+// event only on a genuinely new spot.
 function visitAdventureLocation(locationId) {
   const progress = getAdventureProgress();
   const alreadyVisited = progress.visitedLocations.includes(locationId);
-  const next = Object.assign({}, progress, {
-    visitedLocations: alreadyVisited ? progress.visitedLocations : [...progress.visitedLocations, locationId],
-    currentLocationId: locationId
+  if (!alreadyVisited) progress.visitedLocations = [...progress.visitedLocations, locationId];
+  progress.currentLocationId = locationId;
+  // Scoped, atomic write - a visited location can only ever be added
+  // (arrayUnion), never dropped by a stale concurrent write elsewhere
+  // touching `progress` (a league attempt update, another tab). This is
+  // exactly the map-progress loss reported after a PWA reinstall.
+  pushAdventureCloudAtomic({
+    "progress.visitedLocations": firebase.firestore.FieldValue.arrayUnion(locationId),
+    "progress.currentLocationId": locationId
   });
-  saveAdventureProgress(next);
-  return Object.assign({}, next, { wasNewVisit: !alreadyVisited });
+  return Object.assign({}, progress, { wasNewVisit: !alreadyVisited });
 }
 
 // Central Trainer XP grant (Phase 6) - Gym victories and any future League/

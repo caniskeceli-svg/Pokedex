@@ -4,7 +4,7 @@
 // unlock live, so a future Johto league is just appending another entry -
 // no new UI or battle logic. Depends on adventure-state.js
 // (getAdventurePlayer/saveAdventurePlayer/getAdventureProgress/
-// saveAdventureProgress) - load it first.
+// pushAdventureCloudAtomic) - load it first.
 const LEAGUE_CATALOG = [
   {
     leagueId: "kanto", regionId: "kanto",
@@ -278,8 +278,11 @@ function beginLeagueAttempt(leagueId, instanceId) {
   const stages = getLeagueStages(league);
   const attempt = { leagueId, active: true, stage: stages[0].stageId, instanceId, startedAt: Date.now() };
   const progress = getAdventureProgress();
-  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: attempt });
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
+  progress.leagueAttempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: attempt });
+  // Scoped to this league's own slot only (not a whole-progress merge) so
+  // this can never race with a location visit or another league's attempt
+  // over who last wrote `progress` - see pushAdventureCloudAtomic.
+  pushAdventureCloudAtomic({ [`progress.leagueAttempts.${leagueId}`]: attempt });
   return attempt;
 }
 
@@ -299,8 +302,8 @@ function advanceLeagueAttemptFrom(leagueId, stageId) {
   const nextIdx = idx + 1;
   if (nextIdx >= stages.length) return attempt;
   const next = Object.assign({}, attempt, { stage: stages[nextIdx].stageId });
-  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
+  progress.leagueAttempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
+  pushAdventureCloudAtomic({ [`progress.leagueAttempts.${leagueId}`]: next });
   return next;
 }
 
@@ -314,8 +317,8 @@ function updateLeagueAttemptInstance(leagueId, instanceId) {
   const attempt = (progress.leagueAttempts || {})[leagueId];
   if (!attempt || !attempt.active || attempt.leagueId !== leagueId) return;
   const next = Object.assign({}, attempt, { instanceId });
-  const attempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
+  progress.leagueAttempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: next });
+  pushAdventureCloudAtomic({ [`progress.leagueAttempts.${leagueId}`]: next });
 }
 
 // Clears the active attempt back to the default (inactive) shape - used on a
@@ -328,10 +331,9 @@ function endLeagueAttempt(leagueId) {
   const progress = getAdventureProgress();
   const attempt = (progress.leagueAttempts || {})[leagueId];
   if (!attempt || attempt.leagueId !== leagueId) return;
-  const attempts = Object.assign({}, progress.leagueAttempts, {
-    [leagueId]: { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null }
-  });
-  saveAdventureProgress(Object.assign({}, progress, { leagueAttempts: attempts }));
+  const clearedAttempt = { leagueId: null, active: false, stage: null, instanceId: null, startedAt: null };
+  progress.leagueAttempts = Object.assign({}, progress.leagueAttempts, { [leagueId]: clearedAttempt });
+  pushAdventureCloudAtomic({ [`progress.leagueAttempts.${leagueId}`]: clearedAttempt });
 }
 
 let leagueLockFlags = {};
