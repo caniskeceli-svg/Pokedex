@@ -7,7 +7,7 @@
 // the only place a threshold lives (also doubling as the progress bar the
 // UI shows), so adding a new achievement later is just appending an entry -
 // no new UI or unlock logic. Depends on adventure-state.js
-// (getAdventurePlayer/saveAdventurePlayer/getAdventureDex/
+// (getAdventurePlayer/pushAdventureCloudAtomic/getAdventureDex/
 // getAdventureProgress) and region-data.js (getLocationsForRegion) - load
 // both before this file.
 const ACHIEVEMENT_CATALOG = [
@@ -141,17 +141,32 @@ function checkAndUnlockAdventureAchievements() {
     const ctx = buildAdventureAchievementContext(player, dex, progress);
 
     const newlyUnlocked = [];
+    const newEntries = [];
+    let totalXp = 0, totalCoins = 0;
     ACHIEVEMENT_CATALOG.forEach(ach => {
       if (isAdventureAchievementUnlocked(player, ach.id)) return;
       if (ach.metric(ctx) < adventureAchievementTargetValue(ach, ctx)) return;
-      player.adventureAchievements.push({ id: ach.id, unlockedAt: Date.now() });
+      const entry = { id: ach.id, unlockedAt: Date.now() };
+      player.adventureAchievements.push(entry);
+      newEntries.push(entry);
       if (ach.reward) {
         player.xp += ach.reward.trainerXp || 0;
         player.coins = (player.coins || 0) + (ach.reward.coins || 0);
+        totalXp += ach.reward.trainerXp || 0;
+        totalCoins += ach.reward.coins || 0;
       }
       newlyUnlocked.push(ach);
     });
-    if (newlyUnlocked.length) saveAdventurePlayer(player);
+    // Atomic write, not saveAdventurePlayer: an achievement unlock is a
+    // permanent record, same "must never be clobbered by a stale
+    // concurrent save" reasoning as gym badges (see pushAdventureCloudAtomic).
+    if (newlyUnlocked.length) {
+      pushAdventureCloudAtomic({
+        "player.adventureAchievements": firebase.firestore.FieldValue.arrayUnion(...newEntries),
+        "player.xp": firebase.firestore.FieldValue.increment(totalXp),
+        "player.coins": firebase.firestore.FieldValue.increment(totalCoins)
+      });
+    }
     return newlyUnlocked;
   } finally {
     adventureAchievementLock = false;

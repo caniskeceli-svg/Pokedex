@@ -3,7 +3,7 @@
 // only place a quest's target event/targetValue/reward/icon lives, so adding
 // a new quest later is just appending an entry - no new UI or progress
 // logic. Depends on adventure-state.js (getAdventurePlayer/
-// saveAdventurePlayer/ADVENTURE_DOC_ID) and pokedex-data.js's `cloudDb` -
+// pushAdventureCloudAtomic/ADVENTURE_DOC_ID) and pokedex-data.js's `cloudDb` -
 // load both before this file.
 const QUEST_CATALOG = [
   { id: "explore_location", name: "Kaşif", description: "1 yeni bölge keşfet", category: "Kaşif", target: "explore_location", targetValue: 1, reward: { coins: 100, trainerXp: 50 }, icon: "🗺️" },
@@ -87,7 +87,10 @@ async function ensureDailyQuests() {
     }
     const quests = pickDailyQuestIds().map(id => ({ id, progress: 0, claimed: false }));
     player.dailyQuests = { dateKey, quests };
-    saveAdventurePlayer(player);
+    // Scoped to player.dailyQuests only, not a whole-player save - a quest
+    // roll can never clobber a badge/achievement/xp change saved elsewhere
+    // around the same time (see pushAdventureCloudAtomic).
+    pushAdventureCloudAtomic({ "player.dailyQuests": player.dailyQuests });
     return player.dailyQuests;
   } finally {
     ensureDailyQuestsLock = false;
@@ -109,7 +112,7 @@ function updateQuestProgress(eventType, amount) {
       changed = true;
     }
   });
-  if (changed) saveAdventurePlayer(player);
+  if (changed) pushAdventureCloudAtomic({ "player.dailyQuests": dq });
 }
 
 let questClaimLocked = {};
@@ -136,7 +139,11 @@ function claimDailyQuest(questId) {
     entry.claimed = true;
     player.xp += catalogEntry.reward.trainerXp || 0;
     player.coins = (player.coins || 0) + (catalogEntry.reward.coins || 0);
-    saveAdventurePlayer(player);
+    pushAdventureCloudAtomic({
+      "player.dailyQuests": dq,
+      "player.xp": firebase.firestore.FieldValue.increment(catalogEntry.reward.trainerXp || 0),
+      "player.coins": firebase.firestore.FieldValue.increment(catalogEntry.reward.coins || 0)
+    });
     return { ok: true, reward: catalogEntry.reward, quest: catalogEntry };
   } finally {
     questClaimLocked[questId] = false;
