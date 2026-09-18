@@ -146,7 +146,7 @@ function spriteFor(speciesId, shiny) {
 }
 
 async function fetchWildSpecies() {
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${wildSpeciesId}`);
+  const res = await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon/${wildSpeciesId}`);
   const data = await res.json();
   const statMap = {};
   data.stats.forEach(s => { statMap[s.stat.name] = s.base_stat; });

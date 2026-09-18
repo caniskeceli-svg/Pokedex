@@ -1,4 +1,4 @@
-const CACHE_NAME = "ayaz-pokedex-v1";
+const CACHE_NAME = "ayaz-pokedex-v2";
 const SHELL_FILES = [
   "index.html",
   "mypokemon.html",
