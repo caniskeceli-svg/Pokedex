@@ -368,20 +368,8 @@ async function openDetail(locationId) {
   if (unlocked) {
     el('exploreBtn').addEventListener('click', () => {
       if (loc.encounters.length) {
-        const mydex = getAdventureDex();
-        const encounter = generateWildEncounter(loc, mydex);
-        if (encounter) {
-          window.location.href = `wild-battle.html?location=${loc.id}&species=${encounter.speciesId}&level=${encounter.level}&shiny=${encounter.shiny ? 1 : 0}`;
-          return;
-        }
-        // Every possible encounter here is already owned (normal + shiny) - a
-        // small consolation reward instead of an empty "nothing happened".
-        addAdventureCoins(15);
-        const visit1 = visitAdventureLocation(locationId);
-        if (visit1.wasNewVisit) recordAdventureEvent('explore_location');
-        closeDetail();
-        renderPath();
-        alert(`Bu bölgedeki tüm Pokémon türleri zaten sende! 💰 +15 PokéCoin kazandın.`);
+        const encounter = generateWildEncounter(loc);
+        window.location.href = `wild-battle.html?location=${loc.id}&species=${encounter.speciesId}&level=${encounter.level}&shiny=${encounter.shiny ? 1 : 0}`;
         return;
       }
       const visit2 = visitAdventureLocation(locationId);

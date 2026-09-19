@@ -694,34 +694,20 @@ function weightedPick(entries) {
 
 const SHINY_CHANCE = 1 / 50;
 
-// Picks a wild encounter for `location`, respecting the "no duplicate normal
-// species" and "shiny is a separate slot" rules:
-//  - a species already owned as non-shiny can still be encountered shiny
-//  - a species already owned as shiny can still be encountered non-shiny
-// Returns { speciesId, level, shiny } or null if every possible outcome for
-// this location is already owned (caller should fall back to a small
-// consolation reward instead of a battle).
-function generateWildEncounter(location, mydex) {
+// Picks a wild encounter for `location` by weight alone, exactly like a
+// real Pokemon game - already owning a species (shiny or not) never
+// removes it from the pool. This used to filter out anything already
+// caught, which sounds helpful but backfires badly once a player has
+// caught most of a location's species: with only one uncaught species
+// left in the pool, every single encounter became that one species -
+// reported directly as "I keep getting Clefairy, 10 times in a row" (Mt.
+// Moon: Zubat/Paras/Geodude already owned, leaving only rare-weighted
+// Clefairy). Always returns an encounter as long as the location has any.
+function generateWildEncounter(location) {
   const encounters = location.encounters || [];
   if (!encounters.length) return null;
-
-  const ownedNormal = new Set(mydex.filter(p => !p.shiny).map(p => p.id));
-  const ownedShiny = new Set(mydex.filter(p => p.shiny).map(p => p.id));
-
-  const wantShiny = Math.random() < SHINY_CHANCE;
-  const primaryPool = encounters.filter(e => !(wantShiny ? ownedShiny : ownedNormal).has(e.speciesId));
-  // If the rolled rarity has nothing left, try the other rarity before giving up entirely.
-  const fallbackPool = encounters.filter(e => !(wantShiny ? ownedNormal : ownedShiny).has(e.speciesId));
-
-  let pool = primaryPool;
-  let shiny = wantShiny;
-  if (!pool.length) {
-    pool = fallbackPool;
-    shiny = !wantShiny;
-  }
-  if (!pool.length) return null;
-
-  const picked = weightedPick(pool);
+  const picked = weightedPick(encounters);
   const level = picked.minLevel + Math.floor(Math.random() * (picked.maxLevel - picked.minLevel + 1));
+  const shiny = Math.random() < SHINY_CHANCE;
   return { speciesId: picked.speciesId, level, shiny };
 }
