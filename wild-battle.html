@@ -145,6 +145,11 @@ let wild = null;   // { id, name, types, baseStats, sprite, power, maxHp, hp, mo
 let player = null; // { instanceId, id, name, types, level, maxHp, hp, moves } - always battleParty[activeIndex]
 let battleParty = []; // every non-fainted party member available for this battle, built once at battle start
 let activeIndex = -1;
+// Every Pokemon that was ever the active one this battle (starter +
+// anyone switched in) - all of them get end-of-battle XP, not just
+// whoever happened to be active at the very end. A Pokemon that took a
+// hit and fainted earlier still helped win the fight.
+let foughtInstanceIds = new Set();
 let battleEnded = false;
 let catchLocked = false;
 let logLines = [];
@@ -296,6 +301,7 @@ function startBattle(playerMon) {
   battleParty = eligible.map(buildBattlePartyMember);
   activeIndex = battleParty.findIndex(m => m.instanceId === playerMon.instanceId);
   player = battleParty[activeIndex];
+  foughtInstanceIds = new Set([player.instanceId]);
   const wStats = computeBattleStats(wild.baseStats, wildLevel);
   wild.level = wildLevel;
   wild.maxHp = wStats.maxHp;
@@ -434,6 +440,7 @@ function renderSwitchPicker(forced) {
 function confirmSwitch(idx, forced) {
   activeIndex = idx;
   player = battleParty[idx];
+  foughtInstanceIds.add(player.instanceId);
   if (forced) {
     log(`Hadi ${player.name}!`);
     renderBattle();
@@ -570,14 +577,36 @@ function runAway() {
   if (battleEnded) return;
   battleEnded = true;
   visitAdventureLocation(locationId);
+  // A wild Pokemon can never actually be defeated (see keepWildAlive) so
+  // catching was, until now, the ONLY way a wild fight ever paid out any
+  // Pokemon XP at all - fighting one down to the floor and then just
+  // running (not wanting a duplicate, say) earned nothing. Beating it down
+  // to 1 HP before running still earns a real, if smaller, reward.
+  if (wild.hp <= 1) {
+    const pokemonXp = Math.round(wildLevel * 5);
+    const trainerXp = Math.round(wildLevel * 2);
+    awardBattleXp(pokemonXp, trainerXp);
+    showResult({
+      title: '🏃 Kaçtın!',
+      rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`],
+      continueLabel: 'Haritaya Dön'
+    });
+    return;
+  }
   showResult({ title: '🏃 Kaçtın!', rewards: [], continueLabel: 'Haritaya Dön' });
 }
 
 // Applies XP to the party Pokemon that fought and to the trainer, saves both.
+// Every Pokemon that fought (foughtInstanceIds - the starter plus anyone
+// switched in, not just whoever's active at the very end) gets the full
+// pokemonXp amount, not a split share - simpler and more forgiving, and
+// matches "the ones who fought should earn it" rather than only
+// rewarding whichever one happened to land the last hit.
 function awardBattleXp(pokemonXp, trainerXp) {
   const mydex = getAdventureDex();
-  const idx = mydex.findIndex(p => p.instanceId === player.instanceId);
-  if (idx !== -1) {
+  foughtInstanceIds.forEach(instanceId => {
+    const idx = mydex.findIndex(p => p.instanceId === instanceId);
+    if (idx === -1) return;
     const mon = mydex[idx];
     const oldLevel = mon.level || 1;
     const newPxp = (mon.pxp || 0) + pokemonXp;
@@ -585,9 +614,9 @@ function awardBattleXp(pokemonXp, trainerXp) {
     const learnResult = checkLevelUpLearn(mon, oldLevel, level);
     const leveled = Object.assign({}, mon, { pxp: newPxp, level });
     mydex[idx] = applyLevelUpLearn(leveled, learnResult);
-    saveAdventureDex(mydex);
     if (level > oldLevel) showLevelUpCard(mon, oldLevel, level);
-  }
+  });
+  saveAdventureDex(mydex);
   const p = getAdventurePlayer();
   p.xp += trainerXp;
   pushAdventureCloudAtomic({ "player.xp": firebase.firestore.FieldValue.increment(trainerXp) });
@@ -616,8 +645,11 @@ function endBattle(outcome, ballType) {
       note: 'Baygın Pokémon\'lar dinlenene kadar savaşamaz.'
     });
   } else if (outcome === 'catch') {
-    const trainerXp = 25;
-    const pokemonXp = 15;
+    // Scaled by the caught Pokemon's level, not flat - a flat 15 XP made
+    // sense early on but stopped meaning anything once wild levels climb
+    // past the first few routes.
+    const trainerXp = Math.round(wildLevel * 3);
+    const pokemonXp = Math.round(wildLevel * 8);
     const coins = 20;
     awardBattleXp(pokemonXp, trainerXp);
 
