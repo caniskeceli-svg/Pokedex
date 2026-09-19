@@ -73,6 +73,11 @@
     font-size: 14px; font-weight: bold; cursor: pointer; text-transform: capitalize;
   }
   .move-btn:disabled { background: #ccc; cursor: default; }
+  .move-mult { display: inline-block; font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 999px; }
+  .move-mult.mult-good { background: #d4f5d4; color: #1a7a1a; }
+  .move-mult.mult-bad { background: #ffd9d9; color: #a3221f; }
+  .move-mult.mult-zero { background: #eee; color: #888; }
+  .move-mult.mult-neutral { background: #eee; color: #666; }
 
   .ball-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   .ball-btn {
@@ -406,7 +411,11 @@ function renderBattle() {
       <div class="log-box">${logLines.map(l => `<div>${l}</div>`).join('')}</div>
 
       <div class="move-grid" id="moveGrid">
-        ${player.moves.map((m, i) => `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} ${typeChip(m.type)}<br><span style="font-weight:normal;font-size:11px;">${m.pp}/${m.maxPp} PP</span></button>`).join('')}
+        ${player.moves.map((m, i) => {
+          const mult = typeMultiplier(m.type, wild.types);
+          const multClass = mult === 0 ? 'mult-zero' : mult > 1 ? 'mult-good' : mult < 1 ? 'mult-bad' : 'mult-neutral';
+          return `<button class="move-btn" data-move="${i}" ${m.pp <= 0 ? 'disabled' : ''}>${m.name} ${typeChip(m.type)} <span class="move-mult ${multClass}">${fmtMult(mult)}</span><br><span style="font-weight:normal;font-size:11px;">${m.pp}/${m.maxPp} PP</span></button>`;
+        }).join('')}
       </div>
 
       <div class="ball-row" id="itemRow">
