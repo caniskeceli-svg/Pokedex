@@ -351,7 +351,7 @@ function renderPartyPicker(firstStage, teamInfo) {
     pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok. <a href="adventure-hq.html">Macera Karargâhı\'na dön</a>.</p>';
     return;
   }
-  const firstEnemyTypes = (firstStage && firstStage.data.team[0] && firstStage.data.team[0].types) || [];
+  const firstEnemyTypes = (teamInfo && teamInfo[0] && teamInfo[0].types) || [];
   pickList.innerHTML = mydex.map(p => {
     const fainted = p.fainted === true;
     const advice = (!fainted && p.types && firstEnemyTypes.length) ? switchAdvice(p.types, firstEnemyTypes) : null;
