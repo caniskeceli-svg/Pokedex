@@ -59,7 +59,27 @@ const MOVE_CATALOG = {
   "razor-leaf":   { id: "razor-leaf",     name: "Yaprak Bıçağı",  type: "grass",    category: "physical", power: 55, accuracy: 95,  pp: 25 },
   flamethrower:   { id: "flamethrower",   name: "Alev Püskürtme", type: "fire",     category: "special",  power: 90, accuracy: 100, pp: 15 },
   "water-pulse":  { id: "water-pulse",    name: "Su Nabzı",       type: "water",    category: "special",  power: 60, accuracy: 100, pp: 20 },
-  thunderbolt:    { id: "thunderbolt",    name: "Yıldırım",       type: "electric", category: "special",  power: 90, accuracy: 100, pp: 15 }
+  thunderbolt:    { id: "thunderbolt",    name: "Yıldırım",       type: "electric", category: "special",  power: 90, accuracy: 100, pp: 15 },
+
+  // Phase 16: a second, stronger move per type for every OTHER (fallback-
+  // moveset) species - learned at level 15, same "you get something new as
+  // you level" feeling the curated starter lines already had, without
+  // hand-writing a full learnset for every one of ~1000 species. See
+  // TYPE_TIER2_MOVE_ID below.
+  headbutt:       { id: "headbutt",       name: "Kafa Vuruşu",    type: "normal",   category: "physical", power: 70, accuracy: 100, pp: 15 },
+  "brick-break":  { id: "brick-break",    name: "Tuğla Kırma",    type: "fighting", category: "physical", power: 75, accuracy: 100, pp: 15 },
+  sludge:         { id: "sludge",         name: "Lağım",          type: "poison",   category: "special",  power: 65, accuracy: 100, pp: 20 },
+  dig:            { id: "dig",            name: "Kazma",          type: "ground",   category: "physical", power: 80, accuracy: 100, pp: 10 },
+  "wing-attack":  { id: "wing-attack",    name: "Kanat Saldırısı", type: "flying",  category: "physical", power: 60, accuracy: 100, pp: 35 },
+  psybeam:        { id: "psybeam",        name: "Psişik Işın",    type: "psychic",  category: "special",  power: 65, accuracy: 100, pp: 20 },
+  "x-scissor":    { id: "x-scissor",      name: "Çapraz Makas",   type: "bug",      category: "physical", power: 80, accuracy: 100, pp: 15 },
+  "rock-slide":   { id: "rock-slide",     name: "Kaya Kayması",   type: "rock",     category: "physical", power: 75, accuracy: 90,  pp: 10 },
+  "shadow-ball":  { id: "shadow-ball",    name: "Gölge Topu",     type: "ghost",    category: "special",  power: 80, accuracy: 100, pp: 15 },
+  "dragon-claw":  { id: "dragon-claw",    name: "Ejderha Pençesi", type: "dragon",  category: "physical", power: 80, accuracy: 100, pp: 15 },
+  crunch:         { id: "crunch",         name: "Çıtırdatma",     type: "dark",     category: "physical", power: 80, accuracy: 100, pp: 15 },
+  "iron-head":    { id: "iron-head",      name: "Demir Kafa",     type: "steel",    category: "physical", power: 80, accuracy: 100, pp: 15 },
+  moonblast:      { id: "moonblast",      name: "Ay Işını",       type: "fairy",    category: "special",  power: 95, accuracy: 100, pp: 15 },
+  "ice-punch":    { id: "ice-punch",      name: "Buz Yumruğu",    type: "ice",      category: "physical", power: 75, accuracy: 100, pp: 15 }
 };
 
 function getMoveById(id) {
@@ -76,6 +96,21 @@ const TYPE_FALLBACK_MOVE_ID = {
   fairy: "fairy-wind", fire: "ember", water: "water-gun", grass: "vine-whip",
   electric: "thunder-shock", ice: "powder-snow"
 };
+
+// The stronger move a fallback-moveset species (anything without a
+// hand-curated MOVESETS entry) learns at FALLBACK_TIER2_LEVEL - see
+// fallbackMovesForTypes/checkLevelUpLearn. Fire/water/grass/electric reuse
+// the exact moves the curated starter lines already learn at a similar
+// level, so a wild Charmander-line-adjacent Fire-type and an actual
+// Charmander end up feeling consistent.
+const TYPE_TIER2_MOVE_ID = {
+  normal: "headbutt", fighting: "brick-break", poison: "sludge", ground: "dig",
+  flying: "wing-attack", psychic: "psybeam", bug: "x-scissor", rock: "rock-slide",
+  ghost: "shadow-ball", dragon: "dragon-claw", dark: "crunch", steel: "iron-head",
+  fairy: "moonblast", fire: "flamethrower", water: "water-pulse", grass: "razor-leaf",
+  electric: "thunderbolt", ice: "ice-punch"
+};
+const FALLBACK_TIER2_LEVEL = 15;
 
 // Real, hand-curated learnsets - only for species a player actually controls
 // across a level range (starters + their final evolutions, which also show
@@ -121,9 +156,15 @@ function usesFallbackMoveset(speciesId) {
 
 // Deterministic fallback: one move per (up to 2) types, always topped up
 // with the universal Tackle filler so every Pokemon has at least one
-// guaranteed-neutral move, capped at 4, de-duplicated. Never random.
-function fallbackMovesForTypes(types) {
+// guaranteed-neutral move, capped at 4, de-duplicated. Never random. At
+// FALLBACK_TIER2_LEVEL+, each type's stronger tier-2 move is added too
+// (see TYPE_TIER2_MOVE_ID) - every Pokemon gets something new to learn as
+// it levels, not just the hand-curated starter lines.
+function fallbackMovesForTypes(types, level) {
   const ids = (types || []).map(t => TYPE_FALLBACK_MOVE_ID[t] || TYPE_FALLBACK_MOVE_ID.normal);
+  if ((level || 1) >= FALLBACK_TIER2_LEVEL) {
+    (types || []).forEach(t => ids.push(TYPE_TIER2_MOVE_ID[t] || TYPE_TIER2_MOVE_ID.normal));
+  }
   ids.push(TYPE_FALLBACK_MOVE_ID.normal);
   const deduped = [...new Set(ids)].slice(0, 4);
   return deduped.map(id => getMoveById(id));
@@ -135,9 +176,9 @@ function fallbackMovesForTypes(types) {
 // learnset for this species at all.
 function movesKnownAtLevel(speciesId, level, types) {
   const learnset = getLearnsetFor(speciesId);
-  if (!learnset) return fallbackMovesForTypes(types);
+  if (!learnset) return fallbackMovesForTypes(types, level);
   const eligible = learnset.filter(m => m.level <= (level || 1)).sort((a, b) => a.level - b.level);
-  if (!eligible.length) return fallbackMovesForTypes(types);
+  if (!eligible.length) return fallbackMovesForTypes(types, level);
   const ids = eligible.map(m => m.moveId);
   const lastFour = ids.slice(-4);
   return lastFour.map(id => getMoveById(id)).filter(Boolean);
@@ -190,14 +231,27 @@ function serializeBattleMoves(moves) {
 // dropping either the new move or an old one.
 function checkLevelUpLearn(mon, oldLevel, newLevel) {
   if (newLevel <= oldLevel) return null;
-  const learnset = getLearnsetFor(mon.id);
-  if (!learnset) return null;
-  const newlyEligible = learnset.filter(m => m.level > oldLevel && m.level <= newLevel).sort((a, b) => a.level - b.level);
-  if (!newlyEligible.length) return null;
-  const learn = newlyEligible[newlyEligible.length - 1];
   const currentMoves = Array.isArray(mon.moves) ? mon.moves : [];
-  if (currentMoves.some(m => m.id === learn.moveId)) return null;
-  return { moveId: learn.moveId, autoLearn: currentMoves.length < 4 };
+  const learnset = getLearnsetFor(mon.id);
+  let moveId;
+  if (learnset) {
+    const newlyEligible = learnset.filter(m => m.level > oldLevel && m.level <= newLevel).sort((a, b) => a.level - b.level);
+    if (!newlyEligible.length) return null;
+    moveId = newlyEligible[newlyEligible.length - 1].moveId;
+  } else {
+    // Fallback-moveset species (everything without a curated MOVESETS
+    // entry) - crossing FALLBACK_TIER2_LEVEL learns its type's tier-2
+    // move, same "something new as you level" feeling curated lines get.
+    // A dual-type Pokemon's second type's move is a nice-to-have this
+    // doesn't chase - only one move is ever returned per level-up here,
+    // matching the curated path's own "newest one only" behavior.
+    if (!(oldLevel < FALLBACK_TIER2_LEVEL && newLevel >= FALLBACK_TIER2_LEVEL)) return null;
+    const t = (mon.types || [])[0];
+    if (!t) return null;
+    moveId = TYPE_TIER2_MOVE_ID[t] || TYPE_TIER2_MOVE_ID.normal;
+  }
+  if (currentMoves.some(m => m.id === moveId)) return null;
+  return { moveId, autoLearn: currentMoves.length < 4 };
 }
 
 // Applies a checkLevelUpLearn() result to a (moves-ensured) instance. When
