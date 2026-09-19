@@ -911,6 +911,274 @@ const LOCATIONS = [
   {
     id: "sinnoh-pokemon-league", region: "sinnoh", name: "Pokémon League", type: "town",
     order: 37, requires: "victory-road-sinnoh", gymId: null, leagueId: "sinnoh_league", encounters: []
+  },
+
+  // ---- Unova (Phase 16) ----
+  // Same schema/functions as every region above. Route ids are prefixed
+  // "unova-route-N" (sequential by visiting order, not real Unova route
+  // numbers) specifically because real Unova's "Route 1"/"Route 3" would
+  // otherwise collide with Kanto's own existing "route-1"/"route-3" ids -
+  // every other numbered id space here (Johto 29-44, Hoenn 101-126, Sinnoh
+  // 201-222) happened not to collide, Unova's would have. Targets the
+  // original Black/White progression (see gym-data.js/league-data.js for
+  // why Drayden and Alder specifically); Black2/White2-only locations
+  // (Humilau City etc.) are out of scope for that reason, not an oversight.
+  {
+    id: "nuvema-town", region: "unova", name: "Nuvema Town", type: "town",
+    order: 1, requires: null, gymId: null, encounters: []
+  },
+  {
+    id: "unova-route-1", region: "unova", name: "Route 1", type: "route",
+    order: 2, requires: "nuvema-town", gymId: null,
+    encounters: [
+      { speciesId: 504, minLevel: 2, maxLevel: 4, weight: 40 }, // Patrat
+      { speciesId: 506, minLevel: 2, maxLevel: 4, weight: 40 }, // Lillipup
+      { speciesId: 509, minLevel: 3, maxLevel: 5, weight: 20 }  // Purrloin (rare)
+    ]
+  },
+  {
+    id: "accumula-town", region: "unova", name: "Accumula Town", type: "town",
+    order: 3, requires: "unova-route-1", gymId: null, encounters: []
+  },
+  {
+    id: "unova-route-2", region: "unova", name: "Route 2", type: "route",
+    order: 4, requires: "accumula-town", gymId: null,
+    encounters: [
+      { speciesId: 504, minLevel: 4, maxLevel: 6, weight: 35 }, // Patrat
+      { speciesId: 506, minLevel: 4, maxLevel: 6, weight: 35 }, // Lillipup
+      { speciesId: 540, minLevel: 4, maxLevel: 6, weight: 30 }  // Sewaddle
+    ]
+  },
+  {
+    id: "striaton-city", region: "unova", name: "Striaton City", type: "town",
+    order: 5, requires: "unova-route-2", gymId: "unova_striaton", encounters: []
+  },
+  {
+    id: "unova-route-3", region: "unova", name: "Route 3", type: "route",
+    order: 6, requires: "striaton-city", gymId: null,
+    encounters: [
+      { speciesId: 524, minLevel: 6, maxLevel: 9, weight: 30 }, // Roggenrola
+      { speciesId: 551, minLevel: 6, maxLevel: 9, weight: 30 }, // Sandile
+      { speciesId: 572, minLevel: 6, maxLevel: 9, weight: 25 }, // Minccino
+      { speciesId: 527, minLevel: 7, maxLevel: 9, weight: 15 }  // Woobat (rare)
+    ]
+  },
+  {
+    id: "wellspring-cave", region: "unova", name: "Wellspring Cave", type: "route",
+    order: 7, requires: "unova-route-3", gymId: null,
+    encounters: [
+      { speciesId: 524, minLevel: 8, maxLevel: 11, weight: 40 }, // Roggenrola
+      { speciesId: 527, minLevel: 8, maxLevel: 11, weight: 40 }, // Woobat
+      { speciesId: 532, minLevel: 9, maxLevel: 11, weight: 20 }  // Timburr (rare)
+    ]
+  },
+  {
+    id: "nacrene-city", region: "unova", name: "Nacrene City", type: "town",
+    order: 8, requires: "wellspring-cave", gymId: "unova_nacrene", encounters: []
+  },
+  {
+    id: "unova-route-4", region: "unova", name: "Route 4", type: "route",
+    order: 9, requires: "nacrene-city", gymId: null,
+    encounters: [
+      { speciesId: 551, minLevel: 10, maxLevel: 13, weight: 35 }, // Sandile
+      { speciesId: 554, minLevel: 10, maxLevel: 13, weight: 35 }, // Darumaka
+      { speciesId: 559, minLevel: 10, maxLevel: 13, weight: 30 }  // Scraggy
+    ]
+  },
+  {
+    id: "desert-resort", region: "unova", name: "Desert Resort", type: "route",
+    order: 10, requires: "unova-route-4", gymId: null,
+    encounters: [
+      { speciesId: 551, minLevel: 11, maxLevel: 14, weight: 30 }, // Sandile
+      { speciesId: 554, minLevel: 11, maxLevel: 14, weight: 30 }, // Darumaka
+      { speciesId: 562, minLevel: 12, maxLevel: 14, weight: 20 }, // Yamask (rare)
+      { speciesId: 529, minLevel: 12, maxLevel: 14, weight: 20 }  // Drilbur (rare)
+    ]
+  },
+  {
+    id: "lostlorn-forest", region: "unova", name: "Lostlorn Forest", type: "route",
+    order: 11, requires: "unova-route-4", gymId: null,
+    encounters: [
+      { speciesId: 540, minLevel: 12, maxLevel: 15, weight: 30 }, // Sewaddle
+      { speciesId: 543, minLevel: 12, maxLevel: 15, weight: 30 }, // Venipede
+      { speciesId: 546, minLevel: 12, maxLevel: 15, weight: 20 }, // Cottonee
+      { speciesId: 548, minLevel: 12, maxLevel: 15, weight: 20 }  // Petilil
+    ]
+  },
+  {
+    id: "castelia-city", region: "unova", name: "Castelia City", type: "town",
+    order: 12, requires: "lostlorn-forest", gymId: "unova_castelia", encounters: []
+  },
+  {
+    id: "unova-route-5", region: "unova", name: "Route 5", type: "route",
+    order: 13, requires: "castelia-city", gymId: null,
+    encounters: [
+      { speciesId: 543, minLevel: 14, maxLevel: 17, weight: 30 }, // Venipede
+      { speciesId: 546, minLevel: 14, maxLevel: 17, weight: 25 }, // Cottonee
+      { speciesId: 548, minLevel: 14, maxLevel: 17, weight: 25 }, // Petilil
+      { speciesId: 572, minLevel: 14, maxLevel: 17, weight: 20 }  // Minccino
+    ]
+  },
+  {
+    id: "nimbasa-city", region: "unova", name: "Nimbasa City", type: "town",
+    order: 14, requires: "unova-route-5", gymId: "unova_nimbasa", encounters: []
+  },
+  {
+    id: "village-bridge", region: "unova", name: "Village Bridge", type: "route",
+    order: 15, requires: "nimbasa-city", gymId: null,
+    encounters: [
+      { speciesId: 587, minLevel: 17, maxLevel: 20, weight: 35 }, // Emolga
+      { speciesId: 580, minLevel: 17, maxLevel: 20, weight: 35 }, // Ducklett
+      { speciesId: 588, minLevel: 17, maxLevel: 20, weight: 30 }  // Karrablast
+    ]
+  },
+  {
+    id: "unova-route-6", region: "unova", name: "Route 6", type: "route",
+    order: 16, requires: "village-bridge", gymId: null,
+    encounters: [
+      { speciesId: 535, minLevel: 17, maxLevel: 20, weight: 45 }, // Tympole
+      { speciesId: 590, minLevel: 17, maxLevel: 20, weight: 35 }, // Foongus
+      { speciesId: 592, minLevel: 18, maxLevel: 20, weight: 20 }  // Frillish (rare)
+    ]
+  },
+  {
+    id: "driftveil-city", region: "unova", name: "Driftveil City", type: "town",
+    order: 17, requires: "unova-route-6", gymId: "unova_driftveil", encounters: []
+  },
+  {
+    id: "chargestone-cave", region: "unova", name: "Chargestone Cave", type: "route",
+    order: 18, requires: "driftveil-city", gymId: null,
+    encounters: [
+      { speciesId: 595, minLevel: 19, maxLevel: 22, weight: 40 }, // Joltik
+      { speciesId: 599, minLevel: 19, maxLevel: 22, weight: 40 }, // Klink
+      { speciesId: 529, minLevel: 20, maxLevel: 22, weight: 20 }  // Drilbur (rare)
+    ]
+  },
+  {
+    id: "unova-route-7", region: "unova", name: "Route 7", type: "route",
+    order: 19, requires: "driftveil-city", gymId: null,
+    encounters: [
+      { speciesId: 532, minLevel: 20, maxLevel: 23, weight: 35 }, // Timburr
+      { speciesId: 529, minLevel: 20, maxLevel: 23, weight: 35 }, // Drilbur
+      { speciesId: 524, minLevel: 20, maxLevel: 23, weight: 30 }  // Roggenrola
+    ]
+  },
+  {
+    id: "cold-storage", region: "unova", name: "Cold Storage", type: "route",
+    order: 20, requires: "unova-route-7", gymId: null,
+    encounters: [
+      { speciesId: 582, minLevel: 21, maxLevel: 24, weight: 35 }, // Vanillite
+      { speciesId: 613, minLevel: 21, maxLevel: 24, weight: 35 }, // Cubchoo
+      { speciesId: 568, minLevel: 21, maxLevel: 24, weight: 30 }  // Trubbish
+    ]
+  },
+  {
+    id: "unova-route-8", region: "unova", name: "Route 8", type: "route",
+    order: 21, requires: "unova-route-7", gymId: null,
+    encounters: [
+      { speciesId: 587, minLevel: 22, maxLevel: 25, weight: 35 }, // Emolga
+      { speciesId: 585, minLevel: 22, maxLevel: 25, weight: 35 }, // Deerling
+      { speciesId: 522, minLevel: 22, maxLevel: 25, weight: 30 }  // Blitzle
+    ]
+  },
+  {
+    id: "mistralton-city", region: "unova", name: "Mistralton City", type: "town",
+    order: 22, requires: "unova-route-8", gymId: "unova_mistralton", encounters: []
+  },
+  {
+    id: "celestial-tower", region: "unova", name: "Celestial Tower", type: "route",
+    order: 23, requires: "mistralton-city", gymId: null,
+    encounters: [
+      { speciesId: 607, minLevel: 24, maxLevel: 27, weight: 40 }, // Litwick
+      { speciesId: 605, minLevel: 24, maxLevel: 27, weight: 35 }, // Elgyem
+      { speciesId: 622, minLevel: 24, maxLevel: 27, weight: 25 }  // Golett
+    ]
+  },
+  {
+    id: "unova-route-9", region: "unova", name: "Route 9", type: "route",
+    order: 24, requires: "mistralton-city", gymId: null,
+    encounters: [
+      { speciesId: 561, minLevel: 25, maxLevel: 28, weight: 15 }, // Sigilyph (rare)
+      { speciesId: 587, minLevel: 25, maxLevel: 28, weight: 45 }, // Emolga
+      { speciesId: 619, minLevel: 25, maxLevel: 28, weight: 40 }  // Mienfoo
+    ]
+  },
+  {
+    id: "twist-mountain", region: "unova", name: "Twist Mountain", type: "route",
+    order: 25, requires: "unova-route-9", gymId: null,
+    encounters: [
+      { speciesId: 524, minLevel: 27, maxLevel: 30, weight: 30 }, // Roggenrola
+      { speciesId: 529, minLevel: 27, maxLevel: 30, weight: 30 }, // Drilbur
+      { speciesId: 615, minLevel: 28, maxLevel: 30, weight: 20 }, // Cryogonal (rare)
+      { speciesId: 632, minLevel: 28, maxLevel: 30, weight: 20 }  // Durant (rare)
+    ]
+  },
+  {
+    id: "icirrus-city", region: "unova", name: "Icirrus City", type: "town",
+    order: 26, requires: "twist-mountain", gymId: "unova_icirrus", encounters: []
+  },
+  {
+    id: "dragonspiral-tower", region: "unova", name: "Dragonspiral Tower", type: "route",
+    order: 27, requires: "icirrus-city", gymId: null,
+    encounters: [
+      { speciesId: 633, minLevel: 29, maxLevel: 32, weight: 35 }, // Deino
+      { speciesId: 629, minLevel: 29, maxLevel: 32, weight: 35 }, // Vullaby
+      { speciesId: 622, minLevel: 29, maxLevel: 32, weight: 30 }  // Golett
+    ]
+  },
+  {
+    id: "moor-of-icirrus", region: "unova", name: "Moor of Icirrus", type: "route",
+    order: 28, requires: "icirrus-city", gymId: null,
+    encounters: [
+      { speciesId: 592, minLevel: 28, maxLevel: 31, weight: 35 }, // Frillish
+      { speciesId: 618, minLevel: 28, maxLevel: 31, weight: 35 }, // Stunfisk
+      { speciesId: 588, minLevel: 28, maxLevel: 31, weight: 30 }  // Karrablast
+    ]
+  },
+  {
+    id: "unova-route-10", region: "unova", name: "Route 10", type: "route",
+    order: 29, requires: "icirrus-city", gymId: null,
+    encounters: [
+      { speciesId: 610, minLevel: 30, maxLevel: 33, weight: 40 }, // Axew
+      { speciesId: 621, minLevel: 31, maxLevel: 33, weight: 20 }, // Druddigon (rare)
+      { speciesId: 619, minLevel: 30, maxLevel: 33, weight: 40 }  // Mienfoo
+    ]
+  },
+  {
+    id: "unova-route-11", region: "unova", name: "Route 11", type: "route",
+    order: 30, requires: "unova-route-10", gymId: null,
+    encounters: [
+      { speciesId: 599, minLevel: 32, maxLevel: 35, weight: 35 }, // Klink
+      { speciesId: 595, minLevel: 32, maxLevel: 35, weight: 35 }, // Joltik
+      { speciesId: 559, minLevel: 32, maxLevel: 35, weight: 30 }  // Scraggy
+    ]
+  },
+  {
+    id: "opelucid-city", region: "unova", name: "Opelucid City", type: "town",
+    order: 31, requires: "unova-route-11", gymId: "unova_opelucid", encounters: []
+  },
+  {
+    id: "unova-route-12", region: "unova", name: "Route 12", type: "route",
+    order: 32, requires: "opelucid-city", gymId: null,
+    encounters: [
+      { speciesId: 610, minLevel: 34, maxLevel: 37, weight: 40 }, // Axew
+      { speciesId: 611, minLevel: 35, maxLevel: 37, weight: 20 }, // Fraxure (rare)
+      { speciesId: 633, minLevel: 34, maxLevel: 37, weight: 40 }  // Deino
+    ]
+  },
+  {
+    id: "victory-road-unova", region: "unova", name: "Victory Road", type: "route",
+    order: 33, requires: "unova-route-12", gymId: null,
+    encounters: [
+      { speciesId: 621, minLevel: 37, maxLevel: 41, weight: 25 }, // Druddigon
+      { speciesId: 634, minLevel: 37, maxLevel: 41, weight: 20 }, // Zweilous (rare)
+      { speciesId: 622, minLevel: 37, maxLevel: 41, weight: 30 }, // Golett
+      { speciesId: 610, minLevel: 37, maxLevel: 41, weight: 25 }  // Axew
+    ]
+  },
+  {
+    id: "pokemon-league-unova", region: "unova", name: "Pokémon League", type: "town",
+    order: 34, requires: "victory-road-unova", gymId: null, leagueId: "unova_league", encounters: []
   }
 ];
 

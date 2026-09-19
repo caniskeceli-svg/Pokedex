@@ -265,6 +265,19 @@ function backfillSinnohUnlock(player) {
   });
 }
 
+// Phase 16: identical one-time, idempotent backfill for Unova - see
+// backfillSinnohUnlock immediately above for the full rationale. A no-op
+// once "unova" is already present or Sinnoh isn't completed yet; never
+// touches completedRegions.
+function backfillUnovaUnlock(player) {
+  const sinnohLeague = player.leagueProgress && player.leagueProgress.sinnoh_league;
+  if (!sinnohLeague || !sinnohLeague.completed) return player;
+  if ((player.unlockedRegions || []).includes("unova")) return player;
+  return Object.assign({}, player, {
+    unlockedRegions: (player.unlockedRegions || ["kanto"]).concat(["unova"])
+  });
+}
+
 function startAdventureCloudSync() {
   adventureDocRef = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID);
 
@@ -309,7 +322,7 @@ function startAdventureCloudSync() {
         } catch (e) { console.error("Yedekten geri yükleme hatası:", e); }
       }
       ADVENTURE_STATE = {
-        player: backfillSinnohUnlock(backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}))),
+        player: backfillUnovaUnlock(backfillSinnohUnlock(backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {})))),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: mydex,
         progress: mergedProgress,

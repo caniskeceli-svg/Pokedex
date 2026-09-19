@@ -154,7 +154,67 @@ const EVOLUTION_CATALOG = [
   { fromId: 456, toId: 457, method: "level", level: 31 },  // Finneon -> Lumineon
   { fromId: 459, toId: 460, method: "level", level: 40 },  // Snover -> Abomasnow
   { fromId: 66, toId: 67, method: "level", level: 28 },    // Machop -> Machoke
-  { fromId: 77, toId: 78, method: "level", level: 40 }     // Ponyta -> Rapidash
+  { fromId: 77, toId: 78, method: "level", level: 40 },    // Ponyta -> Rapidash
+
+  // ---- Unova (Phase 16) ----
+  // Same rules as every region above - level/stone only. Cottonee/Petilil's
+  // "stone" use is not an approximation: Sun Stone is a genuine, canonical
+  // alternate evolution method for both in the real games (friendship is
+  // the other valid path), same for Litwick's line -> Chandelure (Dusk
+  // Stone). Every other real Unova evolution this engine can't model
+  // (friendship, trade, trade+partner-species) is deliberately left absent,
+  // exactly like the existing Kadabra/Haunter precedent:
+  //  - Swadloon -> Leavanny (friendship) - Swadloon has no evolution here.
+  //  - Woobat -> Swoobat (friendship) - Woobat never evolves in this engine.
+  //  - Boldore -> Gigalith (trade) - Boldore is the final player-obtainable
+  //    form; Gigalith may still appear as an enemy-only Pokemon.
+  //  - Gurdurr -> Conkeldurr (trade) - Gurdurr final form; Conkeldurr
+  //    enemy-only (used by Marshal).
+  //  - Yamask -> Cofagrigus (trade, the original Black/White method) -
+  //    Yamask final form; Cofagrigus enemy-only (used by Shauntal).
+  //  - Karrablast -> Escavalier (trade with Shelmet) - Karrablast final
+  //    form.
+  //  - Klang -> Klinklang (trade) - Klink/Klang final form.
+  //  - Elgyem -> Beheeyem (trade) - Elgyem final form.
+  //  - Vullaby -> Mandibuzz (friendship) - Vullaby final form.
+  { fromId: 504, toId: 505, method: "level", level: 20 },  // Patrat -> Watchog
+  { fromId: 506, toId: 507, method: "level", level: 16 },  // Lillipup -> Herdier
+  { fromId: 507, toId: 508, method: "level", level: 32 },  // Herdier -> Stoutland
+  { fromId: 509, toId: 510, method: "level", level: 20 },  // Purrloin -> Liepard
+  { fromId: 540, toId: 541, method: "level", level: 20 },  // Sewaddle -> Swadloon
+  { fromId: 524, toId: 525, method: "level", level: 25 },  // Roggenrola -> Boldore
+  { fromId: 551, toId: 552, method: "level", level: 29 },  // Sandile -> Krokorok
+  { fromId: 552, toId: 553, method: "level", level: 40 },  // Krokorok -> Krookodile
+  { fromId: 572, toId: 573, method: "stone" },             // Minccino -> Cinccino (Shiny Stone)
+  { fromId: 532, toId: 533, method: "level", level: 25 },  // Timburr -> Gurdurr
+  { fromId: 554, toId: 555, method: "level", level: 35 },  // Darumaka -> Darmanitan
+  { fromId: 559, toId: 560, method: "level", level: 39 },  // Scraggy -> Scrafty
+  { fromId: 529, toId: 530, method: "level", level: 31 },  // Drilbur -> Excadrill
+  { fromId: 543, toId: 544, method: "level", level: 22 },  // Venipede -> Whirlipede
+  { fromId: 544, toId: 545, method: "level", level: 30 },  // Whirlipede -> Scolipede
+  { fromId: 546, toId: 547, method: "stone" },             // Cottonee -> Whimsicott (Sun Stone)
+  { fromId: 548, toId: 549, method: "stone" },             // Petilil -> Lilligant (Sun Stone)
+  { fromId: 580, toId: 581, method: "level", level: 35 },  // Ducklett -> Swanna
+  { fromId: 535, toId: 536, method: "level", level: 25 },  // Tympole -> Palpitoad
+  { fromId: 536, toId: 537, method: "level", level: 36 },  // Palpitoad -> Seismitoad
+  { fromId: 590, toId: 591, method: "level", level: 39 },  // Foongus -> Amoonguss
+  { fromId: 592, toId: 593, method: "level", level: 40 },  // Frillish -> Jellicent
+  { fromId: 595, toId: 596, method: "level", level: 36 },  // Joltik -> Galvantula
+  { fromId: 599, toId: 600, method: "level", level: 38 },  // Klink -> Klang
+  { fromId: 582, toId: 583, method: "level", level: 35 },  // Vanillite -> Vanillish
+  { fromId: 583, toId: 584, method: "level", level: 47 },  // Vanillish -> Vanilluxe
+  { fromId: 613, toId: 614, method: "level", level: 37 },  // Cubchoo -> Beartic
+  { fromId: 568, toId: 569, method: "level", level: 36 },  // Trubbish -> Garbodor
+  { fromId: 585, toId: 586, method: "level", level: 34 },  // Deerling -> Sawsbuck
+  { fromId: 522, toId: 523, method: "level", level: 27 },  // Blitzle -> Zebstrika
+  { fromId: 607, toId: 608, method: "level", level: 41 },  // Litwick -> Lampent
+  { fromId: 608, toId: 609, method: "stone" },             // Lampent -> Chandelure (Dusk Stone)
+  { fromId: 622, toId: 623, method: "level", level: 43 },  // Golett -> Golurk
+  { fromId: 619, toId: 620, method: "level", level: 50 },  // Mienfoo -> Mienshao
+  { fromId: 633, toId: 634, method: "level", level: 50 },  // Deino -> Zweilous
+  { fromId: 634, toId: 635, method: "level", level: 64 },  // Zweilous -> Hydreigon
+  { fromId: 610, toId: 611, method: "level", level: 38 },  // Axew -> Fraxure
+  { fromId: 611, toId: 612, method: "level", level: 48 }   // Fraxure -> Haxorus
 ];
 
 function getEvolutionFor(speciesId) {

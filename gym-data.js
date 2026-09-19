@@ -409,6 +409,113 @@ const GYM_CATALOG = [
       { speciesId: 466, level: 50 }  // Electivire
     ],
     rewards: { trainerXp: 1200, coins: 2500 }
+  },
+
+  // ---- Unova (Phase 16) ----
+  // Same catalog/functions, same independence pattern as every prior
+  // region. Striaton's canonical three leaders (Cilan/Chili/Cress, each
+  // tied to which starter the player picked) have no equivalent in this
+  // catalog - there is no starter-tracking field anywhere and no branching
+  // mechanism in gym-battle.html, and building one would be a new mechanic
+  // this phase is explicitly told to avoid. Reuses the existing type:"mixed"
+  // pattern every Champion already uses: one fixed gym, one fixed team of
+  // all three elemental monkeys, badge named after its real canonical name
+  // (Trio Badge) which already implies the three-leader flavor. Opelucid
+  // uses Drayden rather than the version-exclusive Iris for the same
+  // "no version-selection mechanic" reason.
+  {
+    gymId: "unova_striaton", regionId: "unova", locationId: "striaton-city", order: 1,
+    leader: "Cilan, Chili & Cress", type: "mixed", requiresBadge: null,
+    badge: { id: "trio", name: "Üçlü Rozet", icon: "🍃" },
+    description: "Striaton'ın üç kardeş lideri Cilan, Chili ve Cress ile Unova'nın ilk savaşı!",
+    team: [
+      { speciesId: 511, level: 13 }, // Pansage
+      { speciesId: 513, level: 13 }, // Pansear
+      { speciesId: 515, level: 15 }  // Panpour
+    ],
+    rewards: { trainerXp: 380, coins: 750 }
+  },
+  {
+    gymId: "unova_nacrene", regionId: "unova", locationId: "nacrene-city", order: 2,
+    leader: "Lenora", type: "normal", requiresBadge: "trio",
+    badge: { id: "basic", name: "Temel Rozet", icon: "⬜" },
+    description: "Normal tipi ustası Lenora ile savaş!",
+    team: [
+      { speciesId: 507, level: 18 }, // Herdier
+      { speciesId: 505, level: 20 }  // Watchog
+    ],
+    rewards: { trainerXp: 480, coins: 950 }
+  },
+  {
+    gymId: "unova_castelia", regionId: "unova", locationId: "castelia-city", order: 3,
+    leader: "Burgh", type: "bug", requiresBadge: "basic",
+    badge: { id: "insect", name: "Böcek Rozeti", icon: "🐛" },
+    description: "Böcek tipi ustası Burgh ile savaş!",
+    team: [
+      { speciesId: 544, level: 21 }, // Whirlipede
+      { speciesId: 557, level: 21 }, // Dwebble
+      { speciesId: 542, level: 23 }  // Leavanny
+    ],
+    rewards: { trainerXp: 580, coins: 1150 }
+  },
+  {
+    gymId: "unova_nimbasa", regionId: "unova", locationId: "nimbasa-city", order: 4,
+    leader: "Elesa", type: "electric", requiresBadge: "insect",
+    badge: { id: "bolt", name: "Şimşek Rozeti", icon: "⚡" },
+    description: "Elektrik tipi ustası Elesa ile savaş!",
+    team: [
+      { speciesId: 587, level: 25 }, // Emolga
+      { speciesId: 523, level: 27 }, // Zebstrika
+      { speciesId: 596, level: 27 }  // Galvantula
+    ],
+    rewards: { trainerXp: 680, coins: 1350 }
+  },
+  {
+    gymId: "unova_driftveil", regionId: "unova", locationId: "driftveil-city", order: 5,
+    leader: "Clay", type: "ground", requiresBadge: "bolt",
+    badge: { id: "quake", name: "Deprem Rozeti", icon: "🌍" },
+    description: "Toprak tipi ustası Clay ile savaş!",
+    team: [
+      { speciesId: 552, level: 30 }, // Krokorok
+      { speciesId: 530, level: 33 }  // Excadrill
+    ],
+    rewards: { trainerXp: 800, coins: 1600 }
+  },
+  {
+    gymId: "unova_mistralton", regionId: "unova", locationId: "mistralton-city", order: 6,
+    leader: "Skyla", type: "flying", requiresBadge: "quake",
+    badge: { id: "jet", name: "Jet Rozeti", icon: "✈️" },
+    description: "Uçan tipi ustası Skyla ile savaş!",
+    team: [
+      { speciesId: 528, level: 35 }, // Swoobat
+      { speciesId: 561, level: 35 }, // Sigilyph
+      { speciesId: 581, level: 37 }  // Swanna
+    ],
+    rewards: { trainerXp: 950, coins: 1900 }
+  },
+  {
+    gymId: "unova_icirrus", regionId: "unova", locationId: "icirrus-city", order: 7,
+    leader: "Brycen", type: "ice", requiresBadge: "jet",
+    badge: { id: "freeze", name: "Buz Rozeti", icon: "❄️" },
+    description: "Buz tipi ustası Brycen ile savaş!",
+    team: [
+      { speciesId: 583, level: 38 }, // Vanillish
+      { speciesId: 615, level: 40 }, // Cryogonal
+      { speciesId: 614, level: 42 }  // Beartic
+    ],
+    rewards: { trainerXp: 1150, coins: 2300 }
+  },
+  {
+    gymId: "unova_opelucid", regionId: "unova", locationId: "opelucid-city", order: 8,
+    leader: "Drayden", type: "dragon", requiresBadge: "freeze",
+    badge: { id: "legend", name: "Efsane Rozeti", icon: "🐉" },
+    description: "Ejderha tipi ustası Drayden ile Unova'nın son Salon savaşı!",
+    team: [
+      { speciesId: 611, level: 46 }, // Fraxure
+      { speciesId: 621, level: 48 }, // Druddigon
+      { speciesId: 612, level: 50 }  // Haxorus
+    ],
+    rewards: { trainerXp: 1500, coins: 3000 }
   }
 ];
 

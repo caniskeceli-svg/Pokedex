@@ -281,6 +281,8 @@
   <div class="badge-grid" id="badgeGridHoenn"></div>
   <div class="section-title">🏅 Sinnoh Rozetleri</div>
   <div class="badge-grid" id="badgeGridSinnoh"></div>
+  <div class="section-title">🏅 Unova Rozetleri</div>
+  <div class="badge-grid" id="badgeGridUnova"></div>
   <div class="region-row" id="regionRow"></div>
 
   <div class="section-title">📊 Pokédex Tamamlanma Durumu</div>
@@ -472,15 +474,18 @@ function renderProgression() {
   const johtoGyms = getGymsForRegion('johto');
   const hoennGyms = getGymsForRegion('hoenn');
   const sinnohGyms = getGymsForRegion('sinnoh');
+  const unovaGyms = getGymsForRegion('unova');
   const kantoGymCount = kantoGyms.filter(g => isGymDefeated(g, player)).length;
   const johtoGymCount = johtoGyms.filter(g => isGymDefeated(g, player)).length;
   const hoennGymCount = hoennGyms.filter(g => isGymDefeated(g, player)).length;
   const sinnohGymCount = sinnohGyms.filter(g => isGymDefeated(g, player)).length;
+  const unovaGymCount = unovaGyms.filter(g => isGymDefeated(g, player)).length;
 
   const kantoLeague = getLeagueById('kanto');
   const johtoLeague = getLeagueById('johto_league');
   const hoennLeague = getLeagueById('hoenn_league');
   const sinnohLeague = getLeagueById('sinnoh_league');
+  const unovaLeague = getLeagueById('unova_league');
   const leagueLabelFor = (league) => {
     const s = leagueStatus(league, player);
     return s === 'completed' ? '🏆 Tamamlandı' : (s === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
@@ -489,6 +494,7 @@ function renderProgression() {
   const johtoLeagueLabel = johtoLeague ? leagueLabelFor(johtoLeague) : '🔒 Kilitli';
   const hoennLeagueLabel = hoennLeague ? leagueLabelFor(hoennLeague) : '🔒 Kilitli';
   const sinnohLeagueLabel = sinnohLeague ? leagueLabelFor(sinnohLeague) : '🔒 Kilitli';
+  const unovaLeagueLabel = unovaLeague ? leagueLabelFor(unovaLeague) : '🔒 Kilitli';
 
   el('progressSummary').innerHTML = `
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
@@ -500,12 +506,15 @@ function renderProgression() {
     <div class="progress-stat"><div class="p-num">${hoennLeagueLabel}</div><div class="p-label">🏟️ Hoenn Ligi</div></div>
     <div class="progress-stat"><div class="p-num">${sinnohGymCount}/${sinnohGyms.length}</div><div class="p-label">🏆 Sinnoh Salon</div></div>
     <div class="progress-stat"><div class="p-num">${sinnohLeagueLabel}</div><div class="p-label">🏟️ Sinnoh Ligi</div></div>
+    <div class="progress-stat"><div class="p-num">${unovaGymCount}/${unovaGyms.length}</div><div class="p-label">🏆 Unova Salon</div></div>
+    <div class="progress-stat"><div class="p-num">${unovaLeagueLabel}</div><div class="p-label">🏟️ Unova Ligi</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
   const johtoUnlocked = isRegionUnlocked(player, 'johto');
   const hoennUnlocked = isRegionUnlocked(player, 'hoenn');
   const sinnohUnlocked = isRegionUnlocked(player, 'sinnoh');
+  const unovaUnlocked = isRegionUnlocked(player, 'unova');
   el('regionRow').innerHTML = `
     <div class="region-card">
       <div class="region-card-title">🗺️ Kanto</div>
@@ -526,6 +535,11 @@ function renderProgression() {
       <div class="region-card-status">${sinnohUnlocked ? '🔓 Açıldı — Macera Twinleaf Town\'da başlar' : '🔒 Kilitli — Açmak için Hoenn Şampiyonu\'nu yen'}</div>
       ${sinnohUnlocked ? `<button class="region-card-btn" id="openSinnohBtn">🗺️ Haritayı Aç</button>` : ''}
     </div>
+    <div class="region-card ${unovaUnlocked ? '' : 'locked'}">
+      <div class="region-card-title">🗺️ Unova</div>
+      <div class="region-card-status">${unovaUnlocked ? '🔓 Açıldı — Macera Nuvema Town\'da başlar' : '🔒 Kilitli — Açmak için Sinnoh Şampiyonu\'nu yen'}</div>
+      ${unovaUnlocked ? `<button class="region-card-btn" id="openUnovaBtn">🗺️ Haritayı Aç</button>` : ''}
+    </div>
   `;
   if (johtoUnlocked) {
     el('openJohtoBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=johto'; });
@@ -536,15 +550,19 @@ function renderProgression() {
   if (sinnohUnlocked) {
     el('openSinnohBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=sinnoh'; });
   }
+  if (unovaUnlocked) {
+    el('openUnovaBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=unova'; });
+  }
 
   renderBadgeGrid('badgeGridKanto', kantoGyms, player);
-  // Johto/Hoenn/Sinnoh badges stay visible (all locked) even before the
-  // region itself unlocks - identical to how Kanto's own gym cards already
-  // show "locked" rather than disappearing, just one level up (region
-  // instead of badge prerequisite).
+  // Johto/Hoenn/Sinnoh/Unova badges stay visible (all locked) even before
+  // the region itself unlocks - identical to how Kanto's own gym cards
+  // already show "locked" rather than disappearing, just one level up
+  // (region instead of badge prerequisite).
   renderBadgeGrid('badgeGridJohto', johtoGyms, player);
   renderBadgeGrid('badgeGridHoenn', hoennGyms, player);
   renderBadgeGrid('badgeGridSinnoh', sinnohGyms, player);
+  renderBadgeGrid('badgeGridUnova', unovaGyms, player);
 }
 
 // Phase 13: derived entirely from the existing Adventure dex + region
@@ -558,14 +576,16 @@ function renderDexCompletion() {
   const johto = getDexCompletionForRegion('johto', dex);
   const hoenn = getDexCompletionForRegion('hoenn', dex);
   const sinnoh = getDexCompletionForRegion('sinnoh', dex);
-  const overallCaught = kanto.caught + johto.caught + hoenn.caught + sinnoh.caught;
-  const overallTotal = kanto.total + johto.total + hoenn.total + sinnoh.total;
+  const unova = getDexCompletionForRegion('unova', dex);
+  const overallCaught = kanto.caught + johto.caught + hoenn.caught + sinnoh.caught + unova.caught;
+  const overallTotal = kanto.total + johto.total + hoenn.total + sinnoh.total + unova.total;
   const shinyCaught = dex.filter(p => p.shiny).length;
   el('dexCompletionArea').innerHTML = `
     <div class="progress-stat"><div class="p-num">${kanto.caught}/${kanto.total}</div><div class="p-label">🗺️ Kanto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${johto.caught}/${johto.total}</div><div class="p-label">🗺️ Johto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${hoenn.caught}/${hoenn.total}</div><div class="p-label">🗺️ Hoenn Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${sinnoh.caught}/${sinnoh.total}</div><div class="p-label">🗺️ Sinnoh Pokédex</div></div>
+    <div class="progress-stat"><div class="p-num">${unova.caught}/${unova.total}</div><div class="p-label">🗺️ Unova Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${overallCaught}/${overallTotal}</div><div class="p-label">📊 Genel Tamamlanma</div></div>
     <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Parlak Koleksiyonu</div></div>
   `;
@@ -886,10 +906,12 @@ function renderHallOfFame() {
   const johtoLeague = getLeagueById('johto_league');
   const hoennLeague = getLeagueById('hoenn_league');
   const sinnohLeague = getLeagueById('sinnoh_league');
+  const unovaLeague = getLeagueById('unova_league');
   const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
   const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
   const hoennRows = renderGymHofRows(getGymsForRegion('hoenn'), player);
   const sinnohRows = renderGymHofRows(getGymsForRegion('sinnoh'), player);
+  const unovaRows = renderGymHofRows(getGymsForRegion('unova'), player);
 
   el('hofArea').innerHTML = `
     <div class="achievement-category-title">Kanto Salonları</div>
@@ -915,6 +937,12 @@ function renderHallOfFame() {
     <div class="achievement-category-title">Sinnoh Elit Dörtlü</div>
     ${renderEliteFourHofRows(sinnohLeague, player)}
     ${renderChampionHofRow(sinnohLeague, player)}` : ''}
+    <div class="achievement-category-title">Unova Salonları</div>
+    ${unovaRows}
+    ${unovaLeague ? `
+    <div class="achievement-category-title">Unova Elit Dörtlü</div>
+    ${renderEliteFourHofRows(unovaLeague, player)}
+    ${renderChampionHofRow(unovaLeague, player)}` : ''}
   `;
   el('hofArea').querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -275,10 +275,81 @@ const LEAGUE_CATALOG = [
         { speciesId: 445, level: 64 }  // Garchomp
       ],
       rewards: { trainerXp: 2000, coins: 3200 }
+    },
+    // Phase 16: Sinnoh Champion victory now also unlocks Unova, the exact
+    // same mechanism every prior region's own entry already uses - see
+    // awardChampionVictory below. Players who already beat Sinnoh's
+    // Champion before this field existed are handled by
+    // backfillUnovaUnlock() (adventure-state.js), since this one-time
+    // unlock branch never re-runs for an already-completed league.
+    unlocksRegion: "unova"
+  },
+
+  // ---- Unova (Phase 16) ----
+  {
+    leagueId: "unova_league", regionId: "unova",
+    requiresBadges: ["trio", "basic", "insect", "bolt", "quake", "jet", "freeze", "legend"],
+    eliteFour: [
+      {
+        id: "shauntal", order: 1, name: "Shauntal", type: "ghost",
+        description: "Hayalet ustası Shauntal, Unova Elit Dörtlü'nün ilk üyesi.",
+        team: [
+          { speciesId: 563, level: 52 }, // Cofagrigus
+          { speciesId: 609, level: 54 }, // Chandelure
+          { speciesId: 623, level: 55 }, // Golurk
+          { speciesId: 593, level: 56 }  // Jellicent
+        ],
+        rewards: { trainerXp: 850, coins: 1050 }
+      },
+      {
+        id: "grimsley", order: 2, name: "Grimsley", type: "dark",
+        description: "Karanlık ustası Grimsley, Unova Elit Dörtlü'nün ikinci üyesi.",
+        team: [
+          { speciesId: 510, level: 53 }, // Liepard
+          { speciesId: 553, level: 55 }, // Krookodile
+          { speciesId: 625, level: 56 }, // Bisharp
+          { speciesId: 560, level: 57 }  // Scrafty
+        ],
+        rewards: { trainerXp: 850, coins: 1050 }
+      },
+      {
+        id: "caitlin", order: 3, name: "Caitlin", type: "psychic",
+        description: "Ruh ustası Caitlin, Unova Elit Dörtlü'nün üçüncü üyesi.",
+        team: [
+          { speciesId: 576, level: 54 }, // Gothitelle
+          { speciesId: 579, level: 56 }, // Reuniclus
+          { speciesId: 561, level: 57 }, // Sigilyph
+          { speciesId: 518, level: 58 }  // Musharna
+        ],
+        rewards: { trainerXp: 850, coins: 1050 }
+      },
+      {
+        id: "marshal", order: 4, name: "Marshal", type: "fighting",
+        description: "Dövüş ustası Marshal, Unova Elit Dörtlü'nün son üyesi.",
+        team: [
+          { speciesId: 534, level: 55 }, // Conkeldurr
+          { speciesId: 620, level: 57 }, // Mienshao
+          { speciesId: 538, level: 58 }, // Throh
+          { speciesId: 560, level: 59 }  // Scrafty
+        ],
+        rewards: { trainerXp: 850, coins: 1050 }
+      }
+    ],
+    champion: {
+      id: "champion", order: 5, name: "Alder (Şampiyon)", type: "mixed",
+      description: "Alder, Unova Şampiyonu! Son sınav.",
+      team: [
+        { speciesId: 626, level: 60 }, // Bouffalant
+        { speciesId: 621, level: 62 }, // Druddigon
+        { speciesId: 584, level: 63 }, // Vanilluxe
+        { speciesId: 637, level: 65 }, // Volcarona
+        { speciesId: 612, level: 68 }  // Haxorus
+      ],
+      rewards: { trainerXp: 2400, coins: 3800 }
     }
-    // No unlocksRegion - Sinnoh Champion marks Sinnoh completed via the
+    // No unlocksRegion - Unova Champion marks Unova completed via the
     // existing generic mechanism (completedRegions) and intentionally does
-    // NOT invent a fifth region unlock, per the approved Phase 15 plan.
+    // NOT invent a sixth region unlock, per the approved Phase 16 plan.
   }
 ];
 

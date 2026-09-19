@@ -77,7 +77,18 @@ const ACHIEVEMENT_CATALOG = [
   { id: "league_elite_four_sinnoh", category: "Lig", name: "Sinnoh Elit Dörtlü Fatihi", description: "Sinnoh Elit Dörtlü'nün tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsSinnoh, targetValue: 4, reward: { coins: 700, trainerXp: 800 } },
   { id: "league_champion_sinnoh", category: "Lig", name: "Sinnoh Şampiyonu", description: "Sinnoh Şampiyonu'nu yen", icon: "🏆", metric: ctx => (ctx.sinnohCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1500, trainerXp: 1800 } },
   { id: "gym_32_badges", category: "Salon", name: "Dört Bölgenin Ustası", description: "Kanto, Johto, Hoenn ve Sinnoh'un 32 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 32, reward: { coins: 2500, trainerXp: 2200 } },
-  { id: "champion_all_four_regions", category: "Lig", name: "Dört Bölgenin Şampiyonu", description: "Kanto, Johto, Hoenn ve Sinnoh Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted && ctx.sinnohCompleted ? 1 : 0), targetValue: 1, reward: { coins: 3500, trainerXp: 3000 } }
+  { id: "champion_all_four_regions", category: "Lig", name: "Dört Bölgenin Şampiyonu", description: "Kanto, Johto, Hoenn ve Sinnoh Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted && ctx.sinnohCompleted ? 1 : 0), targetValue: 1, reward: { coins: 3500, trainerXp: 3000 } },
+
+  // Phase 16: Unova parity, same additive rule as Phase 15's Sinnoh
+  // entries - nothing above this line changed (id/metric/targetValue), so
+  // champion_all_four_regions/gym_32_badges/every earlier achievement stay
+  // exactly as already earned. champion_all_five_regions is a separate,
+  // new id alongside (never replacing) champion_all_four_regions.
+  { id: "explorer_unova_complete", category: "Kaşif", name: "Unova Kaşifi", description: "Unova'daki tüm bölgeleri keşfet", icon: "🧭", metric: ctx => ctx.visitedUnovaCount, targetValue: ctx => ctx.totalUnovaLocations, reward: { coins: 500, trainerXp: 400 } },
+  { id: "league_elite_four_unova", category: "Lig", name: "Unova Elit Dörtlü Fatihi", description: "Unova Elit Dörtlü'nün tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsUnova, targetValue: 4, reward: { coins: 750, trainerXp: 900 } },
+  { id: "league_champion_unova", category: "Lig", name: "Unova Şampiyonu", description: "Unova Şampiyonu'nu yen", icon: "🏆", metric: ctx => (ctx.unovaCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1700, trainerXp: 2000 } },
+  { id: "gym_40_badges", category: "Salon", name: "Beş Bölgenin Ustası", description: "Kanto, Johto, Hoenn, Sinnoh ve Unova'nın 40 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 40, reward: { coins: 3000, trainerXp: 2500 } },
+  { id: "champion_all_five_regions", category: "Lig", name: "Beş Bölgenin Şampiyonu", description: "Kanto, Johto, Hoenn, Sinnoh ve Unova Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted && ctx.sinnohCompleted && ctx.unovaCompleted ? 1 : 0), targetValue: 1, reward: { coins: 4500, trainerXp: 4000 } }
 ];
 
 function getAdventureAchievementCategories() {
@@ -105,6 +116,8 @@ function buildAdventureAchievementContext(player, dex, progress) {
   const hoennLeague = player.leagueProgress && player.leagueProgress.hoenn_league;
   // Phase 15: same literal convention once more for Sinnoh.
   const sinnohLeague = player.leagueProgress && player.leagueProgress.sinnoh_league;
+  // Phase 16: same literal convention once more for Unova.
+  const unovaLeague = player.leagueProgress && player.leagueProgress.unova_league;
   const visitedLocations = progress.visitedLocations || [];
   return {
     dexCount: dex.filter(p => p.id < 900000000).length,
@@ -141,7 +154,15 @@ function buildAdventureAchievementContext(player, dex, progress) {
       ? getLocationsForRegion("sinnoh").filter(l => visitedLocations.includes(l.id)).length
       : 0,
     eliteFourWinsSinnoh: (sinnohLeague && sinnohLeague.eliteFourWins.length) || 0,
-    sinnohCompleted: !!(sinnohLeague && sinnohLeague.completed)
+    sinnohCompleted: !!(sinnohLeague && sinnohLeague.completed),
+    // Phase 16: Unova-equivalent fields, additive only - every field above
+    // this line is unchanged from Phase 15.
+    totalUnovaLocations: typeof getLocationsForRegion === "function" ? getLocationsForRegion("unova").length : 0,
+    visitedUnovaCount: typeof getLocationsForRegion === "function"
+      ? getLocationsForRegion("unova").filter(l => visitedLocations.includes(l.id)).length
+      : 0,
+    eliteFourWinsUnova: (unovaLeague && unovaLeague.eliteFourWins.length) || 0,
+    unovaCompleted: !!(unovaLeague && unovaLeague.completed)
   };
 }
 
