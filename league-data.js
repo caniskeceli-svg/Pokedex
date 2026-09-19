@@ -204,10 +204,81 @@ const LEAGUE_CATALOG = [
         { speciesId: 350, level: 57 }  // Milotic
       ],
       rewards: { trainerXp: 1800, coins: 3000 }
+    },
+    // Phase 15: Hoenn Champion victory now also unlocks Sinnoh, the exact
+    // same mechanism Kanto/Johto's own entries already use - see
+    // awardChampionVictory below. Players who already beat Hoenn's Champion
+    // before this field existed are handled by backfillSinnohUnlock()
+    // (adventure-state.js), since this one-time unlock branch never re-runs
+    // for an already-completed league.
+    unlocksRegion: "sinnoh"
+  },
+
+  // ---- Sinnoh (Phase 15) ----
+  {
+    leagueId: "sinnoh_league", regionId: "sinnoh",
+    requiresBadges: ["coal", "forest", "cobble", "fen", "relic", "mine", "icicle", "beacon"],
+    eliteFour: [
+      {
+        id: "aaron", order: 1, name: "Aaron", type: "bug",
+        description: "Böcek ustası Aaron, Sinnoh Elit Dörtlü'nün ilk üyesi.",
+        team: [
+          { speciesId: 269, level: 49 }, // Dustox
+          { speciesId: 416, level: 51 }, // Vespiquen
+          { speciesId: 452, level: 53 }, // Drapion
+          { speciesId: 214, level: 55 }  // Heracross
+        ],
+        rewards: { trainerXp: 700, coins: 950 }
+      },
+      {
+        id: "bertha", order: 2, name: "Bertha", type: "ground",
+        description: "Toprak ustası Bertha, Sinnoh Elit Dörtlü'nün ikinci üyesi.",
+        team: [
+          { speciesId: 195, level: 51 }, // Quagsire
+          { speciesId: 76, level: 52 },  // Golem
+          { speciesId: 450, level: 54 }, // Hippowdon
+          { speciesId: 464, level: 56 }  // Rhyperior
+        ],
+        rewards: { trainerXp: 700, coins: 950 }
+      },
+      {
+        id: "flint", order: 3, name: "Flint", type: "fire",
+        description: "Ateş ustası Flint, Sinnoh Elit Dörtlü'nün üçüncü üyesi.",
+        team: [
+          { speciesId: 78, level: 51 },  // Rapidash
+          { speciesId: 467, level: 53 }, // Magmortar
+          { speciesId: 229, level: 55 }, // Houndoom
+          { speciesId: 392, level: 56 }  // Infernape
+        ],
+        rewards: { trainerXp: 700, coins: 950 }
+      },
+      {
+        id: "lucian", order: 4, name: "Lucian", type: "psychic",
+        description: "Ruh ustası Lucian, Sinnoh Elit Dörtlü'nün son üyesi.",
+        team: [
+          { speciesId: 203, level: 53 }, // Girafarig
+          { speciesId: 437, level: 55 }, // Bronzong
+          { speciesId: 122, level: 55 }, // Mr. Mime
+          { speciesId: 65, level: 58 }   // Alakazam
+        ],
+        rewards: { trainerXp: 700, coins: 950 }
+      }
+    ],
+    champion: {
+      id: "champion", order: 5, name: "Cynthia (Şampiyon)", type: "mixed",
+      description: "Cynthia, Sinnoh Şampiyonu! Son sınav.",
+      team: [
+        { speciesId: 442, level: 58 }, // Spiritomb
+        { speciesId: 407, level: 60 }, // Roserade
+        { speciesId: 468, level: 61 }, // Togekiss
+        { speciesId: 448, level: 62 }, // Lucario
+        { speciesId: 445, level: 64 }  // Garchomp
+      ],
+      rewards: { trainerXp: 2000, coins: 3200 }
     }
-    // No unlocksRegion - Hoenn Champion marks Hoenn completed via the
+    // No unlocksRegion - Sinnoh Champion marks Sinnoh completed via the
     // existing generic mechanism (completedRegions) and intentionally does
-    // NOT invent a fourth region unlock.
+    // NOT invent a fifth region unlock, per the approved Phase 15 plan.
   }
 ];
 

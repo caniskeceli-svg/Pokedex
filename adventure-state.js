@@ -251,6 +251,20 @@ function backfillHoennUnlock(player) {
   });
 }
 
+// Phase 15: identical one-time, idempotent backfill for Sinnoh - see
+// backfillHoennUnlock immediately above for the full rationale (a player who
+// already beat Hoenn's Champion before this phase existed needs this,
+// exactly like Johto->Hoenn needed it). A no-op once "sinnoh" is already
+// present or Hoenn isn't completed yet; never touches completedRegions.
+function backfillSinnohUnlock(player) {
+  const hoennLeague = player.leagueProgress && player.leagueProgress.hoenn_league;
+  if (!hoennLeague || !hoennLeague.completed) return player;
+  if ((player.unlockedRegions || []).includes("sinnoh")) return player;
+  return Object.assign({}, player, {
+    unlockedRegions: (player.unlockedRegions || ["kanto"]).concat(["sinnoh"])
+  });
+}
+
 function startAdventureCloudSync() {
   adventureDocRef = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID);
 
@@ -295,7 +309,7 @@ function startAdventureCloudSync() {
         } catch (e) { console.error("Yedekten geri yükleme hatası:", e); }
       }
       ADVENTURE_STATE = {
-        player: backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {})),
+        player: backfillSinnohUnlock(backfillHoennUnlock(Object.assign({}, DEFAULT_ADVENTURE_PLAYER, data.player || {}))),
         inventory: Object.assign({}, DEFAULT_ADVENTURE_INVENTORY, data.inventory || {}),
         mydex: mydex,
         progress: mergedProgress,

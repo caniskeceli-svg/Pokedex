@@ -64,7 +64,20 @@ const ACHIEVEMENT_CATALOG = [
   { id: "league_elite_four_hoenn", category: "Lig", name: "Hoenn Elit Dörtlü Fatihi", description: "Hoenn Elit Dörtlü'nün tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsHoenn, targetValue: 4, reward: { coins: 600, trainerXp: 500 } },
   { id: "league_champion_hoenn", category: "Lig", name: "Hoenn Şampiyonu", description: "Hoenn Şampiyonu'nu yen", icon: "🏆", metric: ctx => (ctx.hoennCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1200, trainerXp: 1000 } },
   { id: "gym_24_badges", category: "Salon", name: "Üç Bölgenin Ustası", description: "Kanto, Johto ve Hoenn'in 24 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 24, reward: { coins: 1800, trainerXp: 1500 } },
-  { id: "champion_all_regions", category: "Lig", name: "Üç Bölgenin Şampiyonu", description: "Kanto, Johto ve Hoenn Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted ? 1 : 0), targetValue: 1, reward: { coins: 2500, trainerXp: 2000 } }
+  { id: "champion_all_regions", category: "Lig", name: "Üç Bölgenin Şampiyonu", description: "Kanto, Johto ve Hoenn Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted ? 1 : 0), targetValue: 1, reward: { coins: 2500, trainerXp: 2000 } },
+
+  // Phase 15: Sinnoh parity, same additive rule as Phase 14's Hoenn
+  // entries - nothing above this line changed (id/metric/targetValue), so
+  // champion_all_regions/gym_24_badges/every earlier achievement stay
+  // exactly as already earned. champion_all_four_regions is a separate,
+  // higher-tier id alongside (never replacing) champion_all_regions - the
+  // approved plan is explicit that champion_all_regions must not be
+  // renamed or have its meaning changed.
+  { id: "explorer_sinnoh_complete", category: "Kaşif", name: "Sinnoh Kaşifi", description: "Sinnoh'daki tüm bölgeleri keşfet", icon: "🧭", metric: ctx => ctx.visitedSinnohCount, targetValue: ctx => ctx.totalSinnohLocations, reward: { coins: 500, trainerXp: 400 } },
+  { id: "league_elite_four_sinnoh", category: "Lig", name: "Sinnoh Elit Dörtlü Fatihi", description: "Sinnoh Elit Dörtlü'nün tamamını yen", icon: "🏆", metric: ctx => ctx.eliteFourWinsSinnoh, targetValue: 4, reward: { coins: 700, trainerXp: 800 } },
+  { id: "league_champion_sinnoh", category: "Lig", name: "Sinnoh Şampiyonu", description: "Sinnoh Şampiyonu'nu yen", icon: "🏆", metric: ctx => (ctx.sinnohCompleted ? 1 : 0), targetValue: 1, reward: { coins: 1500, trainerXp: 1800 } },
+  { id: "gym_32_badges", category: "Salon", name: "Dört Bölgenin Ustası", description: "Kanto, Johto, Hoenn ve Sinnoh'un 32 rozetinin hepsini kazan", icon: "🏅", metric: ctx => ctx.badgeCount, targetValue: 32, reward: { coins: 2500, trainerXp: 2200 } },
+  { id: "champion_all_four_regions", category: "Lig", name: "Dört Bölgenin Şampiyonu", description: "Kanto, Johto, Hoenn ve Sinnoh Şampiyonlarının hepsini yen", icon: "👑", metric: ctx => (ctx.kantoCompleted && ctx.johtoCompleted && ctx.hoennCompleted && ctx.sinnohCompleted ? 1 : 0), targetValue: 1, reward: { coins: 3500, trainerXp: 3000 } }
 ];
 
 function getAdventureAchievementCategories() {
@@ -90,6 +103,8 @@ function buildAdventureAchievementContext(player, dex, progress) {
   const johtoLeague = player.leagueProgress && player.leagueProgress.johto_league;
   // Phase 14: same literal convention once more for Hoenn.
   const hoennLeague = player.leagueProgress && player.leagueProgress.hoenn_league;
+  // Phase 15: same literal convention once more for Sinnoh.
+  const sinnohLeague = player.leagueProgress && player.leagueProgress.sinnoh_league;
   const visitedLocations = progress.visitedLocations || [];
   return {
     dexCount: dex.filter(p => p.id < 900000000).length,
@@ -118,7 +133,15 @@ function buildAdventureAchievementContext(player, dex, progress) {
       ? getLocationsForRegion("hoenn").filter(l => visitedLocations.includes(l.id)).length
       : 0,
     eliteFourWinsHoenn: (hoennLeague && hoennLeague.eliteFourWins.length) || 0,
-    hoennCompleted: !!(hoennLeague && hoennLeague.completed)
+    hoennCompleted: !!(hoennLeague && hoennLeague.completed),
+    // Phase 15: Sinnoh-equivalent fields, additive only - every field above
+    // this line is unchanged from Phase 14.
+    totalSinnohLocations: typeof getLocationsForRegion === "function" ? getLocationsForRegion("sinnoh").length : 0,
+    visitedSinnohCount: typeof getLocationsForRegion === "function"
+      ? getLocationsForRegion("sinnoh").filter(l => visitedLocations.includes(l.id)).length
+      : 0,
+    eliteFourWinsSinnoh: (sinnohLeague && sinnohLeague.eliteFourWins.length) || 0,
+    sinnohCompleted: !!(sinnohLeague && sinnohLeague.completed)
   };
 }
 

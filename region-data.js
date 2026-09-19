@@ -634,6 +634,283 @@ const LOCATIONS = [
   {
     id: "hoenn-pokemon-league", region: "hoenn", name: "Pokémon League", type: "town",
     order: 35, requires: "victory-road-hoenn", gymId: null, leagueId: "hoenn_league", encounters: []
+  },
+
+  // ---- Sinnoh (Phase 15) ----
+  // Same schema/functions as Kanto/Johto/Hoenn above - a coherent but
+  // simplified route, not a 1:1 Diamond/Pearl/Platinum remake. The visiting
+  // order is reorganized from the real games specifically so it lines up
+  // with the requested clean 1->8 Gym sequence (Oreburgh, Eterna, Veilstone,
+  // Pastoria, Hearthome, Canalave, Snowpoint, Sunyshore) - real Sinnoh's own
+  // gym order is notoriously non-linear (Hearthome can be reached earlier),
+  // which this app deliberately avoids. Side-cave nodes (Valley Windworks,
+  // Great Marsh, Wayward Cave, Iron Island) each carry a real, distinct
+  // encounter table - same "no dead-end padding" rule Hoenn's Rusturf
+  // Tunnel/Granite Cave/Meteor Falls already followed.
+  {
+    id: "twinleaf-town", region: "sinnoh", name: "Twinleaf Town", type: "town",
+    order: 1, requires: null, gymId: null, encounters: []
+  },
+  {
+    id: "route-201", region: "sinnoh", name: "Route 201", type: "route",
+    order: 2, requires: "twinleaf-town", gymId: null,
+    encounters: [
+      { speciesId: 396, minLevel: 2, maxLevel: 4, weight: 40 }, // Starly
+      { speciesId: 399, minLevel: 2, maxLevel: 4, weight: 40 }, // Bidoof
+      { speciesId: 403, minLevel: 3, maxLevel: 5, weight: 20 }  // Shinx (rare)
+    ]
+  },
+  {
+    id: "sandgem-town", region: "sinnoh", name: "Sandgem Town", type: "town",
+    order: 3, requires: "route-201", gymId: null, encounters: []
+  },
+  {
+    id: "route-202", region: "sinnoh", name: "Route 202", type: "route",
+    order: 4, requires: "sandgem-town", gymId: null,
+    encounters: [
+      { speciesId: 399, minLevel: 4, maxLevel: 6, weight: 35 }, // Bidoof
+      { speciesId: 396, minLevel: 4, maxLevel: 6, weight: 35 }, // Starly
+      { speciesId: 401, minLevel: 4, maxLevel: 6, weight: 30 }  // Kricketot
+    ]
+  },
+  {
+    id: "jubilife-city", region: "sinnoh", name: "Jubilife City", type: "town",
+    order: 5, requires: "route-202", gymId: null, encounters: []
+  },
+  {
+    id: "route-203", region: "sinnoh", name: "Route 203", type: "route",
+    order: 6, requires: "jubilife-city", gymId: null,
+    encounters: [
+      { speciesId: 403, minLevel: 5, maxLevel: 7, weight: 30 }, // Shinx
+      { speciesId: 399, minLevel: 5, maxLevel: 7, weight: 25 }, // Bidoof
+      { speciesId: 41, minLevel: 5, maxLevel: 7, weight: 25 },  // Zubat
+      { speciesId: 74, minLevel: 6, maxLevel: 8, weight: 20 }   // Geodude (rare)
+    ]
+  },
+  {
+    id: "oreburgh-city", region: "sinnoh", name: "Oreburgh City", type: "town",
+    order: 7, requires: "route-203", gymId: "sinnoh_oreburgh", encounters: []
+  },
+  {
+    id: "route-204", region: "sinnoh", name: "Route 204", type: "route",
+    order: 8, requires: "oreburgh-city", gymId: null,
+    encounters: [
+      { speciesId: 406, minLevel: 6, maxLevel: 9, weight: 35 }, // Budew
+      { speciesId: 418, minLevel: 6, maxLevel: 9, weight: 30 }, // Buizel
+      { speciesId: 422, minLevel: 6, maxLevel: 9, weight: 30 }  // Shellos
+    ]
+  },
+  {
+    id: "floaroma-town", region: "sinnoh", name: "Floaroma Town", type: "town",
+    order: 9, requires: "route-204", gymId: null, encounters: []
+  },
+  {
+    id: "valley-windworks", region: "sinnoh", name: "Valley Windworks", type: "route",
+    order: 10, requires: "floaroma-town", gymId: null,
+    encounters: [
+      { speciesId: 418, minLevel: 8, maxLevel: 10, weight: 40 }, // Buizel
+      { speciesId: 422, minLevel: 8, maxLevel: 10, weight: 40 }, // Shellos
+      { speciesId: 417, minLevel: 9, maxLevel: 11, weight: 15 }  // Pachirisu (rare)
+    ]
+  },
+  {
+    id: "eterna-forest", region: "sinnoh", name: "Eterna Forest", type: "route",
+    order: 11, requires: "floaroma-town", gymId: null,
+    encounters: [
+      { speciesId: 406, minLevel: 9, maxLevel: 12, weight: 30 }, // Budew
+      { speciesId: 401, minLevel: 9, maxLevel: 12, weight: 30 }, // Kricketot
+      { speciesId: 399, minLevel: 9, maxLevel: 12, weight: 25 }, // Bidoof
+      { speciesId: 425, minLevel: 10, maxLevel: 12, weight: 15 } // Drifloon (rare)
+    ]
+  },
+  {
+    id: "eterna-city", region: "sinnoh", name: "Eterna City", type: "town",
+    order: 12, requires: "eterna-forest", gymId: "sinnoh_eterna", encounters: []
+  },
+  {
+    id: "route-205", region: "sinnoh", name: "Route 205", type: "route",
+    order: 13, requires: "eterna-city", gymId: null,
+    encounters: [
+      { speciesId: 77, minLevel: 12, maxLevel: 15, weight: 30 },  // Ponyta
+      { speciesId: 401, minLevel: 12, maxLevel: 15, weight: 35 }, // Kricketot
+      { speciesId: 433, minLevel: 12, maxLevel: 15, weight: 35 }  // Chingling
+    ]
+  },
+  {
+    id: "route-215", region: "sinnoh", name: "Route 215", type: "route",
+    order: 14, requires: "route-205", gymId: null,
+    encounters: [
+      { speciesId: 66, minLevel: 14, maxLevel: 17, weight: 35 },  // Machop
+      { speciesId: 207, minLevel: 14, maxLevel: 17, weight: 30 }, // Gligar
+      { speciesId: 422, minLevel: 14, maxLevel: 17, weight: 35 }  // Shellos
+    ]
+  },
+  {
+    id: "veilstone-city", region: "sinnoh", name: "Veilstone City", type: "town",
+    order: 15, requires: "route-215", gymId: "sinnoh_veilstone", encounters: []
+  },
+  {
+    id: "route-214", region: "sinnoh", name: "Route 214", type: "route",
+    order: 16, requires: "veilstone-city", gymId: null,
+    encounters: [
+      { speciesId: 449, minLevel: 16, maxLevel: 19, weight: 35 }, // Hippopotas
+      { speciesId: 451, minLevel: 16, maxLevel: 19, weight: 30 }, // Skorupi
+      { speciesId: 453, minLevel: 16, maxLevel: 19, weight: 35 }  // Croagunk
+    ]
+  },
+  {
+    id: "pastoria-city", region: "sinnoh", name: "Pastoria City", type: "town",
+    order: 17, requires: "route-214", gymId: "sinnoh_pastoria", encounters: []
+  },
+  {
+    id: "great-marsh", region: "sinnoh", name: "Great Marsh", type: "route",
+    order: 18, requires: "pastoria-city", gymId: null,
+    encounters: [
+      { speciesId: 422, minLevel: 17, maxLevel: 20, weight: 30 }, // Shellos
+      { speciesId: 207, minLevel: 17, maxLevel: 20, weight: 25 }, // Gligar
+      { speciesId: 449, minLevel: 18, maxLevel: 21, weight: 25 }, // Hippopotas
+      { speciesId: 453, minLevel: 18, maxLevel: 21, weight: 20 }  // Croagunk
+    ]
+  },
+  {
+    id: "route-210", region: "sinnoh", name: "Route 210", type: "route",
+    order: 19, requires: "pastoria-city", gymId: null,
+    encounters: [
+      { speciesId: 433, minLevel: 19, maxLevel: 22, weight: 35 }, // Chingling
+      { speciesId: 451, minLevel: 19, maxLevel: 22, weight: 30 }, // Skorupi
+      { speciesId: 66, minLevel: 19, maxLevel: 22, weight: 35 }   // Machop
+    ]
+  },
+  {
+    id: "hearthome-city", region: "sinnoh", name: "Hearthome City", type: "town",
+    order: 20, requires: "route-210", gymId: "sinnoh_hearthome", encounters: []
+  },
+  {
+    id: "route-209", region: "sinnoh", name: "Route 209", type: "route",
+    order: 21, requires: "hearthome-city", gymId: null,
+    encounters: [
+      { speciesId: 401, minLevel: 20, maxLevel: 23, weight: 30 }, // Kricketot
+      { speciesId: 433, minLevel: 20, maxLevel: 23, weight: 30 }, // Chingling
+      { speciesId: 355, minLevel: 21, maxLevel: 24, weight: 25 }, // Duskull
+      { speciesId: 200, minLevel: 22, maxLevel: 24, weight: 15 }  // Misdreavus (rare)
+    ]
+  },
+  {
+    id: "solaceon-town", region: "sinnoh", name: "Solaceon Town", type: "town",
+    order: 22, requires: "route-209", gymId: null, encounters: []
+  },
+  {
+    id: "route-206", region: "sinnoh", name: "Route 206", type: "route",
+    order: 23, requires: "solaceon-town", gymId: null,
+    encounters: [
+      { speciesId: 436, minLevel: 22, maxLevel: 25, weight: 35 }, // Bronzor
+      { speciesId: 66, minLevel: 22, maxLevel: 25, weight: 35 },  // Machop
+      { speciesId: 74, minLevel: 22, maxLevel: 25, weight: 30 }   // Geodude
+    ]
+  },
+  {
+    id: "wayward-cave", region: "sinnoh", name: "Wayward Cave", type: "route",
+    order: 24, requires: "route-206", gymId: null,
+    encounters: [
+      { speciesId: 41, minLevel: 23, maxLevel: 26, weight: 35 },  // Zubat
+      { speciesId: 74, minLevel: 23, maxLevel: 26, weight: 30 },  // Geodude
+      { speciesId: 436, minLevel: 24, maxLevel: 27, weight: 25 }, // Bronzor
+      { speciesId: 443, minLevel: 25, maxLevel: 27, weight: 10 }  // Gible (rare)
+    ]
+  },
+  {
+    id: "route-207", region: "sinnoh", name: "Route 207", type: "route",
+    order: 25, requires: "route-206", gymId: null,
+    encounters: [
+      { speciesId: 66, minLevel: 25, maxLevel: 28, weight: 35 },  // Machop
+      { speciesId: 436, minLevel: 25, maxLevel: 28, weight: 35 }, // Bronzor
+      { speciesId: 74, minLevel: 25, maxLevel: 28, weight: 30 }   // Geodude
+    ]
+  },
+  {
+    id: "mt-coronet", region: "sinnoh", name: "Mt. Coronet", type: "route",
+    order: 26, requires: "route-207", gymId: null,
+    encounters: [
+      { speciesId: 67, minLevel: 27, maxLevel: 30, weight: 30 },  // Machoke
+      { speciesId: 436, minLevel: 27, maxLevel: 30, weight: 30 }, // Bronzor
+      { speciesId: 74, minLevel: 28, maxLevel: 31, weight: 30 },  // Geodude
+      { speciesId: 35, minLevel: 29, maxLevel: 31, weight: 10 }   // Clefairy (rare)
+    ]
+  },
+  {
+    id: "celestic-town", region: "sinnoh", name: "Celestic Town", type: "town",
+    order: 27, requires: "mt-coronet", gymId: null, encounters: []
+  },
+  {
+    id: "canalave-city", region: "sinnoh", name: "Canalave City", type: "town",
+    order: 28, requires: "celestic-town", gymId: "sinnoh_canalave", encounters: []
+  },
+  {
+    id: "iron-island", region: "sinnoh", name: "Iron Island", type: "route",
+    order: 29, requires: "canalave-city", gymId: null,
+    encounters: [
+      { speciesId: 74, minLevel: 28, maxLevel: 31, weight: 35 },  // Geodude
+      { speciesId: 436, minLevel: 28, maxLevel: 31, weight: 35 }, // Bronzor
+      { speciesId: 95, minLevel: 30, maxLevel: 32, weight: 15 }   // Onix (rare)
+    ]
+  },
+  {
+    id: "route-218", region: "sinnoh", name: "Route 218", type: "route",
+    order: 30, requires: "canalave-city", gymId: null,
+    encounters: [
+      { speciesId: 418, minLevel: 29, maxLevel: 32, weight: 30 }, // Buizel
+      { speciesId: 72, minLevel: 29, maxLevel: 32, weight: 30 },  // Tentacool
+      { speciesId: 278, minLevel: 29, maxLevel: 32, weight: 25 }, // Wingull
+      { speciesId: 456, minLevel: 30, maxLevel: 33, weight: 15 }  // Finneon
+    ]
+  },
+  {
+    id: "route-216", region: "sinnoh", name: "Route 216", type: "route",
+    order: 31, requires: "route-218", gymId: null,
+    encounters: [
+      { speciesId: 459, minLevel: 30, maxLevel: 33, weight: 50 }, // Snover
+      { speciesId: 215, minLevel: 30, maxLevel: 33, weight: 50 }  // Sneasel
+    ]
+  },
+  {
+    id: "route-217", region: "sinnoh", name: "Route 217", type: "route",
+    order: 32, requires: "route-216", gymId: null,
+    encounters: [
+      { speciesId: 459, minLevel: 32, maxLevel: 35, weight: 40 }, // Snover
+      { speciesId: 215, minLevel: 32, maxLevel: 35, weight: 40 }, // Sneasel
+      { speciesId: 361, minLevel: 33, maxLevel: 36, weight: 20 }  // Snorunt
+    ]
+  },
+  {
+    id: "snowpoint-city", region: "sinnoh", name: "Snowpoint City", type: "town",
+    order: 33, requires: "route-217", gymId: "sinnoh_snowpoint", encounters: []
+  },
+  {
+    id: "route-222", region: "sinnoh", name: "Route 222", type: "route",
+    order: 34, requires: "snowpoint-city", gymId: null,
+    encounters: [
+      { speciesId: 67, minLevel: 36, maxLevel: 39, weight: 40 },  // Machoke
+      { speciesId: 112, minLevel: 37, maxLevel: 40, weight: 15 }, // Rhydon (rare)
+      { speciesId: 461, minLevel: 37, maxLevel: 40, weight: 15 }  // Weavile (rare)
+    ]
+  },
+  {
+    id: "sunyshore-city", region: "sinnoh", name: "Sunyshore City", type: "town",
+    order: 35, requires: "route-222", gymId: "sinnoh_sunyshore", encounters: []
+  },
+  {
+    id: "victory-road-sinnoh", region: "sinnoh", name: "Victory Road", type: "route",
+    order: 36, requires: "sunyshore-city", gymId: null,
+    encounters: [
+      { speciesId: 112, minLevel: 39, maxLevel: 43, weight: 30 }, // Rhydon
+      { speciesId: 67, minLevel: 39, maxLevel: 43, weight: 30 },  // Machoke
+      { speciesId: 461, minLevel: 40, maxLevel: 44, weight: 25 }, // Weavile
+      { speciesId: 478, minLevel: 41, maxLevel: 44, weight: 10 }  // Froslass (rare)
+    ]
+  },
+  {
+    id: "sinnoh-pokemon-league", region: "sinnoh", name: "Pokémon League", type: "town",
+    order: 37, requires: "victory-road-sinnoh", gymId: null, leagueId: "sinnoh_league", encounters: []
   }
 ];
 

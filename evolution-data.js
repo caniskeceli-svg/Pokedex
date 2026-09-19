@@ -112,7 +112,49 @@ const EVOLUTION_CATALOG = [
   { fromId: 371, toId: 372, method: "level", level: 30 },  // Bagon -> Shelgon
   { fromId: 372, toId: 373, method: "level", level: 50 },  // Shelgon -> Salamence
   { fromId: 374, toId: 375, method: "level", level: 20 },  // Beldum -> Metang
-  { fromId: 375, toId: 376, method: "level", level: 45 }   // Metang -> Metagross
+  { fromId: 375, toId: 376, method: "level", level: 45 },  // Metang -> Metagross
+
+  // ---- Sinnoh (Phase 15) ----
+  // Same rules as every region above - level/stone only. Several real
+  // Sinnoh evolutions use mechanics this catalog can't model (friendship,
+  // held item + time of day, trade + item, gender + Dawn Stone) and are
+  // deliberately left absent rather than approximated with a fake
+  // level/stone requirement, exactly like the existing Kadabra/Haunter
+  // trade-evolution precedent:
+  //  - Budew -> Roselia (friendship, day) - Budew has no evolution here.
+  //  - Chingling -> Chimecho (friendship, night) - no evolution here.
+  //  - Buneary -> Lopunny (friendship) - not added to any encounter table.
+  //  - Sneasel -> Weavile (Razor Claw held at night) - Sneasel is the final
+  //    player-obtainable form; Weavile is wild-catchable directly instead
+  //    (see route-222/victory-road-sinnoh).
+  //  - Rhydon -> Rhyperior, Electabuzz -> Electivire, Magmar -> Magmortar
+  //    (trade + held item) - left absent; the fully-evolved forms still
+  //    appear as enemy-only Gym/League Pokemon (Bertha, Volkner) exactly
+  //    like Erika's non-wild-catchable Tangela already does in Kanto.
+  //  - Snorunt(female) -> Froslass (Dawn Stone) - left absent; the existing
+  //    Snorunt -> Glalie level-42 entry above is Snorunt's only reachable
+  //    path regardless of gender, since this engine has no gender field.
+  //  - Machoke -> Machamp (trade only) - left absent, same rule as Kadabra/
+  //    Haunter.
+  { fromId: 396, toId: 397, method: "level", level: 18 },  // Starly -> Staravia
+  { fromId: 397, toId: 398, method: "level", level: 34 },  // Staravia -> Staraptor
+  { fromId: 399, toId: 400, method: "level", level: 15 },  // Bidoof -> Bibarel
+  { fromId: 401, toId: 402, method: "level", level: 10 },  // Kricketot -> Kricketune
+  { fromId: 403, toId: 404, method: "level", level: 15 },  // Shinx -> Luxio
+  { fromId: 404, toId: 405, method: "level", level: 30 },  // Luxio -> Luxray
+  { fromId: 418, toId: 419, method: "level", level: 26 },  // Buizel -> Floatzel
+  { fromId: 422, toId: 423, method: "level", level: 30 },  // Shellos -> Gastrodon
+  { fromId: 425, toId: 426, method: "level", level: 28 },  // Drifloon -> Drifblim
+  { fromId: 436, toId: 437, method: "level", level: 33 },  // Bronzor -> Bronzong
+  { fromId: 443, toId: 444, method: "level", level: 24 },  // Gible -> Gabite
+  { fromId: 444, toId: 445, method: "level", level: 48 },  // Gabite -> Garchomp
+  { fromId: 449, toId: 450, method: "level", level: 34 },  // Hippopotas -> Hippowdon
+  { fromId: 451, toId: 452, method: "level", level: 40 },  // Skorupi -> Drapion
+  { fromId: 453, toId: 454, method: "level", level: 37 },  // Croagunk -> Toxicroak
+  { fromId: 456, toId: 457, method: "level", level: 31 },  // Finneon -> Lumineon
+  { fromId: 459, toId: 460, method: "level", level: 40 },  // Snover -> Abomasnow
+  { fromId: 66, toId: 67, method: "level", level: 28 },    // Machop -> Machoke
+  { fromId: 77, toId: 78, method: "level", level: 40 }     // Ponyta -> Rapidash
 ];
 
 function getEvolutionFor(speciesId) {

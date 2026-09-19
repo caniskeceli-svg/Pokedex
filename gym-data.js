@@ -305,6 +305,110 @@ const GYM_CATALOG = [
       { speciesId: 230, level: 46 }  // Kingdra
     ],
     rewards: { trainerXp: 1300, coins: 2700 }
+  },
+
+  // ---- Sinnoh (Phase 15) ----
+  // Same catalog/functions, same independence pattern as Johto/Hoenn: Sinnoh's
+  // own 1-8 badge chain via requiresBadge, gated as a REGION by
+  // isRegionUnlocked (checked in gym-battle.html's init()) once Hoenn's
+  // Champion is beaten. Real Sinnoh's own Gym order is notoriously
+  // non-linear (Hearthome can be challenged earlier than its position here) -
+  // this catalog deliberately uses a clean sequential 1->8 instead, per the
+  // approved plan.
+  {
+    gymId: "sinnoh_oreburgh", regionId: "sinnoh", locationId: "oreburgh-city", order: 1,
+    leader: "Roark", type: "rock", requiresBadge: null,
+    badge: { id: "coal", name: "Kömür Rozeti", icon: "🪨" },
+    description: "Kaya tipi ustası Roark ile Sinnoh'un ilk savaşı!",
+    team: [
+      { speciesId: 74, level: 12 },  // Geodude
+      { speciesId: 408, level: 14 }  // Cranidos
+    ],
+    rewards: { trainerXp: 320, coins: 650 }
+  },
+  {
+    gymId: "sinnoh_eterna", regionId: "sinnoh", locationId: "eterna-city", order: 2,
+    leader: "Gardenia", type: "grass", requiresBadge: "coal",
+    badge: { id: "forest", name: "Orman Rozeti", icon: "🌲" },
+    description: "Çimen tipi ustası Gardenia ile savaş!",
+    team: [
+      { speciesId: 406, level: 19 }, // Budew
+      { speciesId: 315, level: 21 }, // Roselia
+      { speciesId: 421, level: 23 }  // Cherrim
+    ],
+    rewards: { trainerXp: 420, coins: 850 }
+  },
+  {
+    gymId: "sinnoh_veilstone", regionId: "sinnoh", locationId: "veilstone-city", order: 3,
+    leader: "Maylene", type: "fighting", requiresBadge: "forest",
+    badge: { id: "cobble", name: "Çakıl Rozeti", icon: "🥊" },
+    description: "Dövüş tipi ustası Maylene ile savaş!",
+    team: [
+      { speciesId: 307, level: 27 }, // Meditite
+      { speciesId: 67, level: 29 },  // Machoke
+      { speciesId: 448, level: 31 }  // Lucario
+    ],
+    rewards: { trainerXp: 520, coins: 1050 }
+  },
+  {
+    gymId: "sinnoh_pastoria", regionId: "sinnoh", locationId: "pastoria-city", order: 4,
+    leader: "Crasher Wake", type: "water", requiresBadge: "cobble",
+    badge: { id: "fen", name: "Bataklık Rozeti", icon: "🌊" },
+    description: "Su tipi ustası Crasher Wake ile savaş!",
+    team: [
+      { speciesId: 130, level: 27 }, // Gyarados
+      { speciesId: 195, level: 27 }, // Quagsire
+      { speciesId: 419, level: 30 }  // Floatzel
+    ],
+    rewards: { trainerXp: 600, coins: 1200 }
+  },
+  {
+    gymId: "sinnoh_hearthome", regionId: "sinnoh", locationId: "hearthome-city", order: 5,
+    leader: "Fantina", type: "ghost", requiresBadge: "fen",
+    badge: { id: "relic", name: "Kalıntı Rozeti", icon: "👻" },
+    description: "Hayalet tipi ustası Fantina ile savaş!",
+    team: [
+      { speciesId: 355, level: 32 }, // Duskull
+      { speciesId: 93, level: 32 },  // Haunter
+      { speciesId: 429, level: 34 }  // Mismagius
+    ],
+    rewards: { trainerXp: 700, coins: 1400 }
+  },
+  {
+    gymId: "sinnoh_canalave", regionId: "sinnoh", locationId: "canalave-city", order: 6,
+    leader: "Byron", type: "steel", requiresBadge: "relic",
+    badge: { id: "mine", name: "Maden Rozeti", icon: "⛏️" },
+    description: "Çelik tipi ustası Byron ile savaş!",
+    team: [
+      { speciesId: 82, level: 35 },  // Magneton
+      { speciesId: 208, level: 37 }, // Steelix
+      { speciesId: 411, level: 39 }  // Bastiodon
+    ],
+    rewards: { trainerXp: 850, coins: 1700 }
+  },
+  {
+    gymId: "sinnoh_snowpoint", regionId: "sinnoh", locationId: "snowpoint-city", order: 7,
+    leader: "Candice", type: "ice", requiresBadge: "mine",
+    badge: { id: "icicle", name: "Buz Sarkıtı Rozeti", icon: "❄️" },
+    description: "Buz tipi ustası Candice ile savaş!",
+    team: [
+      { speciesId: 215, level: 38 }, // Sneasel
+      { speciesId: 308, level: 40 }, // Medicham
+      { speciesId: 460, level: 42 }  // Abomasnow
+    ],
+    rewards: { trainerXp: 1000, coins: 2000 }
+  },
+  {
+    gymId: "sinnoh_sunyshore", regionId: "sinnoh", locationId: "sunyshore-city", order: 8,
+    leader: "Volkner", type: "electric", requiresBadge: "icicle",
+    badge: { id: "beacon", name: "Fener Rozeti", icon: "🔆" },
+    description: "Elektrik tipi ustası Volkner ile Sinnoh'un son Salon savaşı!",
+    team: [
+      { speciesId: 26, level: 46 },  // Raichu
+      { speciesId: 405, level: 48 }, // Luxray
+      { speciesId: 466, level: 50 }  // Electivire
+    ],
+    rewards: { trainerXp: 1200, coins: 2500 }
   }
 ];
 

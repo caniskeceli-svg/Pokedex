@@ -279,6 +279,8 @@
   <div class="badge-grid" id="badgeGridJohto"></div>
   <div class="section-title">🏅 Hoenn Rozetleri</div>
   <div class="badge-grid" id="badgeGridHoenn"></div>
+  <div class="section-title">🏅 Sinnoh Rozetleri</div>
+  <div class="badge-grid" id="badgeGridSinnoh"></div>
   <div class="region-row" id="regionRow"></div>
 
   <div class="section-title">📊 Pokédex Tamamlanma Durumu</div>
@@ -469,13 +471,16 @@ function renderProgression() {
   const kantoGyms = getGymsForRegion('kanto');
   const johtoGyms = getGymsForRegion('johto');
   const hoennGyms = getGymsForRegion('hoenn');
+  const sinnohGyms = getGymsForRegion('sinnoh');
   const kantoGymCount = kantoGyms.filter(g => isGymDefeated(g, player)).length;
   const johtoGymCount = johtoGyms.filter(g => isGymDefeated(g, player)).length;
   const hoennGymCount = hoennGyms.filter(g => isGymDefeated(g, player)).length;
+  const sinnohGymCount = sinnohGyms.filter(g => isGymDefeated(g, player)).length;
 
   const kantoLeague = getLeagueById('kanto');
   const johtoLeague = getLeagueById('johto_league');
   const hoennLeague = getLeagueById('hoenn_league');
+  const sinnohLeague = getLeagueById('sinnoh_league');
   const leagueLabelFor = (league) => {
     const s = leagueStatus(league, player);
     return s === 'completed' ? '🏆 Tamamlandı' : (s === 'challenge' ? '⚔️ Açık' : '🔒 Kilitli');
@@ -483,6 +488,7 @@ function renderProgression() {
   const leagueLabel = leagueLabelFor(kantoLeague);
   const johtoLeagueLabel = johtoLeague ? leagueLabelFor(johtoLeague) : '🔒 Kilitli';
   const hoennLeagueLabel = hoennLeague ? leagueLabelFor(hoennLeague) : '🔒 Kilitli';
+  const sinnohLeagueLabel = sinnohLeague ? leagueLabelFor(sinnohLeague) : '🔒 Kilitli';
 
   el('progressSummary').innerHTML = `
     <div class="progress-stat"><div class="p-num">${level}</div><div class="p-label">⭐ Seviye</div></div>
@@ -492,11 +498,14 @@ function renderProgression() {
     <div class="progress-stat"><div class="p-num">${johtoLeagueLabel}</div><div class="p-label">🏟️ Johto Ligi</div></div>
     <div class="progress-stat"><div class="p-num">${hoennGymCount}/${hoennGyms.length}</div><div class="p-label">🏆 Hoenn Salon</div></div>
     <div class="progress-stat"><div class="p-num">${hoennLeagueLabel}</div><div class="p-label">🏟️ Hoenn Ligi</div></div>
+    <div class="progress-stat"><div class="p-num">${sinnohGymCount}/${sinnohGyms.length}</div><div class="p-label">🏆 Sinnoh Salon</div></div>
+    <div class="progress-stat"><div class="p-num">${sinnohLeagueLabel}</div><div class="p-label">🏟️ Sinnoh Ligi</div></div>
   `;
 
   const kantoCompleted = isLeagueCompleted(player, 'kanto');
   const johtoUnlocked = isRegionUnlocked(player, 'johto');
   const hoennUnlocked = isRegionUnlocked(player, 'hoenn');
+  const sinnohUnlocked = isRegionUnlocked(player, 'sinnoh');
   el('regionRow').innerHTML = `
     <div class="region-card">
       <div class="region-card-title">🗺️ Kanto</div>
@@ -512,6 +521,11 @@ function renderProgression() {
       <div class="region-card-status">${hoennUnlocked ? '🔓 Açıldı — Macera Littleroot Town\'da başlar' : '🔒 Kilitli — Açmak için Johto Şampiyonu\'nu yen'}</div>
       ${hoennUnlocked ? `<button class="region-card-btn" id="openHoennBtn">🗺️ Haritayı Aç</button>` : ''}
     </div>
+    <div class="region-card ${sinnohUnlocked ? '' : 'locked'}">
+      <div class="region-card-title">🗺️ Sinnoh</div>
+      <div class="region-card-status">${sinnohUnlocked ? '🔓 Açıldı — Macera Twinleaf Town\'da başlar' : '🔒 Kilitli — Açmak için Hoenn Şampiyonu\'nu yen'}</div>
+      ${sinnohUnlocked ? `<button class="region-card-btn" id="openSinnohBtn">🗺️ Haritayı Aç</button>` : ''}
+    </div>
   `;
   if (johtoUnlocked) {
     el('openJohtoBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=johto'; });
@@ -519,14 +533,18 @@ function renderProgression() {
   if (hoennUnlocked) {
     el('openHoennBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=hoenn'; });
   }
+  if (sinnohUnlocked) {
+    el('openSinnohBtn').addEventListener('click', () => { window.location.href = 'adventure.html?region=sinnoh'; });
+  }
 
   renderBadgeGrid('badgeGridKanto', kantoGyms, player);
-  // Johto/Hoenn badges stay visible (all locked) even before the region
-  // itself unlocks - identical to how Kanto's own gym cards already show
-  // "locked" rather than disappearing, just one level up (region instead
-  // of badge prerequisite).
+  // Johto/Hoenn/Sinnoh badges stay visible (all locked) even before the
+  // region itself unlocks - identical to how Kanto's own gym cards already
+  // show "locked" rather than disappearing, just one level up (region
+  // instead of badge prerequisite).
   renderBadgeGrid('badgeGridJohto', johtoGyms, player);
   renderBadgeGrid('badgeGridHoenn', hoennGyms, player);
+  renderBadgeGrid('badgeGridSinnoh', sinnohGyms, player);
 }
 
 // Phase 13: derived entirely from the existing Adventure dex + region
@@ -539,13 +557,15 @@ function renderDexCompletion() {
   const kanto = getDexCompletionForRegion('kanto', dex);
   const johto = getDexCompletionForRegion('johto', dex);
   const hoenn = getDexCompletionForRegion('hoenn', dex);
-  const overallCaught = kanto.caught + johto.caught + hoenn.caught;
-  const overallTotal = kanto.total + johto.total + hoenn.total;
+  const sinnoh = getDexCompletionForRegion('sinnoh', dex);
+  const overallCaught = kanto.caught + johto.caught + hoenn.caught + sinnoh.caught;
+  const overallTotal = kanto.total + johto.total + hoenn.total + sinnoh.total;
   const shinyCaught = dex.filter(p => p.shiny).length;
   el('dexCompletionArea').innerHTML = `
     <div class="progress-stat"><div class="p-num">${kanto.caught}/${kanto.total}</div><div class="p-label">🗺️ Kanto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${johto.caught}/${johto.total}</div><div class="p-label">🗺️ Johto Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${hoenn.caught}/${hoenn.total}</div><div class="p-label">🗺️ Hoenn Pokédex</div></div>
+    <div class="progress-stat"><div class="p-num">${sinnoh.caught}/${sinnoh.total}</div><div class="p-label">🗺️ Sinnoh Pokédex</div></div>
     <div class="progress-stat"><div class="p-num">${overallCaught}/${overallTotal}</div><div class="p-label">📊 Genel Tamamlanma</div></div>
     <div class="progress-stat"><div class="p-num">✨ ${shinyCaught}</div><div class="p-label">Parlak Koleksiyonu</div></div>
   `;
@@ -865,9 +885,11 @@ function renderHallOfFame() {
   const kantoLeague = getLeagueById('kanto');
   const johtoLeague = getLeagueById('johto_league');
   const hoennLeague = getLeagueById('hoenn_league');
+  const sinnohLeague = getLeagueById('sinnoh_league');
   const kantoRows = renderGymHofRows(getGymsForRegion('kanto'), player);
   const johtoRows = renderGymHofRows(getGymsForRegion('johto'), player);
   const hoennRows = renderGymHofRows(getGymsForRegion('hoenn'), player);
+  const sinnohRows = renderGymHofRows(getGymsForRegion('sinnoh'), player);
 
   el('hofArea').innerHTML = `
     <div class="achievement-category-title">Kanto Salonları</div>
@@ -887,6 +909,12 @@ function renderHallOfFame() {
     <div class="achievement-category-title">Hoenn Elit Dörtlü</div>
     ${renderEliteFourHofRows(hoennLeague, player)}
     ${renderChampionHofRow(hoennLeague, player)}` : ''}
+    <div class="achievement-category-title">Sinnoh Salonları</div>
+    ${sinnohRows}
+    ${sinnohLeague ? `
+    <div class="achievement-category-title">Sinnoh Elit Dörtlü</div>
+    ${renderEliteFourHofRows(sinnohLeague, player)}
+    ${renderChampionHofRow(sinnohLeague, player)}` : ''}
   `;
   el('hofArea').querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => {
