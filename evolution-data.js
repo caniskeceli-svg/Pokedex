@@ -200,7 +200,7 @@ async function performEvolution(instanceId) {
     pushAdventureCloudAtomic({ "player.evolutionCount": firebase.firestore.FieldValue.increment(1) });
     if (typeof recordAdventureEvent === "function") recordAdventureEvent("evolve_pokemon");
 
-    return { ok: true, evolved };
+    return { ok: true, evolved, previous: { name: freshMon.name, img: freshMon.img } };
   } catch (e) {
     console.error("Evolution failed", e);
     return { ok: false, reason: "network-error" };
