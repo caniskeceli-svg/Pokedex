@@ -47,6 +47,11 @@
   .pick-item img { width: 44px; height: 44px; }
   .pick-item .p-name { font-weight: bold; text-transform: capitalize; }
   .pick-item .p-sub { font-size: 12px; color: #888; }
+  .pick-item.sw-good { border-left: 5px solid #3aa13a; background: #eefbee; }
+  .pick-item.sw-bad { border-left: 5px solid #d1443f; background: #fdeceb; }
+  .pick-item.sw-neutral { border-left: 5px solid #ccc; }
+  .pick-item.sw-good:hover:not(.disabled) { background: #e0f6e0; }
+  .pick-item.sw-bad:hover:not(.disabled) { background: #fbdedb; }
 
   .vs-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .mon-box { text-align: center; flex: 1; }
@@ -273,13 +278,15 @@ function renderPartyPicker() {
   }
   pickList.innerHTML = mydex.map(p => {
     const fainted = p.fainted === true;
+    const advice = (!fainted && p.types) ? switchAdvice(p.types, wild.types) : null;
     return `
-      <div class="pick-item ${fainted ? 'disabled' : ''}" data-instance="${p.instanceId || ''}">
+      <div class="pick-item ${fainted ? 'disabled' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-instance="${p.instanceId || ''}">
         <img src="${p.img}" alt="${p.name}">
         <div>
           <div class="p-name">${p.nickname || p.name}${p.shiny ? ' ✨' : ''}</div>
           <div class="p-sub">Lv.${p.level || 1}${fainted ? ' · 😵 Baygın' : ''}</div>
           <div>${(p.types || []).map(typeChip).join(' ')}</div>
+          ${advice ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : advice.verdict === 'bad' ? '⚠️' : '➖'} ${advice.note}</div>` : ''}
         </div>
       </div>`;
   }).join('');
