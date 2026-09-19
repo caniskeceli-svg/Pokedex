@@ -28,7 +28,7 @@ const ITEM_CATALOG = {
     category: "healing", effect: { type: "heal", amount: 50 }, usableIn: ["wild-battle", "adventure-hq"] },
   revive: { id: "revive", name: "Canlandırıcı", emoji: "✨", price: 300,
     description: "Baygın bir Pokémon'u yarı HP ile tekrar savaşabilir hale getirir.",
-    category: "healing", effect: { type: "revive", hpFraction: 0.5 }, usableIn: ["adventure-hq"] },
+    category: "healing", effect: { type: "revive", hpFraction: 0.5 }, usableIn: ["adventure-hq", "wild-battle", "gym-battle", "league-battle"] },
   berry: { id: "berry", name: "Meyve", emoji: "🍒", price: 30,
     description: "Küçük bir HP iyileştirmesi sağlar.",
     category: "healing", effect: { type: "heal", amount: 10 }, usableIn: ["wild-battle"] },

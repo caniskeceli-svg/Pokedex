@@ -105,6 +105,8 @@
   .sw-note-good { color: #1a7a1a; }
   .sw-note-bad { color: #a3221f; }
   .sw-note-neutral { color: #888; }
+  .switch-item.revivable { opacity: 1; cursor: default; }
+  .revive-btn { margin-top: 5px; background: #8e44ad; color: #fff; border: none; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
   .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
   .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
@@ -485,7 +487,7 @@ function renderBattle() {
             ${ITEM_CATALOG[key].emoji} ${ITEM_CATALOG[key].name} (${inv[key] || 0})
           </button>`).join('')}
       </div>
-      ${battleParty.some((m, i) => i !== activeIndex && m.hp > 0) ? '<button class="switch-btn" id="switchBtn">🔄 Değiştir</button>' : ''}
+      ${battleParty.some((m, i) => i !== activeIndex && (m.hp > 0 || ((inv.revive || 0) > 0 && m.hp <= 0))) ? '<button class="switch-btn" id="switchBtn">🔄 Değiştir</button>' : ''}
       <button class="run-btn" id="runBtn">🏳️ Vazgeç</button>
     </div>`;
 
@@ -515,6 +517,7 @@ function persistPlayerHp() {
 // exactly as it would have fought whoever was active before.
 function renderSwitchPicker(forced) {
   const wrap = el('wrap');
+  const inv = getAdventureInventory();
   wrap.innerHTML = `
     <div class="card">
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">${forced ? `<span style="text-transform:capitalize;">${player.name}</span> baygın düştü! Sırada kim var?` : 'Hangi Pokémon\'unla devam etmek istersin?'}</div>
@@ -522,26 +525,56 @@ function renderSwitchPicker(forced) {
       ${forced ? '' : '<button class="run-btn" id="switchCancelBtn">◀ Vazgeç</button>'}
     </div>`;
   el('switchList').innerHTML = battleParty.map((m, i) => {
-    const disabled = i === activeIndex || m.hp <= 0;
+    const fainted = m.hp <= 0;
+    const disabled = i === activeIndex || fainted;
     const advice = (!disabled && m.types) ? switchAdvice(m.types, enemy.types) : null;
+    const canRevive = fainted && (inv.revive || 0) > 0;
     return `
-      <div class="switch-item ${disabled ? 'disabled' : ''} ${i === activeIndex ? 'active' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-idx="${i}">
+      <div class="switch-item ${disabled ? 'disabled' : ''} ${canRevive ? 'revivable' : ''} ${i === activeIndex ? 'active' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-idx="${i}">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${m.id}.png" alt="${m.name}">
         <div style="flex:1;">
           <div class="s-name">${m.name}${i === activeIndex ? ' (aktif)' : ''}</div>
           <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
-          <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
+          <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${fainted ? ' · 😵 Baygın' : ''}</div>
           <div>${(m.types || []).map(typeChip).join(' ')}</div>
           ${advice ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : advice.verdict === 'bad' ? '⚠️' : '➖'} ${advice.note}</div>` : ''}
+          ${canRevive ? `<button class="revive-btn" data-revive-idx="${i}">✨ Canlandırıcı Kullan (${inv.revive})</button>` : ''}
         </div>
       </div>`;
   }).join('');
   el('switchList').querySelectorAll('.switch-item:not(.disabled)').forEach(itemEl => {
     itemEl.addEventListener('click', () => confirmSwitch(Number(itemEl.dataset.idx), forced));
   });
+  el('switchList').querySelectorAll('.revive-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      useReviveInBattle(Number(btn.dataset.reviveIdx), forced);
+    });
+  });
   if (!forced) {
     el('switchCancelBtn').addEventListener('click', renderBattle);
   }
+}
+
+// Revives a fainted battleParty member right from the switch screen instead
+// of forcing a run back to the Pokemon Center - same 50%-HP effect as
+// applyRevive (item-data.js), just applied to the in-memory battle copy
+// (and immediately persisted) instead of the resting dex.
+function useReviveInBattle(idx, forced) {
+  const inv = getAdventureInventory();
+  if ((inv.revive || 0) <= 0) return;
+  const mon = battleParty[idx];
+  if (!mon || mon.hp > 0) return;
+  addAdventureItems('revive', -1);
+  mon.hp = Math.max(1, Math.round(mon.maxHp * (ITEM_CATALOG.revive.effect.hpFraction || 0.5)));
+  const mydex = getAdventureDex();
+  const dexIdx = mydex.findIndex(p => p.instanceId === mon.instanceId);
+  if (dexIdx !== -1) {
+    mydex[dexIdx] = Object.assign({}, mydex[dexIdx], { currentHp: mon.hp, fainted: false });
+    saveAdventureDex(mydex);
+  }
+  log(`${mon.name} Canlandırıcı ile geri geldi!`);
+  renderSwitchPicker(forced);
 }
 
 function confirmSwitch(idx, forced) {
@@ -568,7 +601,9 @@ function confirmSwitch(idx, forced) {
 function handleFaintCheck() {
   if (player.hp > 0) return false;
   const nextIdx = battleParty.findIndex((m, i) => i !== activeIndex && m.hp > 0);
-  if (nextIdx === -1) { endBattle('loss'); return true; }
+  const inv = getAdventureInventory();
+  const canRevive = (inv.revive || 0) > 0 && battleParty.some((m, i) => i !== activeIndex && m.hp <= 0);
+  if (nextIdx === -1 && !canRevive) { endBattle('loss'); return true; }
   renderSwitchPicker(true);
   return true;
 }
