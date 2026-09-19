@@ -202,8 +202,14 @@ function awardPokemonBattleXp(pokemonXp) {
     if (idx === -1) return;
     const mon = mydex[idx];
     const oldLevel = mon.level || 1;
-    const newPxp = (mon.pxp || 0) + pokemonXp;
-    const { level } = pokemonLevelInfo(newPxp);
+    const gainedPxp = (mon.pxp || 0) + pokemonXp;
+    // A wild catch starts a Pokemon at its caught level with pxp:0 (not
+    // the pxp that level would otherwise take to reach), so level must
+    // never be allowed to DROP to whatever pxp alone implies - only ever
+    // rise. Bumping pxp itself up to match keeps the two consistent - see
+    // wild-battle.html's identical fix for the full reasoning.
+    const level = Math.max(oldLevel, pokemonLevelInfo(gainedPxp).level);
+    const newPxp = Math.max(gainedPxp, (level - 1) * POKEMON_XP_PER_LEVEL);
     const learnResult = checkLevelUpLearn(mon, oldLevel, level);
     const leveled = Object.assign({}, mon, { pxp: newPxp, level });
     mydex[idx] = applyLevelUpLearn(leveled, learnResult);
