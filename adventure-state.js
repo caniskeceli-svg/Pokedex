@@ -99,6 +99,11 @@ let adventureReady = false;
 let adventureReadyResolvers = [];
 let adventureChangeCallbacks = [];
 let adventureBootstrapped = false;
+// Named distinctly from pokedex-data.js's own dailyBackupVisibilityListenerAdded -
+// classic <script> tags share one global scope, and pages that load both
+// files (adventure.html, wild-battle.html, pokemart.html, adventure-hq.html)
+// would otherwise throw "Identifier has already been declared".
+let adventureDailyBackupVisibilityListenerAdded = false;
 
 function onAdventureCloudChange(cb) { adventureChangeCallbacks.push(cb); }
 function waitForAdventureCloud() {
@@ -306,6 +311,19 @@ function startAdventureCloudSync() {
     adventureChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
     backupAdventureDexIfChanged();
     if (firstTime) ensureDailyAdventureDexBackup();
+    // Same reasoning as pokedex-data.js's identical listener: a PWA reopen
+    // is very often a resume, not a reload, so `adventureReady` is already
+    // true and this once-per-load `firstTime` check never fires again.
+    // ensureDailyAdventureDexBackup's own "already have today?" check makes
+    // every call after the first a single no-op Firestore read.
+    if (!adventureDailyBackupVisibilityListenerAdded) {
+      adventureDailyBackupVisibilityListenerAdded = true;
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && adventureReady) {
+          ensureDailyAdventureDexBackup();
+        }
+      });
+    }
   }, (err) => {
     console.error("Adventure Firestore bağlantı hatası:", err);
     clearTimeout(connectionTimeout);
