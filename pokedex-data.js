@@ -287,8 +287,28 @@ async function startCloudSync(profileId) {
       cloudDocRef.set(CLOUD_STATE);
     } else {
       const data = snap.data() || {};
+      let mydex = data.mydex || [];
+      // Auto-recovery: mypokemon.html lets a player remove Pokemon one at a
+      // time, so an empty mydex isn't structurally impossible the way it is
+      // in Adventure - but removing every single one down to exactly zero
+      // is not a real scenario for a profile that's caught dozens over
+      // months, while a stale-write bug producing the same [] is (see the
+      // Sep 2026 incident this was added after). Restoring from the last
+      // backup on an empty load is the right trade for that likelihood, and
+      // it's a silent no-op if the backup is also empty/missing.
+      if (mydex.length === 0) {
+        try {
+          const backupSnap = await cloudDb.collection("profiles").doc(profileId + "_backup").get();
+          const backupMydex = backupSnap.exists ? (backupSnap.data() || {}).mydex || [] : [];
+          if (backupMydex.length > 0) {
+            mydex = backupMydex;
+            cloudDocRef.set({ mydex }, { merge: true });
+            console.warn("mydex was empty on load - auto-restored", mydex.length, "Pokemon from backup.");
+          }
+        } catch (e) { console.error("Yedekten geri yükleme hatası:", e); }
+      }
       CLOUD_STATE = {
-        mydex: data.mydex || [],
+        mydex: mydex,
         player: Object.assign({}, DEFAULT_PLAYER, data.player || {}),
         inventory: Object.assign({}, DEFAULT_INVENTORY, data.inventory || {}),
         teams: data.teams || []
@@ -320,7 +340,39 @@ async function startCloudSync(profileId) {
 }
 
 function getMyDexShared() { return CLOUD_STATE.mydex; }
-function saveMyDexShared(list) { CLOUD_STATE.mydex = list; pushCloud({ mydex: list }); }
+// Refuses to ever collapse a real collection down to empty in one write -
+// same guard, same reasoning, as Adventure's saveAdventureDex (added after
+// the Sep 2026 incident where a classic profile's whole `mydex` was wiped
+// to [] this exact way: a stale tab/page holding an old, already-empty
+// CLOUD_STATE.mydex made an unrelated save and clobbered the real 180-
+// Pokemon collection with its stale snapshot). Every existing caller only
+// ever adds/updates/removes entries in place, none legitimately empties the
+// whole array, so this can only ever catch a bug, never block real gameplay.
+function saveMyDexShared(list) {
+  if (list.length === 0 && CLOUD_STATE.mydex.length > 0) {
+    console.error("saveMyDexShared refused: would wipe", CLOUD_STATE.mydex.length, "Pokemon down to 0.");
+    return;
+  }
+  CLOUD_STATE.mydex = list;
+  pushCloud({ mydex: list });
+  backupMyDexIfChanged();
+}
+
+// Mirrors mydex into a separate "<profile>_backup" document whenever the
+// Pokemon count actually changes - see adventure-state.js's identical
+// backupAdventureDexIfChanged for the full rationale. This is what the
+// auto-recovery below restores from if the main document's mydex is ever
+// found wiped.
+let lastBackedUpMyDexLength = {};
+function backupMyDexIfChanged() {
+  const mydex = CLOUD_STATE.mydex;
+  const key = CURRENT_PROFILE;
+  if (!key || mydex.length === 0 || mydex.length === lastBackedUpMyDexLength[key]) return;
+  lastBackedUpMyDexLength[key] = mydex.length;
+  cloudDb.collection("profiles").doc(key + "_backup")
+    .set({ mydex, backedUpAt: firebase.firestore.FieldValue.serverTimestamp() })
+    .catch(e => console.error("mydex yedekleme hatası:", e));
+}
 
 function getPlayer() { return CLOUD_STATE.player; }
 function savePlayer(p) { CLOUD_STATE.player = p; pushCloud({ player: p }); }
