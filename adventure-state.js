@@ -297,6 +297,7 @@ function startAdventureCloudSync() {
         memories: data.memories || []
       };
     }
+    const firstTime = !adventureReady;
     adventureReady = true;
     clearTimeout(connectionTimeout);
     clearConnectionRetryBanner();
@@ -304,6 +305,7 @@ function startAdventureCloudSync() {
     adventureReadyResolvers = [];
     adventureChangeCallbacks.forEach(cb => { try { cb(); } catch (e) { console.error(e); } });
     backupAdventureDexIfChanged();
+    if (firstTime) ensureDailyAdventureDexBackup();
   }, (err) => {
     console.error("Adventure Firestore bağlantı hatası:", err);
     clearTimeout(connectionTimeout);
@@ -326,6 +328,35 @@ function backupAdventureDexIfChanged() {
   cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID + "_backup")
     .set({ mydex, backedUpAt: firebase.firestore.FieldValue.serverTimestamp() })
     .catch(e => console.error("Adventure yedekleme hatası:", e));
+}
+
+// The single "_backup" doc above only ever holds the LATEST good mydex - it
+// protects against a wipe (empty overwriting real data) but not against a
+// bug that corrupts mydex into something wrong-but-non-empty, since that
+// bad state would just overwrite the one backup slot too. This keeps one
+// dated snapshot per day (profiles/<doc>/daily_backups/<YYYY-MM-DD>,
+// pruned past 7 days) so an earlier day's known-good state survives even
+// if today's got corrupted - a real point-in-time history, not just "last
+// good state". Runs once per session (on the first successful sync), not
+// on every save, since it only needs to catch "did today already get a
+// snapshot" once per day.
+const ADVENTURE_DAILY_BACKUP_RETENTION_DAYS = 7;
+async function ensureDailyAdventureDexBackup() {
+  const mydex = ADVENTURE_STATE.mydex;
+  if (mydex.length === 0) return;
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const col = cloudDb.collection("profiles").doc(ADVENTURE_DOC_ID).collection("daily_backups");
+  try {
+    const todaySnap = await col.doc(dateKey).get();
+    if (!todaySnap.exists) {
+      await col.doc(dateKey).set({ mydex, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - ADVENTURE_DAILY_BACKUP_RETENTION_DAYS);
+    const cutoffKey = cutoff.toISOString().slice(0, 10);
+    const all = await col.get();
+    all.forEach(doc => { if (doc.id < cutoffKey) doc.ref.delete().catch(() => {}); });
+  } catch (e) { console.error("Adventure günlük yedekleme hatası:", e); }
 }
 
 function getAdventureDex() { return ADVENTURE_STATE.mydex; }
