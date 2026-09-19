@@ -187,7 +187,21 @@ function spriteFor(speciesId) {
 // A small, self-dismissing toast for a level-up - deliberately modest
 // (one card, a couple of sparkles, no fireworks) since it can fire right
 // as the victory screen renders. Tap or ~2.5s dismisses it.
+// Multiple Pokemon can level up from the same win (everyone who fought
+// gets XP) - queue the toasts one at a time instead of stacking several
+// identical overlays on top of each other, which used to hide all but
+// the last one shown.
+let levelUpQueue = [];
+let levelUpActive = false;
 function showLevelUpCard(mon, oldLevel, newLevel) {
+  levelUpQueue.push({ mon, oldLevel, newLevel });
+  if (!levelUpActive) advanceLevelUpQueue();
+}
+function advanceLevelUpQueue() {
+  const next = levelUpQueue.shift();
+  if (!next) { levelUpActive = false; return; }
+  levelUpActive = true;
+  const { mon, oldLevel, newLevel } = next;
   const overlay = document.createElement('div');
   overlay.className = 'levelup-overlay';
   overlay.innerHTML = `
@@ -198,7 +212,7 @@ function showLevelUpCard(mon, oldLevel, newLevel) {
       <div class="levelup-level">Lv.${oldLevel} → Lv.${newLevel}</div>
     </div>`;
   document.body.appendChild(overlay);
-  const dismiss = () => overlay.remove();
+  const dismiss = () => { overlay.remove(); advanceLevelUpQueue(); };
   overlay.addEventListener('click', dismiss);
   setTimeout(dismiss, 2500);
 }
