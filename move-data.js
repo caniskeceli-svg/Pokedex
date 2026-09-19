@@ -199,6 +199,22 @@ function ensureInstanceMoves(mon) {
   return Object.assign({}, mon, { moves: moves.map(m => ({ id: m.id, pp: m.pp })) });
 }
 
+// The types of the moves this instance actually knows right now - used by
+// the switch-picker/party-picker "Xx yer, Yx vurur" hint so its "vurur"
+// number matches what the player can really do in battle (a Pokemon whose
+// only moves are its weaker STAB type shouldn't be advertised at its
+// stronger, unlearned type's multiplier just because it happens to also
+// carry that type). Works on both a raw dex entry (moves: [{id,pp}]) and an
+// already-hydrated battle move list (full catalog objects, which already
+// carry `.type` and skip the catalog lookup).
+function knownMoveTypes(mon) {
+  const ensured = ensureInstanceMoves(mon);
+  return ensured.moves.map(entry => {
+    const catalog = entry.type ? entry : getMoveById(entry.id);
+    return catalog ? catalog.type : null;
+  }).filter(Boolean);
+}
+
 // Builds the battle-ready move list (full catalog data + this instance's
 // current PP) from a (migration-ensured) instance's stored `moves`. Battle
 // pages mutate the returned objects' `.pp` in place during the fight, then

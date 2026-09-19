@@ -264,8 +264,13 @@ function typeHintHtml(types) {
 function fmtMult(m) {
   return (Number.isInteger(m) ? m : m).toString() + '×';
 }
-function switchAdvice(types, enemyTypes) {
-  const offense = Math.max(...types.map(t => typeMultiplier(t, enemyTypes)));
+// offenseTypes is normally the mon's actual known move types (knownMoveTypes
+// in move-data.js) - falls back to its own species types only if that list
+// is somehow empty, so the "vurur" number here matches what a move button
+// in battle would actually show instead of an unlearned-move best case.
+function switchAdvice(types, enemyTypes, offenseTypes) {
+  const attackTypes = (offenseTypes && offenseTypes.length) ? offenseTypes : types;
+  const offense = Math.max(...attackTypes.map(t => typeMultiplier(t, enemyTypes)));
   const defense = Math.max(...enemyTypes.map(t => typeMultiplier(t, types)));
   let verdict;
   if (defense === 0) verdict = 'good';
@@ -299,7 +304,7 @@ function renderPartyPicker() {
   }
   pickList.innerHTML = mydex.map(p => {
     const fainted = p.fainted === true;
-    const advice = (!fainted && p.types) ? switchAdvice(p.types, wild.types) : null;
+    const advice = (!fainted && p.types) ? switchAdvice(p.types, wild.types, knownMoveTypes(p)) : null;
     return `
       <div class="pick-item ${fainted ? 'disabled' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-instance="${p.instanceId || ''}">
         <img src="${p.img}" alt="${p.name}">
@@ -481,7 +486,7 @@ function renderSwitchPicker(forced) {
   el('switchList').innerHTML = battleParty.map((m, i) => {
     const fainted = m.hp <= 0;
     const disabled = i === activeIndex || fainted;
-    const advice = (!disabled && m.types) ? switchAdvice(m.types, wild.types) : null;
+    const advice = (!disabled && m.types) ? switchAdvice(m.types, wild.types, knownMoveTypes(m)) : null;
     const canRevive = fainted && (inv.revive || 0) > 0;
     return `
       <div class="switch-item ${disabled ? 'disabled' : ''} ${canRevive ? 'revivable' : ''} ${i === activeIndex ? 'active' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-idx="${i}">
