@@ -295,8 +295,10 @@ function renderPartyPicker() {
       </div>
       ${typeHintHtml(wild.types)}
       <div style="text-align:center;font-weight:bold;margin-bottom:8px;">Karşına <span style="text-transform:capitalize;">${wild.name}</span> çıktı! Hangi Pokémon'unla savaşmak istersin?</div>
+      <button class="run-btn" id="fleeBeforeBattleBtn" style="margin-bottom:10px;">🏃 Kaç</button>
       <div id="pickList"></div>
     </div>`;
+  el('fleeBeforeBattleBtn').addEventListener('click', () => { window.location.href = 'adventure.html'; });
   const pickList = el('pickList');
   if (!mydex.length) {
     pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok, bu yüzden savaşamazsın. <a href="adventure.html">Haritaya dön</a>.</p>';
