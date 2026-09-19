@@ -91,6 +91,14 @@
   .switch-item .s-name { font-weight: bold; text-transform: capitalize; }
   .switch-item .s-hp { font-size: 12px; color: #888; }
   .switch-item .hp-track { width: 100px; }
+  .switch-item.sw-good { border-left: 5px solid #3aa13a; background: #eefbee; }
+  .switch-item.sw-bad { border-left: 5px solid #d1443f; background: #fdeceb; }
+  .switch-item.sw-neutral { border-left: 5px solid #ccc; }
+  .switch-item.sw-good:hover:not(.disabled) { background: #e0f6e0; }
+  .switch-item.sw-bad:hover:not(.disabled) { background: #fbdedb; }
+  .sw-note { font-size: 11px; margin-top: 3px; font-weight: bold; }
+  .sw-note-good { color: #1a7a1a; }
+  .sw-note-bad { color: #a3221f; }
 
   .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
   .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
@@ -237,6 +245,25 @@ async function loadTeamPreviewAndRender() {
 
 function typeChip(t) {
   return `<span class="type-chip" style="background:${TYPE_COLORS[t] || '#888'}">${TYPE_TR[t] || t}</span>`;
+}
+
+// Switch-picker recommendation: how would this candidate's types fare
+// against the current enemy - both offense (best multiplier this Pokemon's
+// types have attacking the enemy) and defense (worst-case multiplier the
+// enemy's types have attacking this Pokemon). Pure TYPE_CHART lookups via
+// typeMultiplier, no new type data.
+function switchAdvice(types, enemyTypes) {
+  const offense = Math.max(...types.map(t => typeMultiplier(t, enemyTypes)));
+  const defense = Math.max(...enemyTypes.map(t => typeMultiplier(t, types)));
+  if (defense === 0) return { verdict: 'good', note: 'Rakip hasar veremez' };
+  if (offense === 0) return { verdict: 'bad', note: 'Saldırıları hiç işlemez' };
+  if (defense >= 4) return { verdict: 'bad', note: 'Rakip 4× hasar verir' };
+  if (defense === 2) return { verdict: 'bad', note: 'Rakip 2× hasar verir' };
+  if (defense <= 0.25) return { verdict: 'good', note: 'Bu rakibe çok dirençli' };
+  if (defense === 0.5) return { verdict: 'good', note: 'Bu rakibe dirençli' };
+  if (offense >= 4) return { verdict: 'good', note: 'Bu rakibe çok etkili' };
+  if (offense === 2) return { verdict: 'good', note: 'Bu rakibe etkili' };
+  return { verdict: 'neutral', note: '' };
 }
 
 // Compact weak/resist hint for the small team-preview cards - same
@@ -472,14 +499,16 @@ function renderSwitchPicker(forced) {
     </div>`;
   el('switchList').innerHTML = battleParty.map((m, i) => {
     const disabled = i === activeIndex || m.hp <= 0;
+    const advice = (!disabled && m.types) ? switchAdvice(m.types, enemy.types) : null;
     return `
-      <div class="switch-item ${disabled ? 'disabled' : ''} ${i === activeIndex ? 'active' : ''}" data-idx="${i}">
+      <div class="switch-item ${disabled ? 'disabled' : ''} ${i === activeIndex ? 'active' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-idx="${i}">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${m.id}.png" alt="${m.name}">
         <div style="flex:1;">
           <div class="s-name">${m.name}${i === activeIndex ? ' (aktif)' : ''}</div>
           <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
           <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
           <div>${(m.types || []).map(typeChip).join(' ')}</div>
+          ${advice && advice.note ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : '⚠️'} ${advice.note}</div>` : ''}
         </div>
       </div>`;
   }).join('');
