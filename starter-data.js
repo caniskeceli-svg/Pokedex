@@ -43,7 +43,8 @@ function giveStarter(speciesData) {
     caughtAt: Date.now(),
     favorite: false,
     fainted: false,
-    currentHp: computeBattleStats(speciesData.stats, level).maxHp
+    currentHp: computeBattleStats(speciesData.stats, level).maxHp,
+    evolutionHistory: [{ id: speciesData.id, name: speciesData.name, level, at: Date.now() }]
   };
   saveAdventureDex([mon]);
   return { ok: true, mon };

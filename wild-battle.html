@@ -766,7 +766,8 @@ function endBattle(outcome, ballType) {
       source: 'wild',
       caughtAt: Date.now(),
       favorite: false,
-      fainted: false
+      fainted: false,
+      evolutionHistory: [{ id: wild.id, name: wild.name, level: wildLevel, at: Date.now() }]
     });
     const mydex = getAdventureDex();
     mydex.push(newMon);

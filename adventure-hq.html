@@ -138,7 +138,7 @@
   }
 
   .mydex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-  .mydex-item { background: #fff; border-radius: 16px; padding: 10px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,0.08); }
+  .mydex-item { background: #fff; border-radius: 16px; padding: 10px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,0.08); cursor: pointer; }
   .mydex-item img { width: 64px; height: 64px; }
   .mydex-item .m-name { display: block; font-size: 13px; text-transform: capitalize; font-weight: bold; margin-top: 2px; }
   .mydex-item .m-nick { display: block; font-size: 11px; color: #8e44ad; font-style: italic; }
@@ -211,6 +211,32 @@
   @keyframes levelupFadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes levelupPopIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   @keyframes levelupTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .mon-detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+    align-items: flex-end; justify-content: center; z-index: 300;
+  }
+  .mon-detail-overlay.show { display: flex; }
+  .mon-detail-box {
+    background: #fff; border-radius: 24px 24px 0 0; padding: 20px; width: 100%; max-width: 480px;
+    max-height: 88vh; overflow-y: auto; text-align: center;
+  }
+  .mon-detail-sprite { width: 120px; height: 120px; }
+  .mon-detail-name { font-weight: bold; font-size: 18px; text-transform: capitalize; margin-top: 6px; }
+  .mon-detail-sub { font-size: 13px; color: #888; margin: 4px 0 10px; display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .mon-detail-section-title { font-weight: bold; font-size: 13px; text-align: left; margin: 16px 0 8px; color: #a6702f; }
+  .evo-chain-row { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+  .evo-chain-node { background: #f7f7f7; border-radius: 12px; padding: 8px; width: 74px; }
+  .evo-chain-node.current { background: #f0e6ff; border: 2px solid #8e44ad; }
+  .evo-chain-node img { width: 44px; height: 44px; }
+  .evo-chain-name { font-size: 10px; font-weight: bold; text-transform: capitalize; margin-top: 2px; }
+  .evo-chain-arrow { font-size: 16px; color: #999; text-align: center; padding: 0 2px; }
+  .evo-chain-req { font-size: 9px; color: #999; font-weight: normal; white-space: nowrap; }
+  .evo-history-item { display: flex; align-items: center; gap: 10px; text-align: left; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  .evo-history-item:last-child { border-bottom: none; }
+  .evo-history-item img { width: 40px; height: 40px; }
+  .evo-history-name { font-weight: bold; font-size: 13px; text-transform: capitalize; }
+  .evo-history-sub { font-size: 11px; color: #888; }
 </style>
 </head>
 <body>
@@ -330,6 +356,80 @@ function showEvolutionCard(previous, evolved) {
   const dismiss = () => overlay.remove();
   overlay.addEventListener('click', dismiss);
   setTimeout(dismiss, 2500);
+}
+
+// Detail card opened by tapping a Pokemon in the collection grid: stats,
+// full evolution chain (derived from EVOLUTION_CATALOG, so it also shows
+// stages this exact Pokemon never reached) and this instance's own
+// evolution history (evolutionHistory - see evolution-data.js). The chain
+// needs species names/sprites for stages not currently owned, so those are
+// fetched on open rather than kept on every card; the history needs no
+// fetch since it's already stored on the mon itself.
+async function showPokemonDetail(instanceId) {
+  const mydex = getAdventureDex();
+  const mon = mydex.find(p => p.instanceId === instanceId);
+  if (!mon) return;
+
+  const maxHp = computeMonMaxHp(mon);
+  const curHp = computeMonCurrentHp(mon);
+  const li = pokemonLevelInfo(mon.pxp || 0);
+  const overlay = document.createElement('div');
+  overlay.className = 'mon-detail-overlay show';
+  overlay.innerHTML = `
+    <div class="mon-detail-box">
+      <img class="mon-detail-sprite" src="${mon.img}" alt="${mon.name}">
+      <div class="mon-detail-name">${mon.name}${mon.shiny ? ' ✨' : ''}</div>
+      ${mon.nickname ? `<div class="m-nick">"${mon.nickname}"</div>` : ''}
+      <div class="mon-detail-sub">
+        Lv.${mon.level || 1}
+        ${(mon.types || []).map(t => `<span class="m-type-dot" style="background:${TYPE_COLORS[t]}">${TYPE_TR[t] || t}</span>`).join('')}
+      </div>
+      <div class="m-hp-track"><div class="m-hp-fill" style="width:${Math.max(0, Math.round(curHp / maxHp * 100))}%"></div></div>
+      <div class="m-hp-text">${curHp}/${maxHp} HP</div>
+      ${(mon.level || 1) < 100 ? `
+        <div class="m-xp-track"><div class="m-xp-fill" style="width:${Math.round(li.xpIntoLevel / li.xpForNextLevel * 100)}%"></div></div>
+        <div class="m-xp-text">⭐ ${li.xpIntoLevel}/${li.xpForNextLevel} XP</div>` : ''}
+      <div class="mon-detail-section-title">🧬 Evrim Zinciri</div>
+      <div id="evoChainArea" class="evo-chain-row"><div style="color:#999;font-size:12px;">Yükleniyor...</div></div>
+      <div class="mon-detail-section-title">📜 Evrim Geçmişi</div>
+      <div id="evoHistoryArea"></div>
+      <button class="memory-viewer-close" id="monDetailClose">Kapat</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const dismiss = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+  overlay.querySelector('#monDetailClose').addEventListener('click', dismiss);
+
+  const history = Array.isArray(mon.evolutionHistory) && mon.evolutionHistory.length
+    ? mon.evolutionHistory
+    : [{ id: mon.id, name: mon.name, level: mon.level || 1, at: mon.caughtAt || Date.now() }];
+  overlay.querySelector('#evoHistoryArea').innerHTML = history.map((h, i) => `
+    <div class="evo-history-item">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${h.id}.png" alt="${h.name}">
+      <div>
+        <div class="evo-history-name">${h.name}</div>
+        <div class="evo-history-sub">${i === 0 ? (mon.source === 'starter' ? 'Başlangıç Pokémon\'u' : 'Yakalandı') : 'Evrimleşti'} · Lv.${h.level} · ${new Date(h.at).toLocaleDateString('tr-TR')}</div>
+      </div>
+    </div>`).join('');
+
+  const chain = getEvolutionChainFor(mon.id);
+  const chainArea = overlay.querySelector('#evoChainArea');
+  if (!chain.length) {
+    chainArea.innerHTML = `<div style="color:#999;font-size:12px;">Bu Pokémon evrimleşmiyor.</div>`;
+    return;
+  }
+  const nodes = await Promise.all(chain.map(async (c) => {
+    if (c.id === mon.id) return { id: c.id, name: mon.name, img: mon.img, viaEntry: c.viaEntry };
+    const species = await fetchPokemonSpeciesData(c.id);
+    return { id: c.id, name: species.name, img: species.img, viaEntry: c.viaEntry };
+  }));
+  if (!document.body.contains(overlay)) return; // closed before the fetch finished
+  chainArea.innerHTML = nodes.map((n, i) => `
+    ${i > 0 ? `<div class="evo-chain-arrow">→<div class="evo-chain-req">${evoRequirementLabel(n.viaEntry)}</div></div>` : ''}
+    <div class="evo-chain-node ${n.id === mon.id ? 'current' : ''}">
+      <img src="${n.img}" alt="${n.name}">
+      <div class="evo-chain-name">${n.name}</div>
+    </div>`).join('');
 }
 
 function renderTrainerCard() {
@@ -621,6 +721,13 @@ function renderCollection() {
         ${learnHtml}
       </div>`;
   }).join('')}</div>`;
+
+  area.querySelectorAll('.mydex-item').forEach((cardEl, i) => {
+    cardEl.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return; // don't hijack the action/evolve/learn buttons inside
+      showPokemonDetail(mydex[i].instanceId);
+    });
+  });
 
   area.querySelectorAll('.learn-replace-btn').forEach(btn => {
     btn.addEventListener('click', () => {

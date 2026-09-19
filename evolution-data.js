@@ -119,6 +119,38 @@ function getEvolutionFor(speciesId) {
   return EVOLUTION_CATALOG.find(e => e.fromId === speciesId) || null;
 }
 
+function getPrevEvolutionFor(speciesId) {
+  return EVOLUTION_CATALOG.find(e => e.toId === speciesId) || null;
+}
+
+// Walks EVOLUTION_CATALOG in both directions to build the full family line
+// for any species that appears in it - e.g. calling this with Charmeleon's
+// id returns the whole Charmander -> Charmeleon -> Charizard line, not just
+// what comes after Charmeleon. Purely derived from the existing catalog, no
+// new data. Each entry is { id, viaEntry } where viaEntry is the catalog
+// entry that leads INTO this id (null for the line's base form), so the UI
+// can label each arrow with its level/stone requirement.
+function getEvolutionChainFor(speciesId) {
+  if (!getEvolutionFor(speciesId) && !getPrevEvolutionFor(speciesId)) return [];
+  let base = speciesId;
+  let guard = 0;
+  while (getPrevEvolutionFor(base) && guard++ < 10) base = getPrevEvolutionFor(base).fromId;
+  const chain = [{ id: base, viaEntry: null }];
+  let cur = base;
+  guard = 0;
+  while (getEvolutionFor(cur) && guard++ < 10) {
+    const entry = getEvolutionFor(cur);
+    chain.push({ id: entry.toId, viaEntry: entry });
+    cur = entry.toId;
+  }
+  return chain;
+}
+
+function evoRequirementLabel(entry) {
+  if (!entry) return '';
+  return entry.method === 'level' ? `Lv.${entry.level}` : '💎 Taş';
+}
+
 // Returns null if this species has no evolution at all, otherwise
 // { entry, ready, blockedReason } - blockedReason is only set when there IS
 // an evolution path but it can't happen yet (level too low / no stone), so
@@ -175,6 +207,12 @@ async function performEvolution(instanceId) {
     // Only species-derived fields change; instanceId and every piece of
     // instance metadata (level/pxp/friendship/shiny/source/caughtAt/
     // favorite/nickname/fainted) are carried over untouched via the spread.
+    // evolutionHistory records every species this exact instance has ever
+    // been, oldest first - a Pokemon caught before this field existed simply
+    // starts its own history right here instead of having no prior entry.
+    const priorHistory = Array.isArray(freshMon.evolutionHistory) && freshMon.evolutionHistory.length
+      ? freshMon.evolutionHistory
+      : [{ id: freshMon.id, name: freshMon.name, level: freshMon.level || 1, at: freshMon.caughtAt || Date.now() }];
     const evolved = Object.assign({}, freshMon, {
       id: newSpecies.id,
       name: newSpecies.name,
@@ -182,7 +220,8 @@ async function performEvolution(instanceId) {
       types: newSpecies.types,
       stats: newSpecies.stats,
       power: newSpecies.power,
-      currentHp: newCurrentHp
+      currentHp: newCurrentHp,
+      evolutionHistory: [...priorHistory, { id: newSpecies.id, name: newSpecies.name, level: freshMon.level || 1, at: Date.now() }]
     });
 
     if (status.entry.method === "stone") {
@@ -191,10 +230,11 @@ async function performEvolution(instanceId) {
     freshDex[freshIdx] = evolved;
     saveAdventureDex(freshDex);
 
-    // Phase 8: evolutionCount is the only place evolution history is
-    // tallied (a Pokemon's own record only shows its current species, not
-    // how it got there), so Evolution achievements read this counter rather
-    // than trying to derive a count from the dex.
+    // Phase 8: evolutionCount is the account-wide tally used by Evolution
+    // achievements. Phase 22 added evolutionHistory (above) as the per-
+    // instance record of which species THIS Pokemon has actually been, for
+    // the HQ detail card's own timeline - the two serve different UIs, both
+    // are kept.
     const player = getAdventurePlayer();
     player.evolutionCount = (player.evolutionCount || 0) + 1;
     pushAdventureCloudAtomic({ "player.evolutionCount": firebase.firestore.FieldValue.increment(1) });
