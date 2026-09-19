@@ -218,6 +218,7 @@ function renderRegionTabs() {
       }
       if (regionId === CURRENT_REGION) return;
       CURRENT_REGION = regionId;
+      saveLastRegion(CURRENT_REGION);
       renderPath();
     });
   });
@@ -389,14 +390,36 @@ el('detailOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'detailOverlay') closeDetail();
 });
 
+// Remembers whichever region tab was last open (per profile, so Ayaz and
+// Baba sharing one device never see each other's last region) so opening
+// the map fresh - not through an HQ deep link - picks up where the player
+// left off instead of always resetting to Kanto.
+function lastRegionKey() {
+  return `adventure_last_region_${CURRENT_PROFILE || 'default'}`;
+}
+function saveLastRegion(regionId) {
+  try { localStorage.setItem(lastRegionKey(), regionId); } catch (e) {}
+}
+function loadLastRegion() {
+  try { return localStorage.getItem(lastRegionKey()); } catch (e) { return null; }
+}
+
 function init() {
   // Optional deep-link (e.g. Adventure HQ's "Open Map" for an unlocked
-  // Johto) - ignored entirely if the region is invalid or still locked, so
-  // this can never be used to bypass isRegionUnlocked.
+  // Johto) takes priority - ignored entirely if the region is invalid or
+  // still locked, so this can never be used to bypass isRegionUnlocked.
+  // Otherwise fall back to whichever region was last open, then Kanto.
   const requestedRegion = new URLSearchParams(window.location.search).get('region');
-  if (requestedRegion && REGIONS[requestedRegion] && isRegionUnlocked(getAdventurePlayer(), requestedRegion)) {
+  const player = getAdventurePlayer();
+  if (requestedRegion && REGIONS[requestedRegion] && isRegionUnlocked(player, requestedRegion)) {
     CURRENT_REGION = requestedRegion;
+  } else {
+    const lastRegion = loadLastRegion();
+    if (lastRegion && REGIONS[lastRegion] && isRegionUnlocked(player, lastRegion)) {
+      CURRENT_REGION = lastRegion;
+    }
   }
+  saveLastRegion(CURRENT_REGION);
   const shown = renderStarterGate(el('starterOverlay'), () => renderPath());
   if (!shown) renderPath();
 }
