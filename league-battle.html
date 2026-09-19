@@ -154,6 +154,10 @@ let enemy = null;
 let player = null; // always battleParty[activeIndex]
 let battleParty = []; // every non-fainted party member available for this run, rebuilt on start/resume
 let activeIndex = -1;
+// Every Pokemon that was ever active against the CURRENT stage - all of
+// them get that stage's XP, not just whoever's active when it falls.
+// Reset each time a stage is (re)loaded, same as battleParty itself.
+let foughtInstanceIds = new Set();
 let battleEnded = false;
 let logLines = [];
 
@@ -188,19 +192,24 @@ function showLevelUpCard(mon, oldLevel, newLevel) {
 // Grants the active Pokemon XP for a first-time Elite Four/Champion
 // victory - mirrors wild-battle.html's awardBattleXp, scaled from the
 // same trainerXp reward the league already defines.
-function awardPokemonBattleXp(instanceId, pokemonXp) {
+// Awards pokemonXp to EVERY Pokemon that fought this stage
+// (foughtInstanceIds), not just whoever's active when it falls - each
+// gets the full amount, not a split share.
+function awardPokemonBattleXp(pokemonXp) {
   const mydex = getAdventureDex();
-  const idx = mydex.findIndex(p => p.instanceId === instanceId);
-  if (idx === -1) return;
-  const mon = mydex[idx];
-  const oldLevel = mon.level || 1;
-  const newPxp = (mon.pxp || 0) + pokemonXp;
-  const { level } = pokemonLevelInfo(newPxp);
-  const learnResult = checkLevelUpLearn(mon, oldLevel, level);
-  const leveled = Object.assign({}, mon, { pxp: newPxp, level });
-  mydex[idx] = applyLevelUpLearn(leveled, learnResult);
+  foughtInstanceIds.forEach(instanceId => {
+    const idx = mydex.findIndex(p => p.instanceId === instanceId);
+    if (idx === -1) return;
+    const mon = mydex[idx];
+    const oldLevel = mon.level || 1;
+    const newPxp = (mon.pxp || 0) + pokemonXp;
+    const { level } = pokemonLevelInfo(newPxp);
+    const learnResult = checkLevelUpLearn(mon, oldLevel, level);
+    const leveled = Object.assign({}, mon, { pxp: newPxp, level });
+    mydex[idx] = applyLevelUpLearn(leveled, learnResult);
+    if (level > oldLevel) showLevelUpCard(mon, oldLevel, level);
+  });
   saveAdventureDex(mydex);
-  if (level > oldLevel) showLevelUpCard(mon, oldLevel, level);
 }
 
 function hpBarClass(hp, maxHp) {
@@ -353,6 +362,7 @@ async function startStageFromAttempt(attempt, playerMon) {
   battleParty = eligible.map(buildBattlePartyMember);
   activeIndex = battleParty.findIndex(m => m.instanceId === playerMon.instanceId);
   player = battleParty[activeIndex];
+  foughtInstanceIds = new Set([player.instanceId]);
   enemyIndex = 0;
   logLines = [];
   const stage = stages[stageIdx];
@@ -522,6 +532,7 @@ function renderSwitchPicker(forced) {
 function confirmSwitch(idx, forced) {
   activeIndex = idx;
   player = battleParty[idx];
+  foughtInstanceIds.add(player.instanceId);
   updateLeagueAttemptInstance(leagueId, player.instanceId);
   if (forced) {
     log(`Hadi ${player.name}!`);
@@ -642,8 +653,11 @@ function onStageCleared() {
   recordAdventureEvent('league_progress');
   let pokemonXp = 0;
   if (!result.alreadyWon) {
-    pokemonXp = Math.round(result.trainerXp / 5);
-    awardPokemonBattleXp(player.instanceId, pokemonXp);
+    // Scaled by the enemy team's own level, not a small fraction of
+    // trainerXp - see gym-battle.html's identical reasoning.
+    const avgEnemyLevel = stage.data.team.reduce((s, m) => s + m.level, 0) / stage.data.team.length;
+    pokemonXp = Math.round(avgEnemyLevel * 15);
+    awardPokemonBattleXp(pokemonXp);
   }
   const rewards = result.alreadyWon ? [] : [`👑 +${result.trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${result.coins} PokéCoin`];
   const selfieUrl = `victory-selfie.html?type=league_elitefour&leagueId=${leagueId}&stageId=${stage.stageId}`;
@@ -661,6 +675,7 @@ function onStageCleared() {
     stageIdx++;
     battleEnded = false;
     enemyIndex = 0;
+    foughtInstanceIds = new Set([player.instanceId]);
     await loadEnemyAndRender();
   });
 }
@@ -679,8 +694,11 @@ function endBattle(outcome) {
         continueLabel: 'Haritaya Dön'
       });
     } else {
-      const pokemonXp = Math.round(result.trainerXp / 5);
-      awardPokemonBattleXp(player.instanceId, pokemonXp);
+      // Scaled by the Champion's own team level, not a small fraction of
+      // trainerXp - see gym-battle.html's identical reasoning.
+      const avgEnemyLevel = league.champion.team.reduce((s, m) => s + m.level, 0) / league.champion.team.length;
+      const pokemonXp = Math.round(avgEnemyLevel * 15);
+      awardPokemonBattleXp(pokemonXp);
       const unlockRegionName = league.unlocksRegion && REGIONS[league.unlocksRegion] ? REGIONS[league.unlocksRegion].name : league.unlocksRegion;
       showResult({
         title: `🏆 ${regionName.toUpperCase()} CHAMPION 🏆`,
