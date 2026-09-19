@@ -99,6 +99,7 @@
   .sw-note { font-size: 11px; margin-top: 3px; font-weight: bold; }
   .sw-note-good { color: #1a7a1a; }
   .sw-note-bad { color: #a3221f; }
+  .sw-note-neutral { color: #888; }
 
   .result-title { font-size: 22px; font-weight: bold; text-align: center; color: var(--accent-dark); }
   .reward-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 12px 0; font-size: 14px; }
@@ -234,18 +235,19 @@ function typeHintHtml(types) {
 // types have attacking the enemy) and defense (worst-case multiplier the
 // enemy's types have attacking this Pokemon). Pure TYPE_CHART lookups via
 // typeMultiplier, no new type data.
+function fmtMult(m) {
+  return (Number.isInteger(m) ? m : m).toString() + '×';
+}
 function switchAdvice(types, enemyTypes) {
   const offense = Math.max(...types.map(t => typeMultiplier(t, enemyTypes)));
   const defense = Math.max(...enemyTypes.map(t => typeMultiplier(t, types)));
-  if (defense === 0) return { verdict: 'good', note: 'Rakip hasar veremez' };
-  if (offense === 0) return { verdict: 'bad', note: 'Saldırıları hiç işlemez' };
-  if (defense >= 4) return { verdict: 'bad', note: 'Rakip 4× hasar verir' };
-  if (defense === 2) return { verdict: 'bad', note: 'Rakip 2× hasar verir' };
-  if (defense <= 0.25) return { verdict: 'good', note: 'Bu rakibe çok dirençli' };
-  if (defense === 0.5) return { verdict: 'good', note: 'Bu rakibe dirençli' };
-  if (offense >= 4) return { verdict: 'good', note: 'Bu rakibe çok etkili' };
-  if (offense === 2) return { verdict: 'good', note: 'Bu rakibe etkili' };
-  return { verdict: 'neutral', note: '' };
+  let verdict;
+  if (defense === 0) verdict = 'good';
+  else if (offense === 0) verdict = 'bad';
+  else if (defense > offense) verdict = 'bad';
+  else if (offense > defense) verdict = 'good';
+  else verdict = 'neutral';
+  return { verdict, note: `${fmtMult(defense)} yer, ${fmtMult(offense)} vurur` };
 }
 
 function renderPartyPicker() {
@@ -454,7 +456,7 @@ function renderSwitchPicker(forced) {
           <div class="hp-track"><div class="${hpBarClass(m.hp, m.maxHp)}" style="width:${Math.max(0, m.hp / m.maxHp * 100)}%"></div></div>
           <div class="s-hp">${m.hp}/${m.maxHp} HP · Lv.${m.level}${m.hp <= 0 ? ' · 😵 Baygın' : ''}</div>
           <div>${(m.types || []).map(typeChip).join(' ')}</div>
-          ${advice && advice.note ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : '⚠️'} ${advice.note}</div>` : ''}
+          ${advice ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : advice.verdict === 'bad' ? '⚠️' : '➖'} ${advice.note}</div>` : ''}
         </div>
       </div>`;
   }).join('');
