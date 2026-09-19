@@ -150,6 +150,9 @@
   .m-hp-text { font-size: 10px; color: #888; }
   .m-fainted-tag { font-size: 11px; color: #c0392b; font-weight: bold; }
   .m-friendship { font-size: 11px; color: #d6336c; font-weight: bold; margin-top: 2px; }
+  .m-xp-track { background: #eee; border-radius: 999px; height: 5px; overflow: hidden; margin: 4px 0 1px; }
+  .m-xp-fill { height: 100%; background: linear-gradient(90deg,#3b6cdb,#7ea8f5); }
+  .m-xp-text { font-size: 10px; color: #888; }
   .evo-ready-tag { font-size: 11px; color: #8e44ad; font-weight: bold; margin-top: 6px; }
   .evo-btn {
     display: block; width: 100%; margin-top: 4px; background: #8e44ad; color: #fff; border: none;
@@ -190,6 +193,24 @@
   .starter-card:active { transform: scale(0.95); }
   .starter-card img { width: 80px; height: 80px; }
   .starter-name { font-weight: bold; font-size: 14px; margin-top: 6px; }
+  .levelup-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center;
+    justify-content: center; z-index: 9999; padding: 20px; animation: levelupFadeIn 0.2s ease-out;
+  }
+  .levelup-card {
+    background: #fff; border-radius: 20px; padding: 24px; text-align: center; max-width: 260px;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.15); animation: levelupPopIn 0.35s ease-out;
+  }
+  .levelup-stars { font-size: 20px; margin-bottom: 4px; animation: levelupTwinkle 1.2s ease-in-out infinite; }
+  .levelup-card img { width: 96px; height: 96px; }
+  .levelup-name { font-weight: bold; font-size: 16px; text-transform: capitalize; margin-top: 6px; }
+  .levelup-level { color: #e3350d; font-weight: bold; font-size: 18px; margin-top: 4px; }
+  .evo-card-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 6px; }
+  .evo-card-row img { width: 72px; height: 72px; }
+  .evo-card-arrow { font-size: 22px; color: #999; }
+  @keyframes levelupFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes levelupPopIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes levelupTwinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>
 </head>
 <body>
@@ -270,6 +291,46 @@
 <script src="hall-of-fame-data.js"></script>
 <script>
 const el = (id) => document.getElementById(id);
+
+// Same modest level-up toast used on every battle page - see
+// wild-battle.html's showLevelUpCard for the shared reasoning.
+function showLevelUpCard(mon, oldLevel, newLevel) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = `
+    <div class="levelup-card">
+      <div class="levelup-stars">✨ ⭐ ✨</div>
+      <img src="${mon.img}" alt="${mon.name}">
+      <div class="levelup-name">${mon.nickname || mon.name}</div>
+      <div class="levelup-level">Lv.${oldLevel} → Lv.${newLevel}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const dismiss = () => overlay.remove();
+  overlay.addEventListener('click', dismiss);
+  setTimeout(dismiss, 2500);
+}
+
+// Same modest toast, but for an evolution: shows the before/after sprite
+// side by side instead of a single Pokemon + level.
+function showEvolutionCard(previous, evolved) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = `
+    <div class="levelup-card">
+      <div class="levelup-stars">✨ ⭐ ✨</div>
+      <div class="evo-card-row">
+        <img src="${previous.img}" alt="${previous.name}">
+        <span class="evo-card-arrow">➜</span>
+        <img src="${evolved.img}" alt="${evolved.name}">
+      </div>
+      <div class="levelup-name">${previous.name} → ${evolved.nickname || evolved.name}</div>
+      <div class="levelup-level">✨ Evrimleşti! ✨</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const dismiss = () => overlay.remove();
+  overlay.addEventListener('click', dismiss);
+  setTimeout(dismiss, 2500);
+}
 
 function renderTrainerCard() {
   const player = getAdventurePlayer();
@@ -547,6 +608,12 @@ function renderCollection() {
         ).join('')}</div>
         <div class="m-hp-track"><div class="m-hp-fill ${hpPct < 25 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
         <div class="m-hp-text">${fainted ? '' : `${curHp}/${maxHp} HP · `}Lv.${p.level || 1}</div>
+        ${(p.level || 1) >= 100 ? '' : (() => {
+          const li = pokemonLevelInfo(p.pxp || 0);
+          const xpPct = Math.max(0, Math.min(100, Math.round((li.xpIntoLevel / li.xpForNextLevel) * 100)));
+          return `<div class="m-xp-track"><div class="m-xp-fill" style="width:${xpPct}%"></div></div>
+        <div class="m-xp-text">⭐ ${li.xpIntoLevel}/${li.xpForNextLevel} XP</div>`;
+        })()}
         <div class="m-friendship">❤️ ${friendship}/100</div>
         ${fainted ? '<div class="m-fainted-tag">😵 Baygın</div>' : ''}
         ${actions.length ? `<div class="m-actions">${actions.join('')}</div>` : ''}
@@ -602,6 +669,8 @@ function renderCollection() {
       if (!result.ok) {
         const messages = { 'no-stone': 'Evrim Taşı yok!', 'level-too-low': 'Seviye yetersiz.', 'in-progress': 'Zaten işleniyor...', 'no-evolution': 'Bu Pokémon evrimleşemez.' };
         alert(messages[result.reason] || 'Evrim başarısız oldu.');
+      } else {
+        showEvolutionCard(result.previous, result.evolved);
       }
       renderAll();
     });
