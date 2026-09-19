@@ -73,67 +73,72 @@ const LEAGUE_CATALOG = [
     // only mark the region completed, never invent/unlock a region beyond it.
     leagueId: "johto_league", regionId: "johto",
     requiresBadges: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
+    // Phase 17 rebalance: shifted upward alongside the Johto Gym chain -
+    // see johto_violet's own comment in gym-data.js for the full
+    // rationale (real player data showed a ~27-33 median party level
+    // already on entering Johto, making the original 40-50 range trivial
+    // after 8 rebalanced Gyms only added maybe +10 more levels).
     eliteFour: [
       {
         id: "will", order: 1, name: "Will", type: "psychic",
         description: "Psişik ustası Will, Johto Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 178, level: 40 }, // Xatu
-          { speciesId: 124, level: 41 }, // Jynx
-          { speciesId: 103, level: 41 }, // Exeggutor
-          { speciesId: 80, level: 41 },  // Slowbro
-          { speciesId: 178, level: 42 }  // Xatu
+          { speciesId: 178, level: 56 }, // Xatu
+          { speciesId: 124, level: 57 }, // Jynx
+          { speciesId: 103, level: 57 }, // Exeggutor
+          { speciesId: 80, level: 57 },  // Slowbro
+          { speciesId: 178, level: 58 }  // Xatu
         ],
-        rewards: { trainerXp: 550, coins: 800 }
+        rewards: { trainerXp: 650, coins: 900 }
       },
       {
         id: "koga", order: 2, name: "Koga", type: "poison",
         description: "Zehir ninjası Koga, gölgelerden vurur.",
         team: [
-          { speciesId: 168, level: 40 }, // Ariados
-          { speciesId: 205, level: 43 }, // Forretress
-          { speciesId: 89, level: 42 },  // Muk
-          { speciesId: 169, level: 44 }  // Crobat
+          { speciesId: 168, level: 56 }, // Ariados
+          { speciesId: 205, level: 59 }, // Forretress
+          { speciesId: 89, level: 58 },  // Muk
+          { speciesId: 169, level: 60 }  // Crobat
         ],
-        rewards: { trainerXp: 550, coins: 800 }
+        rewards: { trainerXp: 650, coins: 900 }
       },
       {
         id: "bruno", order: 3, name: "Bruno", type: "fighting",
         description: "Dövüş ustası Bruno, Johto'da tekrar karşında.",
         team: [
-          { speciesId: 237, level: 42 }, // Hitmontop
-          { speciesId: 106, level: 42 }, // Hitmonlee
-          { speciesId: 107, level: 42 }, // Hitmonchan
-          { speciesId: 95, level: 43 },  // Onix
-          { speciesId: 68, level: 46 }   // Machamp
+          { speciesId: 237, level: 58 }, // Hitmontop
+          { speciesId: 106, level: 58 }, // Hitmonlee
+          { speciesId: 107, level: 58 }, // Hitmonchan
+          { speciesId: 95, level: 59 },  // Onix
+          { speciesId: 68, level: 62 }   // Machamp
         ],
-        rewards: { trainerXp: 550, coins: 800 }
+        rewards: { trainerXp: 650, coins: 900 }
       },
       {
         id: "karen", order: 4, name: "Karen", type: "dark",
         description: "Karanlık ustası Karen, Johto Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 197, level: 42 }, // Umbreon
-          { speciesId: 45, level: 42 },  // Vileplume
-          { speciesId: 94, level: 45 },  // Gengar
-          { speciesId: 198, level: 44 }, // Murkrow
-          { speciesId: 229, level: 47 }  // Houndoom
+          { speciesId: 197, level: 58 }, // Umbreon
+          { speciesId: 45, level: 58 },  // Vileplume
+          { speciesId: 94, level: 61 },  // Gengar
+          { speciesId: 198, level: 60 }, // Murkrow
+          { speciesId: 229, level: 63 }  // Houndoom
         ],
-        rewards: { trainerXp: 550, coins: 800 }
+        rewards: { trainerXp: 650, coins: 900 }
       }
     ],
     champion: {
       id: "champion", order: 5, name: "Lance (Şampiyon)", type: "dragon",
       description: "Ejderha ustası Lance, Johto Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 130, level: 44 }, // Gyarados
-        { speciesId: 149, level: 47 }, // Dragonite
-        { speciesId: 149, level: 47 }, // Dragonite
-        { speciesId: 142, level: 46 }, // Aerodactyl
-        { speciesId: 6, level: 46 },   // Charizard
-        { speciesId: 149, level: 50 }  // Dragonite
+        { speciesId: 130, level: 60 }, // Gyarados
+        { speciesId: 149, level: 63 }, // Dragonite
+        { speciesId: 149, level: 63 }, // Dragonite
+        { speciesId: 142, level: 62 }, // Aerodactyl
+        { speciesId: 6, level: 62 },   // Charizard
+        { speciesId: 149, level: 66 }  // Dragonite
       ],
-      rewards: { trainerXp: 1600, coins: 2700 }
+      rewards: { trainerXp: 1900, coins: 3100 }
     },
     // Phase 14: Johto Champion victory now also unlocks Hoenn, the exact
     // same mechanism Kanto's own entry already uses for Johto - see
@@ -148,62 +153,64 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "hoenn_league", regionId: "hoenn",
     requiresBadges: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
+    // Phase 17 rebalance: cascaded upward alongside the Hoenn Gym chain -
+    // see hoenn_rustboro's own comment in gym-data.js for the rationale.
     eliteFour: [
       {
         id: "sidney", order: 1, name: "Sidney", type: "dark",
         description: "Karanlık ustası Sidney, Hoenn Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 262, level: 46 }, // Mightyena
-          { speciesId: 332, level: 46 }, // Cacturne
-          { speciesId: 359, level: 47 }, // Absol
-          { speciesId: 319, level: 48 }  // Sharpedo
+          { speciesId: 262, level: 84 }, // Mightyena
+          { speciesId: 332, level: 84 }, // Cacturne
+          { speciesId: 359, level: 85 }, // Absol
+          { speciesId: 319, level: 86 }  // Sharpedo
         ],
-        rewards: { trainerXp: 600, coins: 850 }
+        rewards: { trainerXp: 900, coins: 1200 }
       },
       {
         id: "phoebe", order: 2, name: "Phoebe", type: "ghost",
         description: "Hayalet ustası Phoebe, Hoenn Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 356, level: 48 }, // Dusclops
-          { speciesId: 354, level: 49 }, // Banette
-          { speciesId: 302, level: 49 }, // Sableye
-          { speciesId: 356, level: 50 }  // Dusclops
+          { speciesId: 356, level: 86 }, // Dusclops
+          { speciesId: 354, level: 87 }, // Banette
+          { speciesId: 302, level: 87 }, // Sableye
+          { speciesId: 356, level: 88 }  // Dusclops
         ],
-        rewards: { trainerXp: 600, coins: 850 }
+        rewards: { trainerXp: 900, coins: 1200 }
       },
       {
         id: "glacia", order: 3, name: "Glacia", type: "ice",
         description: "Buz ustası Glacia, Hoenn Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 362, level: 50 }, // Glalie
-          { speciesId: 364, level: 50 }, // Sealeo
-          { speciesId: 362, level: 52 }, // Glalie
-          { speciesId: 365, level: 53 }  // Walrein
+          { speciesId: 362, level: 88 }, // Glalie
+          { speciesId: 364, level: 88 }, // Sealeo
+          { speciesId: 362, level: 90 }, // Glalie
+          { speciesId: 365, level: 91 }  // Walrein
         ],
-        rewards: { trainerXp: 600, coins: 850 }
+        rewards: { trainerXp: 900, coins: 1200 }
       },
       {
         id: "drake", order: 4, name: "Drake", type: "dragon",
         description: "Ejderha ustası Drake, Hoenn Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 372, level: 52 }, // Shelgon
-          { speciesId: 334, level: 53 }, // Altaria
-          { speciesId: 230, level: 53 }, // Kingdra
-          { speciesId: 373, level: 55 }  // Salamence
+          { speciesId: 372, level: 90 }, // Shelgon
+          { speciesId: 334, level: 91 }, // Altaria
+          { speciesId: 230, level: 91 }, // Kingdra
+          { speciesId: 373, level: 93 }  // Salamence
         ],
-        rewards: { trainerXp: 600, coins: 850 }
+        rewards: { trainerXp: 900, coins: 1200 }
       }
     ],
     champion: {
       id: "champion", order: 5, name: "Wallace (Şampiyon)", type: "water",
       description: "Su ustası Wallace, Hoenn Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 370, level: 54 }, // Luvdisc
-        { speciesId: 340, level: 55 }, // Whiscash
-        { speciesId: 224, level: 56 }, // Tentacruel
-        { speciesId: 350, level: 57 }  // Milotic
+        { speciesId: 370, level: 92 }, // Luvdisc
+        { speciesId: 340, level: 93 }, // Whiscash
+        { speciesId: 224, level: 94 }, // Tentacruel
+        { speciesId: 350, level: 95 }  // Milotic
       ],
-      rewards: { trainerXp: 1800, coins: 3000 }
+      rewards: { trainerXp: 2500, coins: 4000 }
     },
     // Phase 15: Hoenn Champion victory now also unlocks Sinnoh, the exact
     // same mechanism Kanto/Johto's own entries already use - see
@@ -218,63 +225,67 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "sinnoh_league", regionId: "sinnoh",
     requiresBadges: ["coal", "forest", "cobble", "fen", "relic", "mine", "icicle", "beacon"],
+    // Phase 17 rebalance: cascaded upward alongside the Sinnoh Gym chain -
+    // see sinnoh_oreburgh's comment in gym-data.js for the rationale.
+    // Cynthia's team tops out at exactly 100 (the actual level cap) as the
+    // intended "hardest fight in the game so far" before Unova.
     eliteFour: [
       {
         id: "aaron", order: 1, name: "Aaron", type: "bug",
         description: "Böcek ustası Aaron, Sinnoh Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 269, level: 49 }, // Dustox
-          { speciesId: 416, level: 51 }, // Vespiquen
-          { speciesId: 452, level: 53 }, // Drapion
-          { speciesId: 214, level: 55 }  // Heracross
+          { speciesId: 269, level: 96 }, // Dustox
+          { speciesId: 416, level: 96 }, // Vespiquen
+          { speciesId: 452, level: 97 }, // Drapion
+          { speciesId: 214, level: 97 }  // Heracross
         ],
-        rewards: { trainerXp: 700, coins: 950 }
+        rewards: { trainerXp: 1000, coins: 1300 }
       },
       {
         id: "bertha", order: 2, name: "Bertha", type: "ground",
         description: "Toprak ustası Bertha, Sinnoh Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 195, level: 51 }, // Quagsire
-          { speciesId: 76, level: 52 },  // Golem
-          { speciesId: 450, level: 54 }, // Hippowdon
-          { speciesId: 464, level: 56 }  // Rhyperior
+          { speciesId: 195, level: 96 }, // Quagsire
+          { speciesId: 76, level: 97 },  // Golem
+          { speciesId: 450, level: 97 }, // Hippowdon
+          { speciesId: 464, level: 98 }  // Rhyperior
         ],
-        rewards: { trainerXp: 700, coins: 950 }
+        rewards: { trainerXp: 1000, coins: 1300 }
       },
       {
         id: "flint", order: 3, name: "Flint", type: "fire",
         description: "Ateş ustası Flint, Sinnoh Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 78, level: 51 },  // Rapidash
-          { speciesId: 467, level: 53 }, // Magmortar
-          { speciesId: 229, level: 55 }, // Houndoom
-          { speciesId: 392, level: 56 }  // Infernape
+          { speciesId: 78, level: 97 },  // Rapidash
+          { speciesId: 467, level: 97 }, // Magmortar
+          { speciesId: 229, level: 98 }, // Houndoom
+          { speciesId: 392, level: 98 }  // Infernape
         ],
-        rewards: { trainerXp: 700, coins: 950 }
+        rewards: { trainerXp: 1000, coins: 1300 }
       },
       {
         id: "lucian", order: 4, name: "Lucian", type: "psychic",
         description: "Ruh ustası Lucian, Sinnoh Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 203, level: 53 }, // Girafarig
-          { speciesId: 437, level: 55 }, // Bronzong
-          { speciesId: 122, level: 55 }, // Mr. Mime
-          { speciesId: 65, level: 58 }   // Alakazam
+          { speciesId: 203, level: 97 }, // Girafarig
+          { speciesId: 437, level: 98 }, // Bronzong
+          { speciesId: 122, level: 98 }, // Mr. Mime
+          { speciesId: 65, level: 99 }   // Alakazam
         ],
-        rewards: { trainerXp: 700, coins: 950 }
+        rewards: { trainerXp: 1000, coins: 1300 }
       }
     ],
     champion: {
       id: "champion", order: 5, name: "Cynthia (Şampiyon)", type: "mixed",
       description: "Cynthia, Sinnoh Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 442, level: 58 }, // Spiritomb
-        { speciesId: 407, level: 60 }, // Roserade
-        { speciesId: 468, level: 61 }, // Togekiss
-        { speciesId: 448, level: 62 }, // Lucario
-        { speciesId: 445, level: 64 }  // Garchomp
+        { speciesId: 442, level: 97 }, // Spiritomb
+        { speciesId: 407, level: 98 }, // Roserade
+        { speciesId: 468, level: 99 }, // Togekiss
+        { speciesId: 448, level: 99 }, // Lucario
+        { speciesId: 445, level: 100 } // Garchomp
       ],
-      rewards: { trainerXp: 2000, coins: 3200 }
+      rewards: { trainerXp: 2800, coins: 4500 }
     },
     // Phase 16: Sinnoh Champion victory now also unlocks Unova, the exact
     // same mechanism every prior region's own entry already uses - see
@@ -289,63 +300,67 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "unova_league", regionId: "unova",
     requiresBadges: ["trio", "basic", "insect", "bolt", "quake", "jet", "freeze", "legend"],
+    // Phase 17 rebalance: cascaded upward alongside the Unova Gym chain -
+    // see unova_striaton's comment in gym-data.js for the rationale. Alder,
+    // as the current final Champion of the whole game, tops out at the
+    // level cap (100) - the intended hardest fight in the app right now.
     eliteFour: [
       {
         id: "shauntal", order: 1, name: "Shauntal", type: "ghost",
         description: "Hayalet ustası Shauntal, Unova Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 563, level: 52 }, // Cofagrigus
-          { speciesId: 609, level: 54 }, // Chandelure
-          { speciesId: 623, level: 55 }, // Golurk
-          { speciesId: 593, level: 56 }  // Jellicent
+          { speciesId: 563, level: 97 }, // Cofagrigus
+          { speciesId: 609, level: 98 }, // Chandelure
+          { speciesId: 623, level: 98 }, // Golurk
+          { speciesId: 593, level: 99 }  // Jellicent
         ],
-        rewards: { trainerXp: 850, coins: 1050 }
+        rewards: { trainerXp: 1100, coins: 1400 }
       },
       {
         id: "grimsley", order: 2, name: "Grimsley", type: "dark",
         description: "Karanlık ustası Grimsley, Unova Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 510, level: 53 }, // Liepard
-          { speciesId: 553, level: 55 }, // Krookodile
-          { speciesId: 625, level: 56 }, // Bisharp
-          { speciesId: 560, level: 57 }  // Scrafty
+          { speciesId: 510, level: 97 }, // Liepard
+          { speciesId: 553, level: 98 }, // Krookodile
+          { speciesId: 625, level: 99 }, // Bisharp
+          { speciesId: 560, level: 99 }  // Scrafty
         ],
-        rewards: { trainerXp: 850, coins: 1050 }
+        rewards: { trainerXp: 1100, coins: 1400 }
       },
       {
         id: "caitlin", order: 3, name: "Caitlin", type: "psychic",
         description: "Ruh ustası Caitlin, Unova Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 576, level: 54 }, // Gothitelle
-          { speciesId: 579, level: 56 }, // Reuniclus
-          { speciesId: 561, level: 57 }, // Sigilyph
-          { speciesId: 518, level: 58 }  // Musharna
+          { speciesId: 576, level: 98 }, // Gothitelle
+          { speciesId: 579, level: 98 }, // Reuniclus
+          { speciesId: 561, level: 99 }, // Sigilyph
+          { speciesId: 518, level: 99 }  // Musharna
         ],
-        rewards: { trainerXp: 850, coins: 1050 }
+        rewards: { trainerXp: 1100, coins: 1400 }
       },
       {
         id: "marshal", order: 4, name: "Marshal", type: "fighting",
         description: "Dövüş ustası Marshal, Unova Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 534, level: 55 }, // Conkeldurr
-          { speciesId: 620, level: 57 }, // Mienshao
-          { speciesId: 538, level: 58 }, // Throh
-          { speciesId: 560, level: 59 }  // Scrafty
+          { speciesId: 534, level: 98 }, // Conkeldurr
+          { speciesId: 620, level: 99 }, // Mienshao
+          { speciesId: 538, level: 99 }, // Throh
+          { speciesId: 560, level: 100 } // Scrafty
         ],
-        rewards: { trainerXp: 850, coins: 1050 }
+        rewards: { trainerXp: 1100, coins: 1400 }
       }
     ],
     champion: {
       id: "champion", order: 5, name: "Alder (Şampiyon)", type: "mixed",
       description: "Alder, Unova Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 626, level: 60 }, // Bouffalant
-        { speciesId: 621, level: 62 }, // Druddigon
-        { speciesId: 584, level: 63 }, // Vanilluxe
-        { speciesId: 637, level: 65 }, // Volcarona
-        { speciesId: 612, level: 68 }  // Haxorus
+        { speciesId: 626, level: 98 }, // Bouffalant
+        { speciesId: 621, level: 99 }, // Druddigon
+        { speciesId: 584, level: 99 }, // Vanilluxe
+        { speciesId: 637, level: 100 }, // Volcarona
+        { speciesId: 612, level: 100 }  // Haxorus
       ],
-      rewards: { trainerXp: 2400, coins: 3800 }
+      rewards: { trainerXp: 3200, coins: 5000 }
     }
     // No unlocksRegion - Unova Champion marks Unova completed via the
     // existing generic mechanism (completedRegions) and intentionally does
