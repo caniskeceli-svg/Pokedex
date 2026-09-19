@@ -192,6 +192,7 @@ let cloudReady = false;
 let cloudReadyResolvers = [];
 let cloudChangeCallbacks = [];
 let cloudBootstrapped = false;
+let dailyBackupVisibilityListenerAdded = false;
 
 function onCloudChange(cb) { cloudChangeCallbacks.push(cb); }
 function waitForCloud() {
@@ -332,6 +333,23 @@ async function startCloudSync(profileId) {
       injectNotificationButton();
       claimPendingChallengeRewards();
       ensureDailyMyDexBackup(profileId);
+    }
+    // A PWA reopened from the home screen (or a backgrounded browser tab)
+    // very often doesn't reload the page at all - iOS in particular tends
+    // to just resume the suspended one, so `cloudReady` is already true and
+    // the once-per-load `firstTime` check above never fires again. Without
+    // this, a device that's rarely truly closed (only ever backgrounded)
+    // would never get a second day's snapshot. Re-checking on every
+    // foreground is cheap: ensureDailyMyDexBackup's own "already have
+    // today?" check makes every call after the first one a single no-op
+    // Firestore read.
+    if (!dailyBackupVisibilityListenerAdded) {
+      dailyBackupVisibilityListenerAdded = true;
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && cloudReady) {
+          ensureDailyMyDexBackup(CURRENT_PROFILE);
+        }
+      });
     }
   }, (err) => {
     console.error("Firestore bağlantı hatası:", err);
