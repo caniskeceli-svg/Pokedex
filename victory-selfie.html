@@ -77,7 +77,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
 <script src="pokedex-data.js"></script>
 <script src="adventure-state.js"></script>
 <script src="gym-data.js"></script>
@@ -389,6 +388,18 @@ function renderPreview() {
   el('skipBtn').addEventListener('click', () => { window.location.href = 'adventure-hq.html'; });
 }
 
+// A small (120x180) heavily-compressed copy of the composed image, kept
+// directly in the memory's own metadata (getAdventureMemories) so the
+// Hall of Fame grid can show a thumbnail without fetching every memory's
+// full-size image doc just to render the list.
+function makeThumbnail(sourceCanvas) {
+  const thumb = document.createElement('canvas');
+  thumb.width = 120;
+  thumb.height = 180;
+  thumb.getContext('2d').drawImage(sourceCanvas, 0, 0, thumb.width, thumb.height);
+  return thumb.toDataURL('image/jpeg', 0.5);
+}
+
 async function doSaveMemory() {
   if (saveLocked) return;
   saveLocked = true;
@@ -408,27 +419,20 @@ async function doSaveMemory() {
     pokemonLevel: chosenMon.level || 1,
     title: victoryInfo.title,
     subtitle: victoryInfo.subtitle,
-    createdAt: composedServerMs
+    createdAt: composedServerMs,
+    thumbnailUrl: makeThumbnail(composedCanvas)
   };
 
-  composedCanvas.toBlob(async (blob) => {
-    if (!blob) {
-      saveLocked = false;
-      saveBtn.disabled = false;
-      saveBtn.textContent = '💾 SAVE MEMORY';
-      renderSaveError('Fotoğraf hazırlanamadı.');
-      return;
-    }
-    const result = await saveVictoryMemory({ victoryKey: victoryInfo.victoryKey, memoryData, imageBlob: blob });
-    saveLocked = false;
-    if (!result.ok) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = '💾 SAVE MEMORY';
-      renderSaveError(result.reason === 'upload-failed' ? 'Yükleme başarısız oldu. Tekrar dene.' : 'Kaydedilemedi. Tekrar dene.');
-      return;
-    }
-    renderSaved(result.memory);
-  }, 'image/jpeg', 0.88);
+  const imageDataUrl = composedCanvas.toDataURL('image/jpeg', 0.8);
+  const result = await saveVictoryMemory({ victoryKey: victoryInfo.victoryKey, memoryData, imageDataUrl });
+  saveLocked = false;
+  if (!result.ok) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 SAVE MEMORY';
+    renderSaveError(result.reason === 'upload-failed' ? 'Yükleme başarısız oldu. Tekrar dene.' : 'Kaydedilemedi. Tekrar dene.');
+    return;
+  }
+  renderSaved(result.memory);
 }
 
 function renderSaveError(message) {

@@ -729,7 +729,7 @@ function renderMemories() {
   }
   area.innerHTML = `<div class="memories-grid">${memories.slice().sort((a, b) => b.createdAt - a.createdAt).map(m => `
     <div class="memory-card" data-memory="${m.id}">
-      <img src="${m.imageUrl}" alt="${m.title}">
+      <img src="${m.thumbnailUrl}" alt="${m.title}">
       <div class="mc-title">${m.title}</div>
       <div class="mc-sub">${m.pokemonName} · Lv.${m.pokemonLevel}</div>
     </div>`).join('')}</div>`;
