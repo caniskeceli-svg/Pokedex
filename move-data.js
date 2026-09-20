@@ -338,41 +338,62 @@ function serializeBattleMoves(moves) {
 }
 
 // ---- Level-up move learning ----
-// Called after a Pokemon's level actually changed (battle XP or Rare Candy)
-// with the levels straddled. Returns null if nothing new was learned in
-// that range, otherwise the newest move learned. If the Pokemon already has
-// 4 moves, learning is NOT automatic - the caller must offer a Replace/Keep
-// choice (see applyLevelUpLearn/resolvePendingLearn) rather than silently
-// dropping either the new move or an old one.
+// Phase 21: checkLevelUpLearn used to work by tracking which level RANGE
+// was crossed (oldLevel -> newLevel) and looking up just that range's new
+// move. That silently never re-fired for a Pokemon that was already past
+// every tier threshold before this level<->move sync existed (or that's
+// already sitting at/near the level-100 cap and will never cross another
+// threshold again) - exactly the Pokemon players actually have after many
+// hours of play, so nobody was ever seen learning anything. Now compares
+// "what this Pokemon SHOULD know at `atLevel`" (movesKnownAtLevel, the
+// same source of truth battle moves are hydrated from) against what it
+// actually has, and returns whichever eligible move is missing - this
+// works identically whether the gap is from a level-up that just happened
+// or from years-old stale data, and correctly picks up more than one tier
+// crossed in a single big jump (Rare Candy, a large XP gain) since
+// movesKnownAtLevel already returns only the newest-eligible moves.
+function findMissingLearnableMove(mon, atLevel) {
+  const currentMoves = Array.isArray(mon.moves) ? mon.moves : [];
+  if (!currentMoves.length) return null; // no moves yet at all - ensureInstanceMoves handles first-time init, not a "learned something new" event
+  const currentIds = new Set(currentMoves.map(m => m.id));
+  const target = movesKnownAtLevel(mon.id, atLevel, mon.types);
+  const missing = target.filter(m => !currentIds.has(m.id));
+  if (!missing.length) return null;
+  // movesKnownAtLevel returns oldest-eligible-first, so the last missing
+  // entry is normally the most recently learnable one - EXCEPT the
+  // universal Tackle filler (TYPE_FALLBACK_MOVE_ID.normal), which
+  // fallbackMovesForTypes always appends last regardless of level. Skip it
+  // in favor of a real tiered move whenever one is also missing, so a
+  // level-up never "teaches" the most boring possible move by accident.
+  const meaningful = missing.filter(m => m.id !== TYPE_FALLBACK_MOVE_ID.normal);
+  const pick = meaningful.length ? meaningful : missing;
+  const moveId = pick[pick.length - 1].id;
+  return { moveId, autoLearn: currentMoves.length < 4 };
+}
+
+// Called after a Pokemon's level actually changed (battle XP or Rare Candy).
+// Returns null if nothing new was learned, otherwise the newest move
+// learned. If the Pokemon already has 4 moves, learning is NOT automatic -
+// the caller must offer a Replace/Keep choice (see
+// applyLevelUpLearn/resolvePendingLearn) rather than silently dropping
+// either the new move or an old one.
 function checkLevelUpLearn(mon, oldLevel, newLevel) {
   if (newLevel <= oldLevel) return null;
-  const currentMoves = Array.isArray(mon.moves) ? mon.moves : [];
-  const learnset = getLearnsetFor(mon.id);
-  let moveId;
-  if (learnset) {
-    const newlyEligible = learnset.filter(m => m.level > oldLevel && m.level <= newLevel).sort((a, b) => a.level - b.level);
-    if (!newlyEligible.length) return null;
-    moveId = newlyEligible[newlyEligible.length - 1].moveId;
-  } else {
-    // Fallback-moveset species (everything without a curated MOVESETS
-    // entry) - crossing any FALLBACK_TIERS threshold learns its type's
-    // move for that tier, same "something new as you level" feeling
-    // curated lines get. A dual-type Pokemon's second type's move is a
-    // nice-to-have this doesn't chase - only one move is ever returned per
-    // level-up here, matching the curated path's own "newest one only"
-    // behavior. A big level jump (e.g. Rare Candy chaining, or a large XP
-    // gain) can cross more than one tier at once - only the highest one
-    // crossed is offered, same as the curated path only offering the
-    // newest learnset entry in range.
-    const crossed = FALLBACK_TIERS.filter(tier => oldLevel < tier.level && newLevel >= tier.level);
-    if (!crossed.length) return null;
-    const t = (mon.types || [])[0];
-    if (!t) return null;
-    const highestTier = crossed[crossed.length - 1];
-    moveId = highestTier.movesByType[t] || highestTier.movesByType.normal;
-  }
-  if (currentMoves.some(m => m.id === moveId)) return null;
-  return { moveId, autoLearn: currentMoves.length < 4 };
+  if (mon.pendingLearnMoveId) return null; // don't stomp an unresolved Replace/Keep choice
+  return findMissingLearnableMove(mon, newLevel);
+}
+
+// Passive catch-up check, no level-up event required: is this Pokemon's
+// CURRENT moveset missing something it should already know at its current
+// level? Needed for exactly the case checkLevelUpLearn above can't reach -
+// a Pokemon that's already sitting at (or near) the level-100 cap, so no
+// future level-up will ever fire to trigger a re-check. Called once per
+// view in adventure-hq.html's collection card render so every existing
+// Pokemon catches up the first time its owner looks at it after this fix,
+// without needing a separate one-time migration script.
+function checkStaleLearn(mon) {
+  if (mon.pendingLearnMoveId) return null;
+  return findMissingLearnableMove(mon, mon.level || 1);
 }
 
 // Applies a checkLevelUpLearn() result to a (moves-ensured) instance. When

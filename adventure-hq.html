@@ -680,7 +680,7 @@ function renderBag() {
 }
 
 function renderCollection() {
-  const mydex = getAdventureDex();
+  let mydex = getAdventureDex();
   const inv = getAdventureInventory();
   const area = el('collectionArea');
 
@@ -693,6 +693,23 @@ function renderCollection() {
       </div>`;
     return;
   }
+
+  // Phase 21: catches up any Pokemon whose moves fell behind its current
+  // level before the move-tier fix existed - see move-data.js's
+  // checkStaleLearn. checkLevelUpLearn alone only ever re-fires on a real
+  // level-up event, so a Pokemon already sitting at (or near) the
+  // level-100 cap would otherwise never get evaluated again. This is a
+  // no-op once a Pokemon has actually caught up, so it's cheap to run on
+  // every render rather than needing a separate one-time migration.
+  let staleChanged = false;
+  mydex = mydex.map(p => {
+    const ensured = ensureInstanceMoves(p);
+    const learnResult = checkStaleLearn(ensured);
+    if (!learnResult) return ensured;
+    staleChanged = true;
+    return applyLevelUpLearn(ensured, learnResult);
+  });
+  if (staleChanged) saveAdventureDex(mydex);
 
   area.innerHTML = `<div class="mydex-grid">${mydex.map(p => {
     const maxHp = computeMonMaxHp(p);
