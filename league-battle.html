@@ -224,19 +224,30 @@ function advanceLevelUpQueue() {
   setTimeout(dismiss, 2500);
 }
 
+// Phase 19: same fix as wild-battle.html's WILD_XP_LEVEL_MULTIPLIER - the
+// reward is based on Math.max(the fighter's own level, the enemy team's
+// average level), not the enemy's level alone, so an over-leveled fighter
+// still gets a reward that keeps pace with its own level-up cost. Elite
+// Four/Champion fights are rarer and tougher than a Gym run, so their
+// multiplier is a bit higher than gym-battle.html's.
+const LEAGUE_XP_LEVEL_MULTIPLIER = 14;
+
 // Grants the active Pokemon XP for a first-time Elite Four/Champion
-// victory - mirrors wild-battle.html's awardBattleXp, scaled from the
-// same trainerXp reward the league already defines.
-// Awards pokemonXp to EVERY Pokemon that fought this stage
-// (foughtInstanceIds), not just whoever's active when it falls - each
-// gets the full amount, not a split share.
-function awardPokemonBattleXp(pokemonXp) {
+// victory - mirrors wild-battle.html's awardBattleXp. Awards pokemonXp to
+// EVERY Pokemon that fought this stage (foughtInstanceIds), not just
+// whoever's active when it falls - each gets its own amount (see
+// LEAGUE_XP_LEVEL_MULTIPLIER above), not a split share. Returns the amount
+// awarded to `player` (the currently active fighter) for display.
+function awardPokemonBattleXp(avgEnemyLevel) {
   const mydex = getAdventureDex();
+  let displayXp = 0;
   foughtInstanceIds.forEach(instanceId => {
     const idx = mydex.findIndex(p => p.instanceId === instanceId);
     if (idx === -1) return;
     const mon = mydex[idx];
     const oldLevel = mon.level || 1;
+    const pokemonXp = Math.round(Math.max(oldLevel, avgEnemyLevel) * LEAGUE_XP_LEVEL_MULTIPLIER);
+    if (player && instanceId === player.instanceId) displayXp = pokemonXp;
     const gainedPxp = (mon.pxp || 0) + pokemonXp;
     // A wild catch starts a Pokemon at its caught level with pxp:0 (not
     // the pxp that level would otherwise take to reach), so level must
@@ -251,6 +262,7 @@ function awardPokemonBattleXp(pokemonXp) {
     if (level > oldLevel) showLevelUpCard(mon, oldLevel, level);
   });
   saveAdventureDex(mydex);
+  return displayXp;
 }
 
 function hpBarClass(hp, maxHp) {
@@ -764,8 +776,7 @@ function onStageCleared() {
     // Scaled by the enemy team's own level, not a small fraction of
     // trainerXp - see gym-battle.html's identical reasoning.
     const avgEnemyLevel = stage.data.team.reduce((s, m) => s + m.level, 0) / stage.data.team.length;
-    pokemonXp = Math.round(avgEnemyLevel * 15);
-    awardPokemonBattleXp(pokemonXp);
+    pokemonXp = awardPokemonBattleXp(avgEnemyLevel);
   }
   const rewards = result.alreadyWon ? [] : [`👑 +${result.trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`, `💰 +${result.coins} PokéCoin`];
   const selfieUrl = `victory-selfie.html?type=league_elitefour&leagueId=${leagueId}&stageId=${stage.stageId}`;
@@ -805,8 +816,7 @@ function endBattle(outcome) {
       // Scaled by the Champion's own team level, not a small fraction of
       // trainerXp - see gym-battle.html's identical reasoning.
       const avgEnemyLevel = league.champion.team.reduce((s, m) => s + m.level, 0) / league.champion.team.length;
-      const pokemonXp = Math.round(avgEnemyLevel * 15);
-      awardPokemonBattleXp(pokemonXp);
+      const pokemonXp = awardPokemonBattleXp(avgEnemyLevel);
       const unlockRegionName = league.unlocksRegion && REGIONS[league.unlocksRegion] ? REGIONS[league.unlocksRegion].name : league.unlocksRegion;
       showResult({
         title: `🏆 ${regionName.toUpperCase()} CHAMPION 🏆`,

@@ -217,20 +217,29 @@ function advanceLevelUpQueue() {
   setTimeout(dismiss, 2500);
 }
 
+// Phase 19: same fix as wild-battle.html's WILD_XP_LEVEL_MULTIPLIER - the
+// reward is based on Math.max(the fighter's own level, the enemy team's
+// average level), not the enemy's level alone, so an over-leveled fighter
+// (the norm, not the exception, by the time Gyms/Leagues come up) still
+// gets a reward that keeps pace with its own level-up cost.
+const GYM_XP_LEVEL_MULTIPLIER = 12;
+
 // Grants the active Pokemon XP for a first-time Gym/League victory -
-// mirrors wild-battle.html's awardBattleXp, scaled from the same
-// trainerXp reward gyms/leagues already define (beating a whole team is
-// worth noticeably more than a single wild catch's flat 15 XP).
-// Awards pokemonXp to EVERY Pokemon that fought this run (foughtInstanceIds),
-// not just whoever's active when the last enemy falls - each gets the full
-// amount, not a split share.
-function awardPokemonBattleXp(pokemonXp) {
+// mirrors wild-battle.html's awardBattleXp. Awards pokemonXp to EVERY
+// Pokemon that fought this run (foughtInstanceIds), not just whoever's
+// active when the last enemy falls - each gets its own amount (see
+// GYM_XP_LEVEL_MULTIPLIER above), not a split share. Returns the amount
+// awarded to `player` (the currently active fighter) for display.
+function awardPokemonBattleXp(avgEnemyLevel) {
   const mydex = getAdventureDex();
+  let displayXp = 0;
   foughtInstanceIds.forEach(instanceId => {
     const idx = mydex.findIndex(p => p.instanceId === instanceId);
     if (idx === -1) return;
     const mon = mydex[idx];
     const oldLevel = mon.level || 1;
+    const pokemonXp = Math.round(Math.max(oldLevel, avgEnemyLevel) * GYM_XP_LEVEL_MULTIPLIER);
+    if (player && instanceId === player.instanceId) displayXp = pokemonXp;
     const gainedPxp = (mon.pxp || 0) + pokemonXp;
     // A wild catch starts a Pokemon at its caught level with pxp:0 (not
     // the pxp that level would otherwise take to reach), so level must
@@ -245,6 +254,7 @@ function awardPokemonBattleXp(pokemonXp) {
     if (level > oldLevel) showLevelUpCard(mon, oldLevel, level);
   });
   saveAdventureDex(mydex);
+  return displayXp;
 }
 
 function hpBarClass(hp, maxHp) {
@@ -722,8 +732,7 @@ function endBattle(outcome) {
       // underleveled for later Gyms (reported directly: badges up through
       // Rainbow, but nowhere near ready for Koga's level-30+ team).
       const avgEnemyLevel = gym.team.reduce((s, m) => s + m.level, 0) / gym.team.length;
-      const pokemonXp = Math.round(avgEnemyLevel * 15);
-      awardPokemonBattleXp(pokemonXp);
+      const pokemonXp = awardPokemonBattleXp(avgEnemyLevel);
       showResult({
         title: `🏆 ${gym.leader} Yenildi!`,
         rewards: [

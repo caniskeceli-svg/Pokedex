@@ -689,9 +689,8 @@ function runAway() {
   // to get full credit meant either wasting balls on Pokemon already owned
   // or eating a smaller reward on purpose.
   if (wild.hp <= 1) {
-    const pokemonXp = Math.round(wildLevel * 8);
     const trainerXp = Math.round(wildLevel * 3);
-    awardBattleXp(pokemonXp, trainerXp);
+    const pokemonXp = awardBattleXp(wildLevel, trainerXp);
     showResult({
       title: '🏃 Kaçtın!',
       rewards: [`👑 +${trainerXp} Eğitmen XP`, `⭐ +${pokemonXp} Pokémon XP`],
@@ -702,19 +701,35 @@ function runAway() {
   showResult({ title: '🏃 Kaçtın!', rewards: [], continueLabel: 'Haritaya Dön' });
 }
 
+// Phase 19: pokemonXp used to be a single precomputed number (based on the
+// wild Pokemon's level) applied to every fighter alike. Once level-up cost
+// started scaling with the FIGHTER's own level (the Phase 18 XP curve),
+// that made leveling grind to a halt for anyone over-leveled relative to
+// the wild Pokemon they're fighting - the reward stayed pinned to the
+// (low) wild level while the cost kept climbing with the player's own
+// (high) level. Now takes the wild encounter's level as a basis and
+// computes each fighter's own reward from Math.max(its own level, that
+// basis) * WILD_XP_LEVEL_MULTIPLIER, so the reward always scales with
+// whichever is higher - never falls behind the fighter's own cost curve.
+const WILD_XP_LEVEL_MULTIPLIER = 5;
+
 // Applies XP to the party Pokemon that fought and to the trainer, saves both.
 // Every Pokemon that fought (foughtInstanceIds - the starter plus anyone
-// switched in, not just whoever's active at the very end) gets the full
-// pokemonXp amount, not a split share - simpler and more forgiving, and
-// matches "the ones who fought should earn it" rather than only
-// rewarding whichever one happened to land the last hit.
-function awardBattleXp(pokemonXp, trainerXp) {
+// switched in, not just whoever's active at the very end) gets its own
+// pokemonXp amount (see WILD_XP_LEVEL_MULTIPLIER above) - matches "the ones
+// who fought should earn it" rather than only rewarding whichever one
+// happened to land the last hit. Returns the amount awarded to `player`
+// (the currently active fighter) so callers can show a single number.
+function awardBattleXp(wildLevelBasis, trainerXp) {
   const mydex = getAdventureDex();
+  let displayXp = 0;
   foughtInstanceIds.forEach(instanceId => {
     const idx = mydex.findIndex(p => p.instanceId === instanceId);
     if (idx === -1) return;
     const mon = mydex[idx];
     const oldLevel = mon.level || 1;
+    const pokemonXp = Math.round(Math.max(oldLevel, wildLevelBasis) * WILD_XP_LEVEL_MULTIPLIER);
+    if (player && instanceId === player.instanceId) displayXp = pokemonXp;
     const gainedPxp = (mon.pxp || 0) + pokemonXp;
     // A wild catch starts a Pokemon at its caught level with pxp:0 (not
     // the pxp that level would otherwise take to reach), so level must
@@ -733,6 +748,7 @@ function awardBattleXp(pokemonXp, trainerXp) {
   const p = getAdventurePlayer();
   p.xp += trainerXp;
   pushAdventureCloudAtomic({ "player.xp": firebase.firestore.FieldValue.increment(trainerXp) });
+  return displayXp;
 }
 
 function endBattle(outcome, ballType) {
@@ -762,9 +778,8 @@ function endBattle(outcome, ballType) {
     // sense early on but stopped meaning anything once wild levels climb
     // past the first few routes.
     const trainerXp = Math.round(wildLevel * 3);
-    const pokemonXp = Math.round(wildLevel * 8);
     const coins = 20;
-    awardBattleXp(pokemonXp, trainerXp);
+    const pokemonXp = awardBattleXp(wildLevel, trainerXp);
 
     const newMon = ensureInstanceMoves({
       instanceId: makeInstanceId(wild.id),
