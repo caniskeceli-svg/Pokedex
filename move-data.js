@@ -79,7 +79,52 @@ const MOVE_CATALOG = {
   crunch:         { id: "crunch",         name: "Çıtırdatma",     type: "dark",     category: "physical", power: 80, accuracy: 100, pp: 15 },
   "iron-head":    { id: "iron-head",      name: "Demir Kafa",     type: "steel",    category: "physical", power: 80, accuracy: 100, pp: 15 },
   moonblast:      { id: "moonblast",      name: "Ay Işını",       type: "fairy",    category: "special",  power: 95, accuracy: 100, pp: 15 },
-  "ice-punch":    { id: "ice-punch",      name: "Buz Yumruğu",    type: "ice",      category: "physical", power: 75, accuracy: 100, pp: 15 }
+  "ice-punch":    { id: "ice-punch",      name: "Buz Yumruğu",    type: "ice",      category: "physical", power: 75, accuracy: 100, pp: 15 },
+
+  // Phase 20: a Pokemon used to stop learning anything new past a low level
+  // (FALLBACK_TIER2_LEVEL=15 for most species, or the last curated
+  // MOVESETS entry - level 36 at the latest) even though the level curve
+  // now comfortably reaches 100. Two more tiers per type (see
+  // TYPE_TIER3_MOVE_ID/TYPE_TIER4_MOVE_ID below), all real canonical
+  // moves, give every Pokemon something new to learn well into the
+  // Hoenn/Sinnoh/Unova level range instead of going quiet after Johto.
+  "hyper-beam":     { id: "hyper-beam",     name: "Hiper Işın",      type: "normal",   category: "special",  power: 150, accuracy: 90,  pp: 5 },
+  "close-combat":   { id: "close-combat",   name: "Yakın Dövüş",     type: "fighting", category: "physical", power: 120, accuracy: 100, pp: 5 },
+  "sludge-bomb":    { id: "sludge-bomb",    name: "Lağım Bombası",   type: "poison",   category: "special",  power: 90,  accuracy: 100, pp: 10, effect: { type: "poison", chance: 30 } },
+  "earth-power":    { id: "earth-power",    name: "Yer Gücü",        type: "ground",   category: "special",  power: 90,  accuracy: 100, pp: 10 },
+  hurricane:        { id: "hurricane",      name: "Kasırga",         type: "flying",   category: "special",  power: 110, accuracy: 70,  pp: 10 },
+  psychic:          { id: "psychic",        name: "Ruhsal Güç",      type: "psychic",  category: "special",  power: 90,  accuracy: 100, pp: 10 },
+  "bug-buzz":       { id: "bug-buzz",       name: "Böcek Vızıltısı", type: "bug",      category: "special",  power: 90,  accuracy: 100, pp: 10 },
+  "power-gem":      { id: "power-gem",      name: "Güç Taşı",        type: "rock",     category: "special",  power: 80,  accuracy: 100, pp: 20 },
+  "phantom-force":  { id: "phantom-force",  name: "Hayalet Güç",     type: "ghost",    category: "physical", power: 90,  accuracy: 100, pp: 10 },
+  "dragon-pulse":   { id: "dragon-pulse",   name: "Ejderha Nabzı",   type: "dragon",   category: "special",  power: 85,  accuracy: 100, pp: 10 },
+  "dark-pulse":     { id: "dark-pulse",     name: "Karanlık Nabız",  type: "dark",     category: "special",  power: 80,  accuracy: 100, pp: 15 },
+  "flash-cannon":   { id: "flash-cannon",   name: "Işık Topu",       type: "steel",    category: "special",  power: 80,  accuracy: 100, pp: 10 },
+  "dazzling-gleam": { id: "dazzling-gleam", name: "Göz Kamaştırma",  type: "fairy",    category: "special",  power: 80,  accuracy: 100, pp: 10 },
+  "fire-blast":     { id: "fire-blast",     name: "Ateş Fırtınası",  type: "fire",     category: "special",  power: 110, accuracy: 85,  pp: 5 },
+  "hydro-pump":     { id: "hydro-pump",     name: "Su Pompası",      type: "water",    category: "special",  power: 110, accuracy: 80,  pp: 5 },
+  "solar-beam":     { id: "solar-beam",     name: "Güneş Işını",     type: "grass",    category: "special",  power: 120, accuracy: 100, pp: 10 },
+  thunder:          { id: "thunder",        name: "Gök Gürültüsü",   type: "electric", category: "special",  power: 110, accuracy: 70,  pp: 10 },
+  blizzard:         { id: "blizzard",       name: "Kar Fırtınası",   type: "ice",      category: "special",  power: 110, accuracy: 70,  pp: 5 },
+
+  "giga-impact":    { id: "giga-impact",    name: "Dev Darbe",       type: "normal",   category: "physical", power: 150, accuracy: 90,  pp: 5 },
+  "focus-blast":    { id: "focus-blast",    name: "Odak Bombası",    type: "fighting", category: "special",  power: 120, accuracy: 70,  pp: 5 },
+  "gunk-shot":      { id: "gunk-shot",      name: "Pislik Atışı",    type: "poison",   category: "physical", power: 120, accuracy: 80,  pp: 5 },
+  earthquake:       { id: "earthquake",     name: "Deprem",          type: "ground",   category: "physical", power: 100, accuracy: 100, pp: 10 },
+  "sky-attack":     { id: "sky-attack",     name: "Gökyüzü Saldırısı", type: "flying", category: "physical", power: 140, accuracy: 90,  pp: 5 },
+  psystrike:        { id: "psystrike",      name: "Ruh Darbesi",     type: "psychic",  category: "special",  power: 100, accuracy: 100, pp: 10 },
+  megahorn:         { id: "megahorn",       name: "Mega Boynuz",     type: "bug",      category: "physical", power: 120, accuracy: 85,  pp: 10 },
+  "stone-edge":     { id: "stone-edge",     name: "Taş Kenarı",      type: "rock",     category: "physical", power: 100, accuracy: 80,  pp: 5 },
+  "shadow-force":   { id: "shadow-force",   name: "Gölge Güç",       type: "ghost",    category: "physical", power: 120, accuracy: 100, pp: 5 },
+  outrage:          { id: "outrage",        name: "Öfke",            type: "dragon",   category: "physical", power: 120, accuracy: 100, pp: 10 },
+  "foul-play":      { id: "foul-play",      name: "Hileli Oyun",     type: "dark",     category: "physical", power: 95,  accuracy: 100, pp: 15 },
+  "meteor-mash":    { id: "meteor-mash",    name: "Meteor Yumruğu",  type: "steel",    category: "physical", power: 90,  accuracy: 90,  pp: 10 },
+  "play-rough":     { id: "play-rough",     name: "Sert Oyun",       type: "fairy",    category: "physical", power: 90,  accuracy: 90,  pp: 10 },
+  "flare-blitz":    { id: "flare-blitz",    name: "Alev Hücumu",     type: "fire",     category: "physical", power: 120, accuracy: 100, pp: 15 },
+  scald:            { id: "scald",          name: "Haşlama",         type: "water",    category: "special",  power: 80,  accuracy: 100, pp: 15, effect: { type: "burn", chance: 30 } },
+  "petal-blizzard": { id: "petal-blizzard", name: "Yaprak Fırtınası", type: "grass",   category: "physical", power: 90,  accuracy: 100, pp: 15 },
+  "wild-charge":    { id: "wild-charge",    name: "Vahşi Hücum",     type: "electric", category: "physical", power: 90,  accuracy: 100, pp: 15 },
+  "ice-beam":       { id: "ice-beam",       name: "Buz Işını",       type: "ice",      category: "special",  power: 90,  accuracy: 100, pp: 10 }
 };
 
 function getMoveById(id) {
@@ -112,34 +157,75 @@ const TYPE_TIER2_MOVE_ID = {
 };
 const FALLBACK_TIER2_LEVEL = 15;
 
+// Phase 20: two more tiers so a fallback-moveset species (the vast
+// majority of the dex) keeps learning something new well past level 15,
+// matching the level-100 curve every region's Gym/League chain now
+// actually reaches. Levels roughly track the Johto->Hoenn (tier3) and
+// Sinnoh->Unova (tier4) floors from the Phase 18 rebalance.
+const TYPE_TIER3_MOVE_ID = {
+  normal: "hyper-beam", fighting: "close-combat", poison: "sludge-bomb", ground: "earth-power",
+  flying: "hurricane", psychic: "psychic", bug: "bug-buzz", rock: "power-gem",
+  ghost: "phantom-force", dragon: "dragon-pulse", dark: "dark-pulse", steel: "flash-cannon",
+  fairy: "dazzling-gleam", fire: "fire-blast", water: "hydro-pump", grass: "solar-beam",
+  electric: "thunder", ice: "blizzard"
+};
+const FALLBACK_TIER3_LEVEL = 40;
+
+const TYPE_TIER4_MOVE_ID = {
+  normal: "giga-impact", fighting: "focus-blast", poison: "gunk-shot", ground: "earthquake",
+  flying: "sky-attack", psychic: "psystrike", bug: "megahorn", rock: "stone-edge",
+  ghost: "shadow-force", dragon: "outrage", dark: "foul-play", steel: "meteor-mash",
+  fairy: "play-rough", fire: "flare-blitz", water: "scald", grass: "petal-blizzard",
+  electric: "wild-charge", ice: "ice-beam"
+};
+const FALLBACK_TIER4_LEVEL = 70;
+
+// Ordered ascending by level - both fallbackMovesForTypes and
+// checkLevelUpLearn walk this instead of repeating each tier's own
+// if-check, so adding a future tier is just appending one more entry here.
+const FALLBACK_TIERS = [
+  { level: FALLBACK_TIER2_LEVEL, movesByType: TYPE_TIER2_MOVE_ID },
+  { level: FALLBACK_TIER3_LEVEL, movesByType: TYPE_TIER3_MOVE_ID },
+  { level: FALLBACK_TIER4_LEVEL, movesByType: TYPE_TIER4_MOVE_ID }
+];
+
 // Real, hand-curated learnsets - only for species a player actually controls
 // across a level range (starters + their final evolutions, which also show
 // up in Gym/League rosters). Every other species uses the fallback below.
 const MOVESETS = {
   1: [ // Bulbasaur
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "vine-whip" },
-    { level: 3, moveId: "growl" }, { level: 13, moveId: "razor-leaf" }
+    { level: 3, moveId: "growl" }, { level: 13, moveId: "razor-leaf" },
+    // Phase 20: kept learning past level 13, same reasoning as
+    // TYPE_TIER3/4_MOVE_ID - real Bulbasaur-line moves (Sludge Bomb via
+    // TM, Solar Beam by level in several games).
+    { level: 45, moveId: "sludge-bomb" }, { level: 65, moveId: "solar-beam" }
   ],
   4: [ // Charmander
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "ember" },
-    { level: 9, moveId: "quick-attack" }, { level: 20, moveId: "flamethrower" }
+    { level: 9, moveId: "quick-attack" }, { level: 20, moveId: "flamethrower" },
+    { level: 45, moveId: "fire-blast" }, { level: 70, moveId: "flare-blitz" }
   ],
   6: [ // Charizard
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "ember" },
-    { level: 1, moveId: "quick-attack" }, { level: 36, moveId: "flamethrower" }
+    { level: 1, moveId: "quick-attack" }, { level: 36, moveId: "flamethrower" },
+    { level: 55, moveId: "fire-blast" }, { level: 80, moveId: "flare-blitz" }
   ],
   7: [ // Squirtle
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "water-gun" },
-    { level: 10, moveId: "quick-attack" }, { level: 24, moveId: "water-pulse" }
+    { level: 10, moveId: "quick-attack" }, { level: 24, moveId: "water-pulse" },
+    { level: 45, moveId: "hydro-pump" }, { level: 70, moveId: "scald" }
   ],
   9: [ // Blastoise
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "water-gun" },
-    { level: 1, moveId: "quick-attack" }, { level: 36, moveId: "water-pulse" }
+    { level: 1, moveId: "quick-attack" }, { level: 36, moveId: "water-pulse" },
+    { level: 55, moveId: "hydro-pump" }, { level: 80, moveId: "ice-beam" }
   ],
   25: [ // Pikachu
     { level: 1, moveId: "tackle" }, { level: 1, moveId: "thunder-shock" },
     { level: 10, moveId: "quick-attack" }, { level: 18, moveId: "thunder-wave" },
-    { level: 26, moveId: "thunderbolt" }
+    { level: 26, moveId: "thunderbolt" },
+    { level: 45, moveId: "wild-charge" }, { level: 70, moveId: "thunder" }
   ]
 };
 
@@ -156,17 +242,30 @@ function usesFallbackMoveset(speciesId) {
 
 // Deterministic fallback: one move per (up to 2) types, always topped up
 // with the universal Tackle filler so every Pokemon has at least one
-// guaranteed-neutral move, capped at 4, de-duplicated. Never random. At
-// FALLBACK_TIER2_LEVEL+, each type's stronger tier-2 move is added too
-// (see TYPE_TIER2_MOVE_ID) - every Pokemon gets something new to learn as
+// guaranteed-neutral move, capped at 4, de-duplicated. Never random. Each
+// FALLBACK_TIERS threshold crossed adds that type's stronger move (see
+// TYPE_TIER2/3/4_MOVE_ID) - every Pokemon gets something new to learn as
 // it levels, not just the hand-curated starter lines.
+//
+// Phase 20 fix: the cap used to keep the FIRST 4 unique ids, which meant a
+// dual-type Pokemon's basic+tier2 moves already filled all 4 slots before
+// a higher tier was even appended - the new, stronger moves silently never
+// showed up. Now keeps the LAST 4 unique ids instead (scanning from the
+// newest-pushed move backward), so the most recently learned moves always
+// win, same as a real Pokemon forgetting an old move for a new one.
 function fallbackMovesForTypes(types, level) {
   const ids = (types || []).map(t => TYPE_FALLBACK_MOVE_ID[t] || TYPE_FALLBACK_MOVE_ID.normal);
-  if ((level || 1) >= FALLBACK_TIER2_LEVEL) {
-    (types || []).forEach(t => ids.push(TYPE_TIER2_MOVE_ID[t] || TYPE_TIER2_MOVE_ID.normal));
-  }
+  FALLBACK_TIERS.forEach(tier => {
+    if ((level || 1) >= tier.level) {
+      (types || []).forEach(t => ids.push(tier.movesByType[t] || tier.movesByType.normal));
+    }
+  });
   ids.push(TYPE_FALLBACK_MOVE_ID.normal);
-  const deduped = [...new Set(ids)].slice(0, 4);
+  const deduped = [];
+  for (let i = ids.length - 1; i >= 0 && deduped.length < 4; i--) {
+    if (!deduped.includes(ids[i])) deduped.push(ids[i]);
+  }
+  deduped.reverse();
   return deduped.map(id => getMoveById(id));
 }
 
@@ -256,15 +355,21 @@ function checkLevelUpLearn(mon, oldLevel, newLevel) {
     moveId = newlyEligible[newlyEligible.length - 1].moveId;
   } else {
     // Fallback-moveset species (everything without a curated MOVESETS
-    // entry) - crossing FALLBACK_TIER2_LEVEL learns its type's tier-2
-    // move, same "something new as you level" feeling curated lines get.
-    // A dual-type Pokemon's second type's move is a nice-to-have this
-    // doesn't chase - only one move is ever returned per level-up here,
-    // matching the curated path's own "newest one only" behavior.
-    if (!(oldLevel < FALLBACK_TIER2_LEVEL && newLevel >= FALLBACK_TIER2_LEVEL)) return null;
+    // entry) - crossing any FALLBACK_TIERS threshold learns its type's
+    // move for that tier, same "something new as you level" feeling
+    // curated lines get. A dual-type Pokemon's second type's move is a
+    // nice-to-have this doesn't chase - only one move is ever returned per
+    // level-up here, matching the curated path's own "newest one only"
+    // behavior. A big level jump (e.g. Rare Candy chaining, or a large XP
+    // gain) can cross more than one tier at once - only the highest one
+    // crossed is offered, same as the curated path only offering the
+    // newest learnset entry in range.
+    const crossed = FALLBACK_TIERS.filter(tier => oldLevel < tier.level && newLevel >= tier.level);
+    if (!crossed.length) return null;
     const t = (mon.types || [])[0];
     if (!t) return null;
-    moveId = TYPE_TIER2_MOVE_ID[t] || TYPE_TIER2_MOVE_ID.normal;
+    const highestTier = crossed[crossed.length - 1];
+    moveId = highestTier.movesByType[t] || highestTier.movesByType.normal;
   }
   if (currentMoves.some(m => m.id === moveId)) return null;
   return { moveId, autoLearn: currentMoves.length < 4 };
