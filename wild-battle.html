@@ -281,6 +281,21 @@ function switchAdvice(types, enemyTypes, offenseTypes) {
   return { verdict, note: `${fmtMult(defense)} yer, ${fmtMult(offense)} vurur` };
 }
 
+// Sorts the pre-battle party list so the best matchups are on top: good
+// verdicts first, then neutral, then bad, then fainted (no advice) last -
+// and within each group, higher level first (a stronger same-matchup pick
+// is still the better pick). Takes {p, fainted, advice} entries so callers
+// don't need to recompute switchAdvice just to sort.
+function sortPartyPickerList(items) {
+  const rank = { good: 0, neutral: 1, bad: 2 };
+  return items.slice().sort((a, b) => {
+    const ra = a.advice ? rank[a.advice.verdict] : 3;
+    const rb = b.advice ? rank[b.advice.verdict] : 3;
+    if (ra !== rb) return ra - rb;
+    return (b.p.level || 1) - (a.p.level || 1);
+  });
+}
+
 function renderPartyPicker() {
   const mydex = getAdventureDex().filter(p => p.id < 900000000); // fusions can't be sent into wild battles (Phase 3 scope)
   const wrap = el('wrap');
@@ -304,10 +319,11 @@ function renderPartyPicker() {
     pickList.innerHTML = '<p style="text-align:center;color:#999;">Henüz hiç Adventure Pokémon\'un yok, bu yüzden savaşamazsın. <a href="adventure.html">Haritaya dön</a>.</p>';
     return;
   }
-  pickList.innerHTML = mydex.map(p => {
+  pickList.innerHTML = sortPartyPickerList(mydex.map(p => {
     const fainted = p.fainted === true;
     const advice = (!fainted && p.types) ? switchAdvice(p.types, wild.types, knownMoveTypes(p)) : null;
-    return `
+    return { p, fainted, advice };
+  })).map(({ p, fainted, advice }) => `
       <div class="pick-item ${fainted ? 'disabled' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-instance="${p.instanceId || ''}">
         <img src="${p.img}" alt="${p.name}">
         <div>
@@ -316,8 +332,7 @@ function renderPartyPicker() {
           <div>${(p.types || []).map(typeChip).join(' ')}</div>
           ${advice ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : advice.verdict === 'bad' ? '⚠️' : '➖'} ${advice.note}</div>` : ''}
         </div>
-      </div>`;
-  }).join('');
+      </div>`).join('');
   pickList.querySelectorAll('.pick-item:not(.disabled)').forEach(itemEl => {
     itemEl.addEventListener('click', () => {
       const mon = mydex.find(p => p.instanceId === itemEl.dataset.instance);
