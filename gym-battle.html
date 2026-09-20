@@ -563,12 +563,13 @@ function renderSwitchPicker(forced) {
       <div id="switchList"></div>
       ${forced ? '' : '<button class="run-btn" id="switchCancelBtn">◀ Vazgeç</button>'}
     </div>`;
-  el('switchList').innerHTML = battleParty.map((m, i) => {
+  el('switchList').innerHTML = sortPartyPickerList(battleParty.map((m, i) => {
     const fainted = m.hp <= 0;
     const disabled = i === activeIndex || fainted;
     const advice = (!disabled && m.types) ? switchAdvice(m.types, enemy.types, knownMoveTypes(m)) : null;
     const canRevive = fainted && (inv.revive || 0) > 0;
-    return `
+    return { p: m, i, disabled, fainted, advice, canRevive };
+  })).map(({ p: m, i, disabled, fainted, advice, canRevive }) => `
       <div class="switch-item ${disabled ? 'disabled' : ''} ${canRevive ? 'revivable' : ''} ${i === activeIndex ? 'active' : ''} ${advice ? 'sw-' + advice.verdict : ''}" data-idx="${i}">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${m.id}.png" alt="${m.name}">
         <div style="flex:1;">
@@ -579,8 +580,7 @@ function renderSwitchPicker(forced) {
           ${advice ? `<div class="sw-note sw-note-${advice.verdict}">${advice.verdict === 'good' ? '✓' : advice.verdict === 'bad' ? '⚠️' : '➖'} ${advice.note}</div>` : ''}
           ${canRevive ? `<button class="revive-btn" data-revive-idx="${i}">✨ Canlandırıcı Kullan (${inv.revive})</button>` : ''}
         </div>
-      </div>`;
-  }).join('');
+      </div>`).join('');
   el('switchList').querySelectorAll('.switch-item:not(.disabled)').forEach(itemEl => {
     itemEl.addEventListener('click', () => confirmSwitch(Number(itemEl.dataset.idx), forced));
   });
