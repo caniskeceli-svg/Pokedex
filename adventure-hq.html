@@ -376,7 +376,7 @@ async function showPokemonDetail(instanceId) {
 
   const maxHp = computeMonMaxHp(mon);
   const curHp = computeMonCurrentHp(mon);
-  const li = pokemonLevelInfo(mon.pxp || 0);
+  const li = pokemonLevelInfo(Math.max(mon.pxp || 0, xpForLevel(mon.level || 1)));
   const overlay = document.createElement('div');
   overlay.className = 'mon-detail-overlay show';
   overlay.innerHTML = `
@@ -749,7 +749,15 @@ function renderCollection() {
         <div class="m-hp-track"><div class="m-hp-fill ${hpPct < 25 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
         <div class="m-hp-text">${fainted ? '' : `${curHp}/${maxHp} HP · `}Lv.${p.level || 1}</div>
         ${(p.level || 1) >= 100 ? '' : (() => {
-          const li = pokemonLevelInfo(p.pxp || 0);
+          // Phase 18: pxp values saved before the XP-curve rebalance were
+          // accumulated under the old flat-100-per-level rule, so a
+          // Pokemon's raw pxp can now compute to a LOWER level than its
+          // actual stored level under the new, steeper curve - showing a
+          // nonsensical XP bar (e.g. "Lv.25" header next to a bar that
+          // thinks it's barely past Lv.12). Same floor-clamp already used
+          // everywhere else pxp/level must stay consistent (see
+          // wild-battle.html's awardBattleXp).
+          const li = pokemonLevelInfo(Math.max(p.pxp || 0, xpForLevel(p.level || 1)));
           const xpPct = Math.max(0, Math.min(100, Math.round((li.xpIntoLevel / li.xpForNextLevel) * 100)));
           return `<div class="m-xp-track"><div class="m-xp-fill" style="width:${xpPct}%"></div></div>
         <div class="m-xp-text">⭐ ${li.xpIntoLevel}/${li.xpForNextLevel} XP</div>`;

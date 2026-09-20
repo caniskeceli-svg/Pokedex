@@ -36,7 +36,7 @@ function giveStarter(speciesData) {
     stats: speciesData.stats,
     power: speciesData.power,
     level,
-    pxp: (level - 1) * POKEMON_XP_PER_LEVEL,
+    pxp: xpForLevel(level),
     friendship: STARTER_FRIENDSHIP,
     shiny: false,
     source: "starter",

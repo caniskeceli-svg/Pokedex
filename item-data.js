@@ -112,7 +112,7 @@ function applyRareCandy(instanceId) {
   const newLevel = oldLevel + 1;
   // Keep pxp consistent with the new level so a later battle XP gain
   // computes the right next level (never lower than what levelInfo implies).
-  const newPxp = Math.max(mon.pxp || 0, (newLevel - 1) * POKEMON_XP_PER_LEVEL);
+  const newPxp = Math.max(mon.pxp || 0, xpForLevel(newLevel));
   const newMaxHp = computeMonMaxHp(Object.assign({}, mon, { level: newLevel }));
   const newCurrentHp = Math.min(newMaxHp, oldCurrentHp + (newMaxHp - oldMaxHp));
   const ensuredMon = ensureInstanceMoves(mon);

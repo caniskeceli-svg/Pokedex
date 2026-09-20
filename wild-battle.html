@@ -723,7 +723,7 @@ function awardBattleXp(pokemonXp, trainerXp) {
     // the two consistent for the next gain and for the XP bar's own
     // pokemonLevelInfo call - same fix applyRareCandy already uses.
     const level = Math.max(oldLevel, pokemonLevelInfo(gainedPxp).level);
-    const newPxp = Math.max(gainedPxp, (level - 1) * POKEMON_XP_PER_LEVEL);
+    const newPxp = Math.max(gainedPxp, xpForLevel(level));
     const learnResult = checkLevelUpLearn(mon, oldLevel, level);
     const leveled = Object.assign({}, mon, { pxp: newPxp, level });
     mydex[idx] = applyLevelUpLearn(leveled, learnResult);
