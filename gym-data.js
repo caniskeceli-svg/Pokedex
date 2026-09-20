@@ -112,17 +112,20 @@ const GYM_CATALOG = [
     leader: "Falkner", type: "flying", requiresBadge: null,
     badge: { id: "zephyr", name: "Meltem Rozeti", icon: "🌪️" },
     description: "Uçan tip ustası Falkner ile savaş!",
-    // Phase 17 rebalance: Johto's original 7/9 assumed a player starting
-    // completely fresh, the way the real games do. This app carries the
-    // same Pokemon (and their XP) across every region with no reset, and
-    // wild/gym battles now grant real Pokemon XP - live data pulled from
-    // both real profiles showed players arriving in Johto with an already
-    // ~27-33 median party level (some individual Pokemon well past that),
-    // making the original numbers a non-fight. Rebalanced the whole Johto
-    // Gym chain upward to match that, still escalating 1->8 within Johto.
+    // Phase 18 rebalance: the true "floor" on entering Johto isn't the
+    // dex-wide average level (skewed low by unused filler catches) - it's
+    // that beating Kanto's own League Champion already requires levels
+    // 58-61 (see league-data.js's kanto entry, unchanged). Anchored the
+    // whole Johto->Unova chain off that real number instead: each region's
+    // gym1 gets a deliberate "reset dip" below the previous region's
+    // Champion (same feel as a real game's new region), but that dip
+    // shrinks region over region (Johto's is the biggest) so the curve
+    // still has headroom for ~4-5 more regions after Unova before hitting
+    // the level-100 cap - see the Phase 18 chat report for the full
+    // backward-computed table.
     team: [
-      { speciesId: 16, level: 24 }, // Pidgey
-      { speciesId: 17, level: 26 }  // Pidgeotto
+      { speciesId: 16, level: 41 }, // Pidgey
+      { speciesId: 17, level: 43 }  // Pidgeotto
     ],
     rewards: { trainerXp: 500, coins: 1000 }
   },
@@ -132,9 +135,9 @@ const GYM_CATALOG = [
     badge: { id: "hive", name: "Kovan Rozeti", icon: "🐝" },
     description: "Böcek tip ustası Bugsy ile savaş!",
     team: [
-      { speciesId: 11, level: 28 },  // Metapod
-      { speciesId: 14, level: 28 },  // Kakuna
-      { speciesId: 123, level: 30 }  // Scyther
+      { speciesId: 11, level: 44 },  // Metapod
+      { speciesId: 14, level: 44 },  // Kakuna
+      { speciesId: 123, level: 46 }  // Scyther
     ],
     rewards: { trainerXp: 600, coins: 1200 }
   },
@@ -144,8 +147,8 @@ const GYM_CATALOG = [
     badge: { id: "plain", name: "Ova Rozeti", icon: "⚪" },
     description: "Normal tip ustası Whitney ile savaş!",
     team: [
-      { speciesId: 35, level: 32 },  // Clefairy
-      { speciesId: 241, level: 34 }  // Miltank
+      { speciesId: 35, level: 47 },  // Clefairy
+      { speciesId: 241, level: 49 }  // Miltank
     ],
     rewards: { trainerXp: 700, coins: 1400 }
   },
@@ -155,10 +158,10 @@ const GYM_CATALOG = [
     badge: { id: "fog", name: "Sis Rozeti", icon: "🌫️" },
     description: "Hayalet tip ustası Morty ile savaş!",
     team: [
-      { speciesId: 92, level: 35 }, // Gastly
-      { speciesId: 93, level: 35 }, // Haunter
-      { speciesId: 94, level: 39 }, // Gengar
-      { speciesId: 93, level: 37 }  // Haunter
+      { speciesId: 92, level: 50 }, // Gastly
+      { speciesId: 93, level: 50 }, // Haunter
+      { speciesId: 94, level: 53 }, // Gengar
+      { speciesId: 93, level: 52 }  // Haunter
     ],
     rewards: { trainerXp: 850, coins: 1700 }
   },
@@ -168,8 +171,8 @@ const GYM_CATALOG = [
     badge: { id: "storm", name: "Fırtına Rozeti", icon: "⛈️" },
     description: "Dövüş tip ustası Chuck ile savaş!",
     team: [
-      { speciesId: 57, level: 41 }, // Primeape
-      { speciesId: 62, level: 43 }  // Poliwrath
+      { speciesId: 57, level: 55 }, // Primeape
+      { speciesId: 62, level: 56 }  // Poliwrath
     ],
     rewards: { trainerXp: 1000, coins: 2000 }
   },
@@ -179,9 +182,9 @@ const GYM_CATALOG = [
     badge: { id: "mineral", name: "Mineral Rozeti", icon: "💎" },
     description: "Çelik tip ustası Jasmine ile savaş!",
     team: [
-      { speciesId: 81, level: 45 },  // Magnemite
-      { speciesId: 81, level: 45 },  // Magnemite
-      { speciesId: 208, level: 48 }  // Steelix
+      { speciesId: 81, level: 58 },  // Magnemite
+      { speciesId: 81, level: 58 },  // Magnemite
+      { speciesId: 208, level: 60 }  // Steelix
     ],
     rewards: { trainerXp: 1150, coins: 2300 }
   },
@@ -191,9 +194,9 @@ const GYM_CATALOG = [
     badge: { id: "glacier", name: "Buzul Rozeti", icon: "🧊" },
     description: "Buz tip ustası Pryce ile savaş!",
     team: [
-      { speciesId: 86, level: 47 },  // Seel
-      { speciesId: 87, level: 49 },  // Dewgong
-      { speciesId: 221, level: 51 }  // Piloswine
+      { speciesId: 86, level: 60 },  // Seel
+      { speciesId: 87, level: 61 },  // Dewgong
+      { speciesId: 221, level: 63 }  // Piloswine
     ],
     rewards: { trainerXp: 1300, coins: 2600 }
   },
@@ -203,10 +206,10 @@ const GYM_CATALOG = [
     badge: { id: "rising", name: "Yükselen Rozet", icon: "🐉" },
     description: "Ejderha tip ustası Clair ile Johto'nun son savaşı!",
     team: [
-      { speciesId: 148, level: 51 }, // Dragonair
-      { speciesId: 148, level: 51 }, // Dragonair
-      { speciesId: 148, level: 51 }, // Dragonair
-      { speciesId: 230, level: 55 }  // Kingdra
+      { speciesId: 148, level: 63 }, // Dragonair
+      { speciesId: 148, level: 63 }, // Dragonair
+      { speciesId: 148, level: 63 }, // Dragonair
+      { speciesId: 230, level: 66 }  // Kingdra
     ],
     rewards: { trainerXp: 1500, coins: 3000 }
   },
@@ -225,14 +228,14 @@ const GYM_CATALOG = [
     leader: "Roxanne", type: "rock", requiresBadge: null,
     badge: { id: "stone", name: "Taş Rozeti", icon: "🪨" },
     description: "Kaya tipi ustası Roxanne ile Hoenn'in ilk savaşı!",
-    // Phase 17 rebalance: cascaded upward after Johto's own rebalance (see
-    // johto_violet's comment in this file) - Johto's Champion now peaks
-    // around level 66, so Hoenn's original 12-46 range would have been an
-    // even bigger cliff than the original Johto problem this was meant to
-    // fix. Hoenn's own 1->8 escalation is preserved, just shifted.
+    // Phase 18 rebalance: cascaded from Johto's own rebalance (see
+    // johto_violet's comment in this file) - same "reset dip below the
+    // previous Champion, shrinking each region" logic, just a smaller dip
+    // than Johto's since less headroom remains before the level-100 cap.
+    // Hoenn's own 1->8 escalation is preserved, just shifted/compressed.
     team: [
-      { speciesId: 74, level: 58 },  // Geodude
-      { speciesId: 299, level: 61 }  // Nosepass
+      { speciesId: 74, level: 61 },  // Geodude
+      { speciesId: 299, level: 63 }  // Nosepass
     ],
     rewards: { trainerXp: 1350, coins: 2700 }
   },
@@ -242,7 +245,7 @@ const GYM_CATALOG = [
     badge: { id: "knuckle", name: "Yumruk Rozeti", icon: "👊" },
     description: "Dövüş tipi ustası Brawly ile savaş!",
     team: [
-      { speciesId: 66, level: 63 },  // Machop
+      { speciesId: 66, level: 64 },  // Machop
       { speciesId: 296, level: 65 }  // Makuhita
     ],
     rewards: { trainerXp: 1450, coins: 2900 }
@@ -253,9 +256,9 @@ const GYM_CATALOG = [
     badge: { id: "dynamo", name: "Dinamo Rozeti", icon: "⚡" },
     description: "Elektrik tipi ustası Wattson ile savaş!",
     team: [
-      { speciesId: 100, level: 66 }, // Voltorb
-      { speciesId: 82, level: 68 },  // Magneton
-      { speciesId: 310, level: 70 }  // Manectric
+      { speciesId: 100, level: 65 }, // Voltorb
+      { speciesId: 82, level: 66 },  // Magneton
+      { speciesId: 310, level: 67 }  // Manectric
     ],
     rewards: { trainerXp: 1550, coins: 3100 }
   },
@@ -265,9 +268,9 @@ const GYM_CATALOG = [
     badge: { id: "heat", name: "Alev Rozeti", icon: "🌋" },
     description: "Ateş tipi ustası Flannery ile savaş!",
     team: [
-      { speciesId: 322, level: 70 }, // Numel
-      { speciesId: 218, level: 70 }, // Slugma
-      { speciesId: 324, level: 73 }  // Torkoal
+      { speciesId: 322, level: 67 }, // Numel
+      { speciesId: 218, level: 67 }, // Slugma
+      { speciesId: 324, level: 69 }  // Torkoal
     ],
     rewards: { trainerXp: 1650, coins: 3300 }
   },
@@ -277,9 +280,9 @@ const GYM_CATALOG = [
     badge: { id: "balance", name: "Denge Rozeti", icon: "⚖️" },
     description: "Eğitmen babası Norman ile Hoenn'in orta sınavı!",
     team: [
-      { speciesId: 287, level: 73 }, // Slakoth
-      { speciesId: 264, level: 75 }, // Linoone
-      { speciesId: 288, level: 77 }  // Vigoroth
+      { speciesId: 287, level: 69 }, // Slakoth
+      { speciesId: 264, level: 70 }, // Linoone
+      { speciesId: 288, level: 71 }  // Vigoroth
     ],
     rewards: { trainerXp: 1750, coins: 3500 }
   },
@@ -289,9 +292,9 @@ const GYM_CATALOG = [
     badge: { id: "feather", name: "Tüy Rozeti", icon: "🪶" },
     description: "Uçan tip ustası Winona ile savaş!",
     team: [
-      { speciesId: 333, level: 75 }, // Swablu
-      { speciesId: 357, level: 76 }, // Tropius
-      { speciesId: 334, level: 78 }  // Altaria
+      { speciesId: 333, level: 70 }, // Swablu
+      { speciesId: 357, level: 71 }, // Tropius
+      { speciesId: 334, level: 72 }  // Altaria
     ],
     rewards: { trainerXp: 1850, coins: 3700 }
   },
@@ -301,8 +304,8 @@ const GYM_CATALOG = [
     badge: { id: "mind", name: "Zihin Rozeti", icon: "🔮" },
     description: "İkiz Ruh ustaları Tate & Liza ile savaş!",
     team: [
-      { speciesId: 338, level: 81 }, // Solrock
-      { speciesId: 337, level: 81 }  // Lunatone
+      { speciesId: 338, level: 73 }, // Solrock
+      { speciesId: 337, level: 73 }  // Lunatone
     ],
     rewards: { trainerXp: 1950, coins: 3900 }
   },
@@ -312,10 +315,10 @@ const GYM_CATALOG = [
     badge: { id: "rain", name: "Yağmur Rozeti", icon: "🌧️" },
     description: "Su tipi ustası Juan ile Hoenn'in son Salon savaşı!",
     team: [
-      { speciesId: 370, level: 83 }, // Luvdisc
-      { speciesId: 340, level: 84 }, // Whiscash
-      { speciesId: 364, level: 84 }, // Sealeo
-      { speciesId: 230, level: 86 }  // Kingdra
+      { speciesId: 370, level: 75 }, // Luvdisc
+      { speciesId: 340, level: 75 }, // Whiscash
+      { speciesId: 364, level: 75 }, // Sealeo
+      { speciesId: 230, level: 76 }  // Kingdra
     ],
     rewards: { trainerXp: 2100, coins: 4200 }
   },
@@ -333,17 +336,15 @@ const GYM_CATALOG = [
     leader: "Roark", type: "rock", requiresBadge: null,
     badge: { id: "coal", name: "Kömür Rozeti", icon: "🪨" },
     description: "Kaya tipi ustası Roark ile Sinnoh'un ilk savaşı!",
-    // Phase 17 rebalance: cascaded upward alongside Johto/Hoenn's own
-    // rebalance (see johto_violet/hoenn_rustboro's comments) - Hoenn's
-    // Champion now peaks around level 95, leaving very little headroom
-    // before the level-100 cap. Sinnoh and Unova's own 1->8 escalation is
-    // necessarily compressed into that remaining room rather than jumping
-    // by the same margin every region did earlier - by this point in the
-    // game a plateau near the level cap is the honest, sustainable design,
-    // not a bug (see the Phase 17 chat report for the full reasoning).
+    // Phase 18 rebalance: cascaded alongside Johto/Hoenn's own rebalance
+    // (see johto_violet/hoenn_rustboro's comments) - same shrinking "reset
+    // dip" logic. Sinnoh and Unova are deliberately left well short of the
+    // level-100 cap (unlike the Phase 17 version of this rebalance, which
+    // slammed both into the cap) specifically to leave room for the ~4-5
+    // more regions planned after Unova - see the Phase 18 chat report.
     team: [
-      { speciesId: 74, level: 87 },  // Geodude
-      { speciesId: 408, level: 88 }  // Cranidos
+      { speciesId: 74, level: 70 },  // Geodude
+      { speciesId: 408, level: 71 }  // Cranidos
     ],
     rewards: { trainerXp: 2200, coins: 4400 }
   },
@@ -353,9 +354,9 @@ const GYM_CATALOG = [
     badge: { id: "forest", name: "Orman Rozeti", icon: "🌲" },
     description: "Çimen tipi ustası Gardenia ile savaş!",
     team: [
-      { speciesId: 406, level: 88 }, // Budew
-      { speciesId: 315, level: 89 }, // Roselia
-      { speciesId: 421, level: 90 }  // Cherrim
+      { speciesId: 406, level: 71 }, // Budew
+      { speciesId: 315, level: 72 }, // Roselia
+      { speciesId: 421, level: 73 }  // Cherrim
     ],
     rewards: { trainerXp: 2300, coins: 4600 }
   },
@@ -365,9 +366,9 @@ const GYM_CATALOG = [
     badge: { id: "cobble", name: "Çakıl Rozeti", icon: "🥊" },
     description: "Dövüş tipi ustası Maylene ile savaş!",
     team: [
-      { speciesId: 307, level: 90 }, // Meditite
-      { speciesId: 67, level: 91 },  // Machoke
-      { speciesId: 448, level: 92 }  // Lucario
+      { speciesId: 307, level: 73 }, // Meditite
+      { speciesId: 67, level: 75 },  // Machoke
+      { speciesId: 448, level: 76 }  // Lucario
     ],
     rewards: { trainerXp: 2400, coins: 4800 }
   },
@@ -377,9 +378,9 @@ const GYM_CATALOG = [
     badge: { id: "fen", name: "Bataklık Rozeti", icon: "🌊" },
     description: "Su tipi ustası Crasher Wake ile savaş!",
     team: [
-      { speciesId: 130, level: 91 }, // Gyarados
-      { speciesId: 195, level: 91 }, // Quagsire
-      { speciesId: 419, level: 92 }  // Floatzel
+      { speciesId: 130, level: 75 }, // Gyarados
+      { speciesId: 195, level: 75 }, // Quagsire
+      { speciesId: 419, level: 76 }  // Floatzel
     ],
     rewards: { trainerXp: 2500, coins: 5000 }
   },
@@ -389,9 +390,9 @@ const GYM_CATALOG = [
     badge: { id: "relic", name: "Kalıntı Rozeti", icon: "👻" },
     description: "Hayalet tipi ustası Fantina ile savaş!",
     team: [
-      { speciesId: 355, level: 92 }, // Duskull
-      { speciesId: 93, level: 92 },  // Haunter
-      { speciesId: 429, level: 93 }  // Mismagius
+      { speciesId: 355, level: 76 }, // Duskull
+      { speciesId: 93, level: 76 },  // Haunter
+      { speciesId: 429, level: 77 }  // Mismagius
     ],
     rewards: { trainerXp: 2600, coins: 5200 }
   },
@@ -401,9 +402,9 @@ const GYM_CATALOG = [
     badge: { id: "mine", name: "Maden Rozeti", icon: "⛏️" },
     description: "Çelik tipi ustası Byron ile savaş!",
     team: [
-      { speciesId: 82, level: 93 },  // Magneton
-      { speciesId: 208, level: 94 }, // Steelix
-      { speciesId: 411, level: 94 }  // Bastiodon
+      { speciesId: 82, level: 77 },  // Magneton
+      { speciesId: 208, level: 78 }, // Steelix
+      { speciesId: 411, level: 78 }  // Bastiodon
     ],
     rewards: { trainerXp: 2700, coins: 5400 }
   },
@@ -413,9 +414,9 @@ const GYM_CATALOG = [
     badge: { id: "icicle", name: "Buz Sarkıtı Rozeti", icon: "❄️" },
     description: "Buz tipi ustası Candice ile savaş!",
     team: [
-      { speciesId: 215, level: 94 }, // Sneasel
-      { speciesId: 308, level: 95 }, // Medicham
-      { speciesId: 460, level: 95 }  // Abomasnow
+      { speciesId: 215, level: 78 }, // Sneasel
+      { speciesId: 308, level: 79 }, // Medicham
+      { speciesId: 460, level: 79 }  // Abomasnow
     ],
     rewards: { trainerXp: 2800, coins: 5600 }
   },
@@ -425,9 +426,9 @@ const GYM_CATALOG = [
     badge: { id: "beacon", name: "Fener Rozeti", icon: "🔆" },
     description: "Elektrik tipi ustası Volkner ile Sinnoh'un son Salon savaşı!",
     team: [
-      { speciesId: 26, level: 95 },  // Raichu
-      { speciesId: 405, level: 96 }, // Luxray
-      { speciesId: 466, level: 97 }  // Electivire
+      { speciesId: 26, level: 79 },  // Raichu
+      { speciesId: 405, level: 80 }, // Luxray
+      { speciesId: 466, level: 82 }  // Electivire
     ],
     rewards: { trainerXp: 3000, coins: 6000 }
   },
@@ -449,18 +450,16 @@ const GYM_CATALOG = [
     leader: "Cilan, Chili & Cress", type: "mixed", requiresBadge: null,
     badge: { id: "trio", name: "Üçlü Rozet", icon: "🍃" },
     description: "Striaton'ın üç kardeş lideri Cilan, Chili ve Cress ile Unova'nın ilk savaşı!",
-    // Phase 17 rebalance: cascaded upward alongside every earlier region's
-    // own rebalance (see johto_violet/hoenn_rustboro/sinnoh_oreburgh's
-    // comments in this file). Sinnoh's Champion already peaks at exactly
-    // 100 (the level cap), so Unova - the fifth and currently final
-    // region - can't keep escalating by the same margin every earlier
-    // region did; its own 1->8 progression is compressed into the little
-    // headroom left below the cap, which is the honest, sustainable
-    // outcome of a level-100 ceiling, not a design mistake.
+    // Phase 18 rebalance: cascaded alongside every earlier region's own
+    // rebalance (see johto_violet/hoenn_rustboro/sinnoh_oreburgh's comments
+    // in this file). Unova - the fifth region, no longer assumed to be the
+    // last - is deliberately kept well under the level-100 cap, leaving
+    // room for the ~4-5 more regions planned after it; see the Phase 18
+    // chat report for the full backward-computed 9-region table.
     team: [
-      { speciesId: 511, level: 90 }, // Pansage
-      { speciesId: 513, level: 90 }, // Pansear
-      { speciesId: 515, level: 91 }  // Panpour
+      { speciesId: 511, level: 77 }, // Pansage
+      { speciesId: 513, level: 77 }, // Pansear
+      { speciesId: 515, level: 78 }  // Panpour
     ],
     rewards: { trainerXp: 3200, coins: 6400 }
   },
@@ -470,8 +469,8 @@ const GYM_CATALOG = [
     badge: { id: "basic", name: "Temel Rozet", icon: "⬜" },
     description: "Normal tipi ustası Lenora ile savaş!",
     team: [
-      { speciesId: 507, level: 91 }, // Herdier
-      { speciesId: 505, level: 93 }  // Watchog
+      { speciesId: 507, level: 78 }, // Herdier
+      { speciesId: 505, level: 81 }  // Watchog
     ],
     rewards: { trainerXp: 3300, coins: 6600 }
   },
@@ -481,9 +480,9 @@ const GYM_CATALOG = [
     badge: { id: "insect", name: "Böcek Rozeti", icon: "🐛" },
     description: "Böcek tipi ustası Burgh ile savaş!",
     team: [
-      { speciesId: 544, level: 92 }, // Whirlipede
-      { speciesId: 557, level: 93 }, // Dwebble
-      { speciesId: 542, level: 94 }  // Leavanny
+      { speciesId: 544, level: 79 }, // Whirlipede
+      { speciesId: 557, level: 81 }, // Dwebble
+      { speciesId: 542, level: 82 }  // Leavanny
     ],
     rewards: { trainerXp: 3400, coins: 6800 }
   },
@@ -493,9 +492,9 @@ const GYM_CATALOG = [
     badge: { id: "bolt", name: "Şimşek Rozeti", icon: "⚡" },
     description: "Elektrik tipi ustası Elesa ile savaş!",
     team: [
-      { speciesId: 587, level: 94 }, // Emolga
-      { speciesId: 523, level: 95 }, // Zebstrika
-      { speciesId: 596, level: 95 }  // Galvantula
+      { speciesId: 587, level: 82 }, // Emolga
+      { speciesId: 523, level: 83 }, // Zebstrika
+      { speciesId: 596, level: 83 }  // Galvantula
     ],
     rewards: { trainerXp: 3500, coins: 7000 }
   },
@@ -505,8 +504,8 @@ const GYM_CATALOG = [
     badge: { id: "quake", name: "Deprem Rozeti", icon: "🌍" },
     description: "Toprak tipi ustası Clay ile savaş!",
     team: [
-      { speciesId: 552, level: 95 }, // Krokorok
-      { speciesId: 530, level: 96 }  // Excadrill
+      { speciesId: 552, level: 83 }, // Krokorok
+      { speciesId: 530, level: 84 }  // Excadrill
     ],
     rewards: { trainerXp: 3600, coins: 7200 }
   },
@@ -516,9 +515,9 @@ const GYM_CATALOG = [
     badge: { id: "jet", name: "Jet Rozeti", icon: "✈️" },
     description: "Uçan tipi ustası Skyla ile savaş!",
     team: [
-      { speciesId: 528, level: 96 }, // Swoobat
-      { speciesId: 561, level: 96 }, // Sigilyph
-      { speciesId: 581, level: 97 }  // Swanna
+      { speciesId: 528, level: 84 }, // Swoobat
+      { speciesId: 561, level: 84 }, // Sigilyph
+      { speciesId: 581, level: 85 }  // Swanna
     ],
     rewards: { trainerXp: 3700, coins: 7400 }
   },
@@ -528,9 +527,9 @@ const GYM_CATALOG = [
     badge: { id: "freeze", name: "Buz Rozeti", icon: "❄️" },
     description: "Buz tipi ustası Brycen ile savaş!",
     team: [
-      { speciesId: 583, level: 97 }, // Vanillish
-      { speciesId: 615, level: 97 }, // Cryogonal
-      { speciesId: 614, level: 98 }  // Beartic
+      { speciesId: 583, level: 85 }, // Vanillish
+      { speciesId: 615, level: 85 }, // Cryogonal
+      { speciesId: 614, level: 87 }  // Beartic
     ],
     rewards: { trainerXp: 3800, coins: 7600 }
   },
@@ -540,9 +539,9 @@ const GYM_CATALOG = [
     badge: { id: "legend", name: "Efsane Rozeti", icon: "🐉" },
     description: "Ejderha tipi ustası Drayden ile Unova'nın son Salon savaşı!",
     team: [
-      { speciesId: 611, level: 97 }, // Fraxure
-      { speciesId: 621, level: 98 }, // Druddigon
-      { speciesId: 612, level: 99 }  // Haxorus
+      { speciesId: 611, level: 85 }, // Fraxure
+      { speciesId: 621, level: 87 }, // Druddigon
+      { speciesId: 612, level: 88 }  // Haxorus
     ],
     rewards: { trainerXp: 4000, coins: 8000 }
   }

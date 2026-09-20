@@ -73,21 +73,20 @@ const LEAGUE_CATALOG = [
     // only mark the region completed, never invent/unlock a region beyond it.
     leagueId: "johto_league", regionId: "johto",
     requiresBadges: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
-    // Phase 17 rebalance: shifted upward alongside the Johto Gym chain -
-    // see johto_violet's own comment in gym-data.js for the full
-    // rationale (real player data showed a ~27-33 median party level
-    // already on entering Johto, making the original 40-50 range trivial
-    // after 8 rebalanced Gyms only added maybe +10 more levels).
+    // Phase 18 rebalance: shifted alongside the Johto Gym chain - see
+    // johto_violet's own comment in gym-data.js for the full rationale
+    // (anchored off Kanto League's real Champion level, 58-61, not the
+    // flawed dex-wide average the Phase 17 version of this used).
     eliteFour: [
       {
         id: "will", order: 1, name: "Will", type: "psychic",
         description: "Psişik ustası Will, Johto Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 178, level: 56 }, // Xatu
-          { speciesId: 124, level: 57 }, // Jynx
-          { speciesId: 103, level: 57 }, // Exeggutor
-          { speciesId: 80, level: 57 },  // Slowbro
-          { speciesId: 178, level: 58 }  // Xatu
+          { speciesId: 178, level: 67 }, // Xatu
+          { speciesId: 124, level: 68 }, // Jynx
+          { speciesId: 103, level: 68 }, // Exeggutor
+          { speciesId: 80, level: 68 },  // Slowbro
+          { speciesId: 178, level: 69 }  // Xatu
         ],
         rewards: { trainerXp: 650, coins: 900 }
       },
@@ -95,10 +94,10 @@ const LEAGUE_CATALOG = [
         id: "koga", order: 2, name: "Koga", type: "poison",
         description: "Zehir ninjası Koga, gölgelerden vurur.",
         team: [
-          { speciesId: 168, level: 56 }, // Ariados
-          { speciesId: 205, level: 59 }, // Forretress
-          { speciesId: 89, level: 58 },  // Muk
-          { speciesId: 169, level: 60 }  // Crobat
+          { speciesId: 168, level: 67 }, // Ariados
+          { speciesId: 205, level: 69 }, // Forretress
+          { speciesId: 89, level: 69 },  // Muk
+          { speciesId: 169, level: 70 }  // Crobat
         ],
         rewards: { trainerXp: 650, coins: 900 }
       },
@@ -106,11 +105,11 @@ const LEAGUE_CATALOG = [
         id: "bruno", order: 3, name: "Bruno", type: "fighting",
         description: "Dövüş ustası Bruno, Johto'da tekrar karşında.",
         team: [
-          { speciesId: 237, level: 58 }, // Hitmontop
-          { speciesId: 106, level: 58 }, // Hitmonlee
-          { speciesId: 107, level: 58 }, // Hitmonchan
-          { speciesId: 95, level: 59 },  // Onix
-          { speciesId: 68, level: 62 }   // Machamp
+          { speciesId: 237, level: 69 }, // Hitmontop
+          { speciesId: 106, level: 69 }, // Hitmonlee
+          { speciesId: 107, level: 69 }, // Hitmonchan
+          { speciesId: 95, level: 69 },  // Onix
+          { speciesId: 68, level: 72 }   // Machamp
         ],
         rewards: { trainerXp: 650, coins: 900 }
       },
@@ -118,11 +117,11 @@ const LEAGUE_CATALOG = [
         id: "karen", order: 4, name: "Karen", type: "dark",
         description: "Karanlık ustası Karen, Johto Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 197, level: 58 }, // Umbreon
-          { speciesId: 45, level: 58 },  // Vileplume
-          { speciesId: 94, level: 61 },  // Gengar
-          { speciesId: 198, level: 60 }, // Murkrow
-          { speciesId: 229, level: 63 }  // Houndoom
+          { speciesId: 197, level: 69 }, // Umbreon
+          { speciesId: 45, level: 69 },  // Vileplume
+          { speciesId: 94, level: 71 },  // Gengar
+          { speciesId: 198, level: 70 }, // Murkrow
+          { speciesId: 229, level: 73 }  // Houndoom
         ],
         rewards: { trainerXp: 650, coins: 900 }
       }
@@ -131,12 +130,12 @@ const LEAGUE_CATALOG = [
       id: "champion", order: 5, name: "Lance (Şampiyon)", type: "dragon",
       description: "Ejderha ustası Lance, Johto Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 130, level: 60 }, // Gyarados
-        { speciesId: 149, level: 63 }, // Dragonite
-        { speciesId: 149, level: 63 }, // Dragonite
-        { speciesId: 142, level: 62 }, // Aerodactyl
-        { speciesId: 6, level: 62 },   // Charizard
-        { speciesId: 149, level: 66 }  // Dragonite
+        { speciesId: 130, level: 70 }, // Gyarados
+        { speciesId: 149, level: 73 }, // Dragonite
+        { speciesId: 149, level: 73 }, // Dragonite
+        { speciesId: 142, level: 72 }, // Aerodactyl
+        { speciesId: 6, level: 72 },   // Charizard
+        { speciesId: 149, level: 75 }  // Dragonite
       ],
       rewards: { trainerXp: 1900, coins: 3100 }
     },
@@ -153,17 +152,17 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "hoenn_league", regionId: "hoenn",
     requiresBadges: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
-    // Phase 17 rebalance: cascaded upward alongside the Hoenn Gym chain -
-    // see hoenn_rustboro's own comment in gym-data.js for the rationale.
+    // Phase 18 rebalance: cascaded alongside the Hoenn Gym chain - see
+    // hoenn_rustboro's own comment in gym-data.js for the rationale.
     eliteFour: [
       {
         id: "sidney", order: 1, name: "Sidney", type: "dark",
         description: "Karanlık ustası Sidney, Hoenn Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 262, level: 84 }, // Mightyena
-          { speciesId: 332, level: 84 }, // Cacturne
-          { speciesId: 359, level: 85 }, // Absol
-          { speciesId: 319, level: 86 }  // Sharpedo
+          { speciesId: 262, level: 75 }, // Mightyena
+          { speciesId: 332, level: 75 }, // Cacturne
+          { speciesId: 359, level: 76 }, // Absol
+          { speciesId: 319, level: 76 }  // Sharpedo
         ],
         rewards: { trainerXp: 900, coins: 1200 }
       },
@@ -171,10 +170,10 @@ const LEAGUE_CATALOG = [
         id: "phoebe", order: 2, name: "Phoebe", type: "ghost",
         description: "Hayalet ustası Phoebe, Hoenn Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 356, level: 86 }, // Dusclops
-          { speciesId: 354, level: 87 }, // Banette
-          { speciesId: 302, level: 87 }, // Sableye
-          { speciesId: 356, level: 88 }  // Dusclops
+          { speciesId: 356, level: 76 }, // Dusclops
+          { speciesId: 354, level: 77 }, // Banette
+          { speciesId: 302, level: 77 }, // Sableye
+          { speciesId: 356, level: 77 }  // Dusclops
         ],
         rewards: { trainerXp: 900, coins: 1200 }
       },
@@ -182,10 +181,10 @@ const LEAGUE_CATALOG = [
         id: "glacia", order: 3, name: "Glacia", type: "ice",
         description: "Buz ustası Glacia, Hoenn Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 362, level: 88 }, // Glalie
-          { speciesId: 364, level: 88 }, // Sealeo
-          { speciesId: 362, level: 90 }, // Glalie
-          { speciesId: 365, level: 91 }  // Walrein
+          { speciesId: 362, level: 77 }, // Glalie
+          { speciesId: 364, level: 77 }, // Sealeo
+          { speciesId: 362, level: 78 }, // Glalie
+          { speciesId: 365, level: 79 }  // Walrein
         ],
         rewards: { trainerXp: 900, coins: 1200 }
       },
@@ -193,10 +192,10 @@ const LEAGUE_CATALOG = [
         id: "drake", order: 4, name: "Drake", type: "dragon",
         description: "Ejderha ustası Drake, Hoenn Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 372, level: 90 }, // Shelgon
-          { speciesId: 334, level: 91 }, // Altaria
-          { speciesId: 230, level: 91 }, // Kingdra
-          { speciesId: 373, level: 93 }  // Salamence
+          { speciesId: 372, level: 78 }, // Shelgon
+          { speciesId: 334, level: 79 }, // Altaria
+          { speciesId: 230, level: 79 }, // Kingdra
+          { speciesId: 373, level: 80 }  // Salamence
         ],
         rewards: { trainerXp: 900, coins: 1200 }
       }
@@ -205,10 +204,10 @@ const LEAGUE_CATALOG = [
       id: "champion", order: 5, name: "Wallace (Şampiyon)", type: "water",
       description: "Su ustası Wallace, Hoenn Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 370, level: 92 }, // Luvdisc
-        { speciesId: 340, level: 93 }, // Whiscash
-        { speciesId: 224, level: 94 }, // Tentacruel
-        { speciesId: 350, level: 95 }  // Milotic
+        { speciesId: 370, level: 79 }, // Luvdisc
+        { speciesId: 340, level: 80 }, // Whiscash
+        { speciesId: 224, level: 80 }, // Tentacruel
+        { speciesId: 350, level: 81 }  // Milotic
       ],
       rewards: { trainerXp: 2500, coins: 4000 }
     },
@@ -225,19 +224,20 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "sinnoh_league", regionId: "sinnoh",
     requiresBadges: ["coal", "forest", "cobble", "fen", "relic", "mine", "icicle", "beacon"],
-    // Phase 17 rebalance: cascaded upward alongside the Sinnoh Gym chain -
-    // see sinnoh_oreburgh's comment in gym-data.js for the rationale.
-    // Cynthia's team tops out at exactly 100 (the actual level cap) as the
-    // intended "hardest fight in the game so far" before Unova.
+    // Phase 18 rebalance: cascaded alongside the Sinnoh Gym chain - see
+    // sinnoh_oreburgh's comment in gym-data.js for the rationale. Cynthia's
+    // team is deliberately kept below the level-100 cap (unlike the Phase
+    // 17 version, which put her right at it) to leave room for the ~4-5
+    // regions planned after Unova.
     eliteFour: [
       {
         id: "aaron", order: 1, name: "Aaron", type: "bug",
         description: "Böcek ustası Aaron, Sinnoh Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 269, level: 96 }, // Dustox
-          { speciesId: 416, level: 96 }, // Vespiquen
-          { speciesId: 452, level: 97 }, // Drapion
-          { speciesId: 214, level: 97 }  // Heracross
+          { speciesId: 269, level: 80 }, // Dustox
+          { speciesId: 416, level: 80 }, // Vespiquen
+          { speciesId: 452, level: 82 }, // Drapion
+          { speciesId: 214, level: 82 }  // Heracross
         ],
         rewards: { trainerXp: 1000, coins: 1300 }
       },
@@ -245,10 +245,10 @@ const LEAGUE_CATALOG = [
         id: "bertha", order: 2, name: "Bertha", type: "ground",
         description: "Toprak ustası Bertha, Sinnoh Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 195, level: 96 }, // Quagsire
-          { speciesId: 76, level: 97 },  // Golem
-          { speciesId: 450, level: 97 }, // Hippowdon
-          { speciesId: 464, level: 98 }  // Rhyperior
+          { speciesId: 195, level: 80 }, // Quagsire
+          { speciesId: 76, level: 82 },  // Golem
+          { speciesId: 450, level: 82 }, // Hippowdon
+          { speciesId: 464, level: 83 }  // Rhyperior
         ],
         rewards: { trainerXp: 1000, coins: 1300 }
       },
@@ -256,10 +256,10 @@ const LEAGUE_CATALOG = [
         id: "flint", order: 3, name: "Flint", type: "fire",
         description: "Ateş ustası Flint, Sinnoh Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 78, level: 97 },  // Rapidash
-          { speciesId: 467, level: 97 }, // Magmortar
-          { speciesId: 229, level: 98 }, // Houndoom
-          { speciesId: 392, level: 98 }  // Infernape
+          { speciesId: 78, level: 82 },  // Rapidash
+          { speciesId: 467, level: 82 }, // Magmortar
+          { speciesId: 229, level: 83 }, // Houndoom
+          { speciesId: 392, level: 83 }  // Infernape
         ],
         rewards: { trainerXp: 1000, coins: 1300 }
       },
@@ -267,10 +267,10 @@ const LEAGUE_CATALOG = [
         id: "lucian", order: 4, name: "Lucian", type: "psychic",
         description: "Ruh ustası Lucian, Sinnoh Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 203, level: 97 }, // Girafarig
-          { speciesId: 437, level: 98 }, // Bronzong
-          { speciesId: 122, level: 98 }, // Mr. Mime
-          { speciesId: 65, level: 99 }   // Alakazam
+          { speciesId: 203, level: 82 }, // Girafarig
+          { speciesId: 437, level: 83 }, // Bronzong
+          { speciesId: 122, level: 83 }, // Mr. Mime
+          { speciesId: 65, level: 84 }   // Alakazam
         ],
         rewards: { trainerXp: 1000, coins: 1300 }
       }
@@ -279,11 +279,11 @@ const LEAGUE_CATALOG = [
       id: "champion", order: 5, name: "Cynthia (Şampiyon)", type: "mixed",
       description: "Cynthia, Sinnoh Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 442, level: 97 }, // Spiritomb
-        { speciesId: 407, level: 98 }, // Roserade
-        { speciesId: 468, level: 99 }, // Togekiss
-        { speciesId: 448, level: 99 }, // Lucario
-        { speciesId: 445, level: 100 } // Garchomp
+        { speciesId: 442, level: 82 }, // Spiritomb
+        { speciesId: 407, level: 83 }, // Roserade
+        { speciesId: 468, level: 84 }, // Togekiss
+        { speciesId: 448, level: 84 }, // Lucario
+        { speciesId: 445, level: 85 } // Garchomp
       ],
       rewards: { trainerXp: 2800, coins: 4500 }
     },
@@ -300,19 +300,20 @@ const LEAGUE_CATALOG = [
   {
     leagueId: "unova_league", regionId: "unova",
     requiresBadges: ["trio", "basic", "insect", "bolt", "quake", "jet", "freeze", "legend"],
-    // Phase 17 rebalance: cascaded upward alongside the Unova Gym chain -
-    // see unova_striaton's comment in gym-data.js for the rationale. Alder,
-    // as the current final Champion of the whole game, tops out at the
-    // level cap (100) - the intended hardest fight in the app right now.
+    // Phase 18 rebalance: cascaded alongside the Unova Gym chain - see
+    // unova_striaton's comment in gym-data.js for the rationale. Alder is
+    // deliberately kept well below the level-100 cap - Unova is no longer
+    // assumed to be the last region, so this cap headroom is reserved for
+    // the ~4-5 more regions planned after it.
     eliteFour: [
       {
         id: "shauntal", order: 1, name: "Shauntal", type: "ghost",
         description: "Hayalet ustası Shauntal, Unova Elit Dörtlü'nün ilk üyesi.",
         team: [
-          { speciesId: 563, level: 97 }, // Cofagrigus
-          { speciesId: 609, level: 98 }, // Chandelure
-          { speciesId: 623, level: 98 }, // Golurk
-          { speciesId: 593, level: 99 }  // Jellicent
+          { speciesId: 563, level: 85 }, // Cofagrigus
+          { speciesId: 609, level: 87 }, // Chandelure
+          { speciesId: 623, level: 87 }, // Golurk
+          { speciesId: 593, level: 88 }  // Jellicent
         ],
         rewards: { trainerXp: 1100, coins: 1400 }
       },
@@ -320,10 +321,10 @@ const LEAGUE_CATALOG = [
         id: "grimsley", order: 2, name: "Grimsley", type: "dark",
         description: "Karanlık ustası Grimsley, Unova Elit Dörtlü'nün ikinci üyesi.",
         team: [
-          { speciesId: 510, level: 97 }, // Liepard
-          { speciesId: 553, level: 98 }, // Krookodile
-          { speciesId: 625, level: 99 }, // Bisharp
-          { speciesId: 560, level: 99 }  // Scrafty
+          { speciesId: 510, level: 85 }, // Liepard
+          { speciesId: 553, level: 87 }, // Krookodile
+          { speciesId: 625, level: 88 }, // Bisharp
+          { speciesId: 560, level: 88 }  // Scrafty
         ],
         rewards: { trainerXp: 1100, coins: 1400 }
       },
@@ -331,10 +332,10 @@ const LEAGUE_CATALOG = [
         id: "caitlin", order: 3, name: "Caitlin", type: "psychic",
         description: "Ruh ustası Caitlin, Unova Elit Dörtlü'nün üçüncü üyesi.",
         team: [
-          { speciesId: 576, level: 98 }, // Gothitelle
-          { speciesId: 579, level: 98 }, // Reuniclus
-          { speciesId: 561, level: 99 }, // Sigilyph
-          { speciesId: 518, level: 99 }  // Musharna
+          { speciesId: 576, level: 87 }, // Gothitelle
+          { speciesId: 579, level: 87 }, // Reuniclus
+          { speciesId: 561, level: 88 }, // Sigilyph
+          { speciesId: 518, level: 88 }  // Musharna
         ],
         rewards: { trainerXp: 1100, coins: 1400 }
       },
@@ -342,10 +343,10 @@ const LEAGUE_CATALOG = [
         id: "marshal", order: 4, name: "Marshal", type: "fighting",
         description: "Dövüş ustası Marshal, Unova Elit Dörtlü'nün son üyesi.",
         team: [
-          { speciesId: 534, level: 98 }, // Conkeldurr
-          { speciesId: 620, level: 99 }, // Mienshao
-          { speciesId: 538, level: 99 }, // Throh
-          { speciesId: 560, level: 100 } // Scrafty
+          { speciesId: 534, level: 87 }, // Conkeldurr
+          { speciesId: 620, level: 88 }, // Mienshao
+          { speciesId: 538, level: 88 }, // Throh
+          { speciesId: 560, level: 89 } // Scrafty
         ],
         rewards: { trainerXp: 1100, coins: 1400 }
       }
@@ -354,11 +355,11 @@ const LEAGUE_CATALOG = [
       id: "champion", order: 5, name: "Alder (Şampiyon)", type: "mixed",
       description: "Alder, Unova Şampiyonu! Son sınav.",
       team: [
-        { speciesId: 626, level: 98 }, // Bouffalant
-        { speciesId: 621, level: 99 }, // Druddigon
-        { speciesId: 584, level: 99 }, // Vanilluxe
-        { speciesId: 637, level: 100 }, // Volcarona
-        { speciesId: 612, level: 100 }  // Haxorus
+        { speciesId: 626, level: 87 }, // Bouffalant
+        { speciesId: 621, level: 88 }, // Druddigon
+        { speciesId: 584, level: 88 }, // Vanilluxe
+        { speciesId: 637, level: 89 }, // Volcarona
+        { speciesId: 612, level: 89 }  // Haxorus
       ],
       rewards: { trainerXp: 3200, coins: 5000 }
     }
