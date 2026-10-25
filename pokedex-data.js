@@ -142,31 +142,23 @@ const DEFAULT_INVENTORY = { pokeball: 0, berry: 0, "evolution-stone": 0 };
 // Phase 18: was a flat 100 XP per level (any level, level 2 or level 99,
 // cost exactly the same) - real player data showed Pokemon reaching very
 // high levels almost trivially once battle XP scaled with enemy level,
-// making "level" stop meaning much. Replaced with a gradually increasing
-// cost per level-up: level L->L+1 costs 100 + 20*(L-1), so it's identical
-// to the old flat cost at the very start (level 1->2 is still 100) and
-// grows from there - but stays bounded (the single most expensive step in
-// the game, 99->100, costs 2060, nowhere near a five-digit jump).
-// xpForLevel(L) is now the single source of truth for "how much pxp has a
-// Pokemon that just reached level L accumulated" - every place that used
-// to compute (level-1)*POKEMON_XP_PER_LEVEL directly (starter creation,
-// Rare Candy, and the level-never-decreases clamp in every battle file)
-// now calls this instead, so they all stay consistent with the real curve.
-const POKEMON_XP_PER_LEVEL = 100; // base cost, level 1 -> 2 only
-const POKEMON_XP_GROWTH_PER_LEVEL = 20; // each further level-up costs this much more than the last
+// Phase 22: Ayaz found the Phase 18 increasing-cost curve too slow/grindy -
+// reverted back to the original flat cost per level. xpForLevel(L) is kept
+// as a function (not inlined back to (level-1)*POKEMON_XP_PER_LEVEL at
+// every call site) purely so starter creation/Rare Candy/every battle
+// file's level-never-decreases clamp don't all need their own edit back -
+// they already call this function, so reverting its body here is enough.
+const POKEMON_XP_PER_LEVEL = 100;
 
 function xpForLevel(level) {
   if (level <= 1) return 0;
-  const steps = level - 1;
-  // sum_{i=0}^{steps-1} (100 + 20*i) = 100*steps + 20*steps*(steps-1)/2
-  return POKEMON_XP_PER_LEVEL * steps + (POKEMON_XP_GROWTH_PER_LEVEL / 2) * steps * (steps - 1);
+  return (level - 1) * POKEMON_XP_PER_LEVEL;
 }
 
 function pokemonLevelInfo(pxp) {
-  let level = 1;
-  while (level < 100 && pxp >= xpForLevel(level + 1)) level++;
+  const level = Math.min(100, Math.floor(pxp / POKEMON_XP_PER_LEVEL) + 1);
   const xpIntoLevel = pxp - xpForLevel(level);
-  const xpForNextLevel = level >= 100 ? 0 : xpForLevel(level + 1) - xpForLevel(level);
+  const xpForNextLevel = level >= 100 ? 0 : POKEMON_XP_PER_LEVEL;
   return { level, xpIntoLevel, xpForNextLevel };
 }
 
